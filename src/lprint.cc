@@ -2078,8 +2078,6 @@ Format::s_exp (wStream &stream, Char c)
   else
     ncol = minpad;
 
-  if (stringp (x))
-    atsign = !atsign;
   if (!atsign)
     {
       stream.add (tem);
