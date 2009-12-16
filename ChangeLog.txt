@@ -14,14 +14,9 @@
 
 2009-12-16  NANRI Masaoki  <southly@gmail.com>
 
-	* src : remove compiler option '-Zc:wchar_t-'.
-	wchar_t をネイティブ型として扱うように修正。
-	gccではVCと異なりwchar_tのサイズが4なので修正すべきかどうかも不明。
-	とりあえずCスタイルのキャストで型を合わせることで対応している。
-
-	* src : remove compiler option '-Zc:forScope-'.
-	forループのスコープをC++の標準にしてもコンパイル可能なように修正。
-	必要な箇所だけ変数宣言をforループの前に出すのを基本方針にしている。
+	* src : fix set-buffer-modified-p.
+	(set-buffer-modified-p nil) をした時に以前更新なし状態だった点が更
+	新無し状態のままなのを修正。
 
 	* src : fix inverse-cursor-line.
 	(setq inverse-cursor-line t)
