@@ -72,7 +72,8 @@ make_random_state (lisp keys)
   if (!general_vector_p (v) || xvector_length (v) != Random::INDEX_MAX + 1)
     FEprogram_error (Einvalid_random_state_initializer, v);
   lisp *x = xvector_contents (v);
-  for (int i = 0; i < Random::INDEX_MAX + 1; i++, x++)
+  int i = 0;
+  for (; i < Random::INDEX_MAX + 1; i++, x++)
     if (!fixnump (*x))
       FEprogram_error (Einvalid_random_state_initializer, v);
   x = xvector_contents (v);
@@ -137,7 +138,7 @@ Fmake_random_state (lisp state)
     state = coerce_to_random_state (state);
   lisp p = make_random_state ();
   if (state == Qt)
-    xrandom_state_object (p).srandom (time (0));
+    xrandom_state_object (p).srandom ((long)time (0));
   else
     xrandom_state_object (p) = xrandom_state_object (state);
   return p;

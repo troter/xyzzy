@@ -334,7 +334,8 @@ find_prime (int n)
 {
   static const int prime[] =
     {11, 53, 101, 211, 307, 401, 503, 601, 701, 809, 907, 1009,};
-  for (int i = 0; i < numberof (prime); i++)
+  int i = 0;
+  for (; i < numberof (prime); i++)
     if (prime[i] >= n)
       return prime[i];
   return prime[i - 1];
@@ -653,11 +654,11 @@ lookup (u_int hash, const Char *s, int size, lisp vector)
 }
 
 void
-maybe_symbol_string::parse (const Char *&xb, int &xl)
+maybe_symbol_string::parse (Char *&xb, int &xl)
 {
-  const Char *b = xb;
-  const Char *be = b + xl;
-  for (const Char *colon = b; colon < be; colon++)
+  Char *b = xb;
+  Char *be = b + xl;
+  for (Char *colon = b; colon < be; colon++)
     if (*colon == ':')
       {
         if (colon == b)

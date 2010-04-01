@@ -152,7 +152,8 @@ utimer::remove (lisp fn)
 void
 utimer::gc_mark (void (*f)(lisp))
 {
-  for (timer_entry *p = t_entries.head (); p; p = p->next ())
+  timer_entry *p = t_entries.head ();
+  for (; p; p = p->next ())
     (*f)(p->te_fn);
   for (p = t_defers.head (); p; p = p->next ())
     (*f)(p->te_fn);

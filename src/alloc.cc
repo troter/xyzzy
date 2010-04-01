@@ -150,7 +150,7 @@ alloc_page::free (void *p)
             return;
           }
 
-      r = (alloc_page_rep *)p;
+      alloc_page_rep* r = (alloc_page_rep *)p;
       r->commit = (1U << ap_units_per_block) - 1;
       r->next = ap_rep;
       ap_rep = r;
@@ -223,7 +223,7 @@ fixed_heap::free (void *p)
 
   if (count < fh_heap_per_page)
     {
-      h = (fixed_heap_rep *)p;
+      fixed_heap_rep *h = (fixed_heap_rep *)p;
       h->next = fh_heap;
       fh_heap = h;
     }
@@ -231,7 +231,7 @@ fixed_heap::free (void *p)
     {
       fixed_heap_rep *nheap = 0;
       fixed_heap_rep *next;
-      for (h = fh_heap; h; h = next)
+      for (fixed_heap_rep *h = fh_heap; h; h = next)
         {
           next = h->next;
           if ((pointer_t (h) & mask) != base)

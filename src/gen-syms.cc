@@ -2714,7 +2714,7 @@ check_dup (symbols *p, int n, const char *pkg)
 
   qsort (buf, n, sizeof *buf, compare);
   int f = 0;
-  for (i = 1; i < n; i++)
+  for (int i = 1; i < n; i++)
     if (!strcmp (buf[i - 1], buf[i]))
       {
         fprintf (stderr, "package %s: duplicate definition: %s \n", pkg, buf[i]);
@@ -2835,7 +2835,8 @@ static void
 process_interactive ()
 {
   const char **intr = (const char **)alloca (sizeof (char *) * numberof (ed));
-  for (int i = 0, j = 0; i < numberof (ed); i++)
+  int i, j;
+  for (i = 0, j = 0; i < numberof (ed); i++)
     if (ed[i].interactive)
       intr[j++] = ed[i].interactive;
   if (!j)

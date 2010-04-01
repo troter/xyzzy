@@ -257,7 +257,7 @@ complete_read (const Char *prompt, long prompt_length, lisp def,
             package = lpkg;
         }
 
-      const Char *b = xstring_contents (string);
+      Char *b = xstring_contents (string);
       int l = xstring_length (string);
 
       maybe_symbol_string mss (package);
@@ -527,7 +527,7 @@ completion::complete_symbol ()
         package = lpkg;
     }
 
-  const Char *b = xstring_contents (c_target);
+  Char *b = xstring_contents (c_target);
   int l = xstring_length (c_target);
 
   maybe_symbol_string mss (package);
@@ -631,7 +631,8 @@ completion::split_pathname ()
 {
   const Char *p0 = xstring_contents (c_target);
   const Char *pe = p0 + xstring_length (c_target);
-  for (const Char *p = pe;
+  const Char *p = pe;
+  for (;
        p > p0 && p[-1] != ':' && p[-1] != '/' && p[-1] != '\\';
        p--)
     ;
@@ -679,7 +680,8 @@ completion::complete_UNC (lisp &directory)
   int l = pe - p0;
   if (l < 2 || *p0 != '/' || p0[1] != '/')
     return 0;
-  for (const Char *p = p0 + 2; p < pe && *p != '/'; p++)
+  const Char *p = p0 + 2;
+  for (; p < pe && *p != '/'; p++)
     ;
   for (; pe > p && pe[-1] == '/'; pe--)
     ;

@@ -162,7 +162,7 @@ CFG=r
 
 OUTDIR=d
 OBJS=$(OBJS: = d/)
-CXXFLAGS=-Od -Gz -Gs -Gy -Gi -Gm $(CXXOPT) -W3 -MTd -Zi $(INC) $(DEFS) -DDEBUG -Fo$(OUTDIR)/
+CXXFLAGS=-Od -Gz -Gs -Gy -Gi -Gm $(CXXOPT) -W3 -MTd -Zi $(INC) $(DEFS) -DDEBUG /Zc:forScope- -Fo$(OUTDIR)/
 LDFLAGS=-debug -stack:0x2000000 -incremental:yes
 FINAL_TARGET=$(OUTDIR)/$(BUILD)
 
