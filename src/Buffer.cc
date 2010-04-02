@@ -114,7 +114,7 @@ Buffer::Buffer (lisp name, lisp filename, lisp dirname, int temporary)
   b_prev = b_next = 0;
   b_ldisp = 0;
 
-  b_tab_columns = active_app().default_tab_columns;
+  b_tab_columns = active_app_frame().default_tab_columns;
   b_local_tab_columns = 0;
 
   lbp = temporary ? Qnil : make_buffer ();
@@ -334,7 +334,7 @@ Buffer::erase ()
     if (xmarker_point (xcar (x)) != NO_MARK_SET)
       xmarker_point (xcar (x)) = 0;
 
-  for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     if (wp->w_bufp == this)
       {
         wp->w_last_bufp = 0;
@@ -734,7 +734,7 @@ Buffer::quoted_buffer_name (char *b, char *be, int qc, int qe) const
 void
 Buffer::modify_mode_line () const
 {
-  for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     if (wp->w_bufp == this)
       wp->w_disp_flags |= Window::WDF_MODELINE;
 }
@@ -914,7 +914,7 @@ Fdelete_buffer (lisp buffer)
       return Qnil;
     }
 
-  for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     if (wp->w_bufp == bp)
       {
         wp->w_last_bufp = 0;
@@ -1210,7 +1210,7 @@ call_hooks (lisp hook)
 int
 Buffer::query_kill_xyzzy ()
 {
-  if (active_app().kbdq.disablep ())
+  if (active_app_frame().kbdq.disablep ())
     return 0;
   if (!call_hooks (Vbefore_delete_buffer_hook))
     return 0;
@@ -1255,9 +1255,18 @@ Buffer::kill_xyzzy (int query)
   return 1;
 }
 
+extern bool is_last_app_frame();
+
+
 lisp
 Fkill_xyzzy ()
 {
+  if(!is_last_app_frame())
+  {
+    PostMessage(active_app_frame().toplev, WM_CLOSE, 0, 0);
+    return Qnil;
+  }
+
   if (Buffer::kill_xyzzy (1))
     {
       nonlocal_data *nld = nonlocal_jump::data ();
@@ -1287,7 +1296,7 @@ Buffer::refresh_title_bar () const
       char buf[512 + 10];
       buffer_info binfo (0, this, 0, 0);
       *binfo.format (fmt, buf, buf + 512) = 0;
-      SetWindowText (active_app().toplev, buf);
+      SetWindowText (active_app_frame().toplev, buf);
     }
   else
     {
@@ -1306,7 +1315,7 @@ Buffer::refresh_title_bar () const
       else
         store_title (x, stpcpy (stpcpy (b, TitleBarString), " - "), b + l);
 
-      SetWindowText (active_app().toplev, b);
+      SetWindowText (active_app_frame().toplev, b);
     }
   b_last_title_bar_buffer = 0; // 次回タイトルバーを強制的に再描画させる
 }
@@ -1362,7 +1371,7 @@ Buffer::change_colors (const XCOLORREF *cc)
       b_colors_enable = 0;
     }
 
-  for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     if (wp->w_bufp == this)
       wp->change_color ();
 }
@@ -1418,7 +1427,7 @@ change_local_colors (const XCOLORREF *cc, int dir, int subdir)
 void
 Buffer::refresh_buffer () const
 {
-  for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     if (wp->w_bufp == this)
       wp->w_disp_flags |= Window::WDF_WINDOW;
 }
@@ -1446,7 +1455,7 @@ Buffer::init_fold_width (int w)
   if (w == FOLD_WINDOW)
     {
       w = -1;
-      for (const Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+      for (const Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
         if (wp->w_bufp == this)
           {
             int cx = wp->w_ech.cx;
@@ -1888,7 +1897,7 @@ Buffer::change_ime_mode ()
     {
       b_last_selected_buffer = this;
       if (xsymbol_value (Vsave_buffer_ime_mode) != Qnil)
-        active_app().kbdq.toggle_ime (b_ime_mode);
+        active_app_frame().kbdq.toggle_ime (b_ime_mode);
     }
 }
 
@@ -1920,7 +1929,7 @@ Fset_buffer_ime_mode (lisp f, lisp buffer)
   if (bp->b_ime_mode != omode
       && bp == selected_buffer ()
       && xsymbol_value (Vsave_buffer_ime_mode) != Qnil)
-    active_app().kbdq.toggle_ime (bp->b_ime_mode);
+    active_app_frame().kbdq.toggle_ime (bp->b_ime_mode);
   return Qt;
 }
 

@@ -11,7 +11,7 @@ void
 set_window_icon (HWND hwnd)
 {
   SendMessage (hwnd, WM_SETICON, 1,
-               LPARAM (LoadIcon (active_app().hinst, MAKEINTRESOURCE (IDI_XYZZY))));
+               LPARAM (LoadIcon (active_app_frame().hinst, MAKEINTRESOURCE (IDI_XYZZY))));
 }
 
 void
@@ -21,7 +21,7 @@ center_window (HWND hwnd)
   if (!owner)
     owner = GetParent (hwnd);
   if (!owner)
-    owner = active_app().toplev;
+    owner = active_app_frame().toplev;
 
   RECT dr, or;
   GetWindowRect (hwnd, &dr);
@@ -57,7 +57,7 @@ init_list_column (HWND list, int ncolumns, const int *width, const int *fmts,
     {
       char buf[64];
       lvc.cx = width[i];
-      LoadString (active_app().hinst, id_start + i, buf, sizeof buf);
+      LoadString (active_app_frame().hinst, id_start + i, buf, sizeof buf);
       lvc.pszText = buf;
       lvc.iSubItem = i;
       lvc.fmt = fmts[i];
@@ -109,7 +109,7 @@ buffer_list_init_column (HWND list)
   init_list_column (list, 4, width, fmts, IDS_SELECT_BUFFER1,
                     cfgBufferSelector, cfgColumn);
 
-  HIMAGELIST hil = ImageList_LoadBitmap (active_app().hinst,
+  HIMAGELIST hil = ImageList_LoadBitmap (active_app_frame().hinst,
                                          MAKEINTRESOURCE (IDB_BUFSEL),
                                          17, 1, RGB (255, 255, 255));
   ListView_SetImageList (list, hil, LVSIL_SMALL);
@@ -397,7 +397,7 @@ select_buffer_proc (HWND dlg, UINT msg, WPARAM wparam, LPARAM lparam)
       return 1;
 
     case WM_ACTIVATEAPP:
-      PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
+      PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
                          wparam, lparam);
       return 0;
 
@@ -431,7 +431,7 @@ lisp
 Fbuffer_selector ()
 {
   Buffer *bp = 0;
-  int r = DialogBoxParam (active_app().hinst, MAKEINTRESOURCE (IDD_SELECT_BUFFER),
+  int r = DialogBoxParam (active_app_frame().hinst, MAKEINTRESOURCE (IDD_SELECT_BUFFER),
                           get_active_window (), select_buffer_proc, LPARAM (&bp));
   Fdo_events ();
   if (r != IDOK)
@@ -514,7 +514,7 @@ OFN::init_eol_list ()
     if (!ofn_save || eol_list[i].id != IDS_EOL_AUTO)
       {
         char b[64];
-        LoadString (active_app().hinst, eol_list[i].id, b, sizeof b);
+        LoadString (active_app_frame().hinst, eol_list[i].id, b, sizeof b);
         int j = SendDlgItemMessage (ofn_hwnd, IDC_EOL_CODE, CB_ADDSTRING, 0, LPARAM (b));
         if (j != CB_ERR)
           {
@@ -778,7 +778,7 @@ Ffile_name_dialog (lisp keys)
                      ? OPENFILENAME_SIZE_VERSION_500
                      : OPENFILENAME_SIZE_VERSION_400);
   ofn.hwndOwner = get_active_window ();
-  ofn.hInstance = active_app().hinst;
+  ofn.hInstance = active_app_frame().hinst;
   ofn.lCustData = DWORD (&ofn);
 
   char buf[1024 * 32];
@@ -889,7 +889,7 @@ Ffile_name_dialog (lisp keys)
       if (!ofn.lpstrTitle && save)
         {
           title = (char *)alloca (256);
-          LoadString (active_app().hinst, IDS_SAVE_AS, title, 256);
+          LoadString (active_app_frame().hinst, IDS_SAVE_AS, title, 256);
           ofn.lpstrTitle = title;
         }
     }
@@ -1093,7 +1093,7 @@ Fdirectory_name_dialog (lisp keys)
 
   odn.lStructSize = OPENFILENAME_SIZE_VERSION_400;
   odn.hwndOwner = get_active_window ();
-  odn.hInstance = active_app().hinst;
+  odn.hInstance = active_app_frame().hinst;
 
   char buf[PATH_MAX];
   strcpy (buf, "FOO");
@@ -1216,7 +1216,7 @@ IdleDialog::DoModal (HWND owner, UINT id)
       enable_owner = 1;
     }
 
-  id_hwnd = CreateDialogParam (active_app().hinst, MAKEINTRESOURCE (id), owner,
+  id_hwnd = CreateDialogParam (active_app_frame().hinst, MAKEINTRESOURCE (id), owner,
                                WndProc, LPARAM (this));
   if (id_hwnd)
     {
@@ -1241,7 +1241,7 @@ int
 IdleDialog::Create (HWND owner, UINT id)
 {
   id_modeless = 1;
-  id_hwnd = CreateDialogParam (active_app().hinst, MAKEINTRESOURCE (id), owner,
+  id_hwnd = CreateDialogParam (active_app_frame().hinst, MAKEINTRESOURCE (id), owner,
                                WndProc, LPARAM (this));
   if (!id_hwnd)
     return 0;
@@ -1350,7 +1350,7 @@ DriveDialog::setup_list (HWND hwnd)
       ListView_InsertColumn (hwnd, i, &lvc);
     }
 
-  HIMAGELIST hil = ImageList_LoadBitmap (active_app().hinst,
+  HIMAGELIST hil = ImageList_LoadBitmap (active_app_frame().hinst,
                                          MAKEINTRESOURCE (IDB_FILESEL),
                                          16, 1, RGB (0, 0, 255));
   ListView_SetImageList (hwnd, hil, LVSIL_SMALL);
@@ -1545,7 +1545,7 @@ DriveDialog::WndProc (UINT msg, WPARAM wparam, LPARAM lparam)
       return 1;
 
     case WM_ACTIVATEAPP:
-      PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
+      PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
                          wparam, lparam);
       return 0;
 

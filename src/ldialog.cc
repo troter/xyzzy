@@ -957,8 +957,8 @@ item_string (lisp item, char *buf, int size)
           else if (c == '\t')
             {
               int col = b - b0;
-              int goal = ((col + active_app().default_tab_columns) / active_app().default_tab_columns
-                          * active_app().default_tab_columns);
+              int goal = ((col + active_app_frame().default_tab_columns) / active_app_frame().default_tab_columns
+                          * active_app_frame().default_tab_columns);
               for (int n = min (goal - col, be - b); n > 0; n--)
                 *b++ = ' ';
             }
@@ -1281,7 +1281,7 @@ ldialog_proc (HWND dlg, UINT msg, WPARAM wparam, LPARAM lparam)
       return 1;
 
     case WM_ACTIVATEAPP:
-      PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
+      PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
                          wparam, lparam);
       return 0;
 
@@ -1392,11 +1392,11 @@ PropSheetFont::change_font (const char *id)
     return 0;
 
   HGLOBAL result = 0;
-  HRSRC hrsrc = FindResource (active_app().hinst, id, RT_DIALOG);
-  const DLGTEMPLATE *tmpl = (DLGTEMPLATE *)LoadResource (active_app().hinst, hrsrc);
+  HRSRC hrsrc = FindResource (active_app_frame().hinst, id, RT_DIALOG);
+  const DLGTEMPLATE *tmpl = (DLGTEMPLATE *)LoadResource (active_app_frame().hinst, hrsrc);
   if (tmpl)
     {
-      DWORD size = SizeofResource (active_app().hinst, hrsrc);
+      DWORD size = SizeofResource (active_app_frame().hinst, hrsrc);
       result = change_font (tmpl, size);
     }
   return result;
@@ -1710,7 +1710,7 @@ Fdialog_box (lisp dialog, lisp init, lisp handlers)
                              | WS_CAPTION | WS_SYSMENU),
                             0);
 
-  int result = DialogBoxIndirectParam (active_app().hinst,
+  int result = DialogBoxIndirectParam (active_app_frame().hinst,
                                        d.get_template (),
                                        get_active_window (), ldialog_proc,
                                        LPARAM (&d));
@@ -1803,7 +1803,7 @@ lprop_page_proc (HWND dlg, UINT msg, WPARAM wparam, LPARAM lparam)
 
 #if 0
     case WM_ACTIVATEAPP:
-      PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
+      PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
                          wparam, lparam);
       return 0;
 #endif
@@ -1836,7 +1836,7 @@ PropPage::init_page (PropSheet *parent, int page_no, PROPSHEETPAGE *psp, lisp in
   p_page_no = page_no;
   psp->dwSize = sizeof *psp;
   psp->dwFlags = PSP_DLGINDIRECT;
-  psp->hInstance = active_app().hinst;
+  psp->hInstance = active_app_frame().hinst;
   psp->pResource = get_template (),
   psp->pszIcon = 0;
   psp->pfnDlgProc = lprop_page_proc;
@@ -1975,7 +1975,7 @@ Fproperty_sheet (lisp pages, lisp caption, lisp lstart_page)
   psh.dwSize = sizeof psh;
   psh.dwFlags = PSH_PROPSHEETPAGE | PSH_USECALLBACK | PSH_NOAPPLYNOW;
   psh.hwndParent = get_active_window ();
-  psh.hInstance = active_app().hinst;
+  psh.hInstance = active_app_frame().hinst;
   psh.pszIcon = 0;
   psh.pszCaption = b;
   psh.nPages = total_pages;

@@ -1316,7 +1316,7 @@ readc_stream (lisp stream)
       if (xstream_type (stream) == st_keyboard)
         {
           check_kbd_enable ();
-          return active_app().kbdq.fetch (0, 0);
+          return active_app_frame().kbdq.fetch (0, 0);
         }
 
       lChar cc = xstream_pending (stream);
@@ -1503,7 +1503,7 @@ listen_stream (lisp stream)
       if (xstream_type (stream) == st_keyboard)
         {
           check_kbd_enable ();
-          return active_app().kbdq.listen ();
+          return active_app_frame().kbdq.listen ();
         }
 
       lChar cc = xstream_pending (stream);
@@ -1602,8 +1602,8 @@ peekc_stream (lisp stream)
     {
     case st_keyboard:
       check_kbd_enable ();
-      cc = active_app().kbdq.fetch (0, 0);
-      active_app().kbdq.push_back (cc);
+      cc = active_app_frame().kbdq.fetch (0, 0);
+      active_app_frame().kbdq.push_back (cc);
       break;
 
     case st_buffer:
@@ -1636,7 +1636,7 @@ unreadc_stream (lChar cc, lisp stream)
   switch (xstream_type (stream))
     {
     case st_keyboard:
-      active_app().kbdq.push_back (cc);
+      active_app_frame().kbdq.push_back (cc);
       break;
 
     case st_buffer:
@@ -1752,7 +1752,7 @@ writec_stream (lisp stream, Char cc)
           break;
 
         case st_status:
-          active_app().status_window.putc (cc);
+          active_app_frame().status_window.putc (cc);
           xstream_column (stream) = update_column (xstream_column (stream), cc);
           return;
 
@@ -1858,7 +1858,7 @@ write_stream (lisp stream, const Char *b, size_t size)
           break;
 
         case st_status:
-          active_app().status_window.puts (b, size);
+          active_app_frame().status_window.puts (b, size);
           xstream_column (stream) = update_column (xstream_column (stream), b, size);
           return;
 
@@ -2006,7 +2006,7 @@ flush_stream (lisp stream)
           break;
 
         case st_status:
-          active_app().status_window.flush ();
+          active_app_frame().status_window.flush ();
           return;
 
         case st_buffer:

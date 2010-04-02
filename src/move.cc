@@ -645,8 +645,8 @@ Window::scroll_window_horizontally (long ncolumns, int abs)
          Ç¬Å[Ç©ÅAÇ±ÇÃÇ†ÇΩÇËÇÃçÏÇËÇ™ÇΩÇ‘ÇÒä‘à·Ç¡ÇƒÇ¢ÇÈÇÃÇæÇ™ÅB*/
       RECT r;
       GetClientRect (w_hwnd, &r);
-      int cx = max (0L, ((r.right - sysdep.edge.cx - active_app().text_font.cell ().cx / 2)
-                         / active_app().text_font.cell ().cx));
+      int cx = max (0L, ((r.right - sysdep.edge.cx - active_app_frame().text_font.cell ().cx / 2)
+                         / active_app_frame().text_font.cell ().cx));
 #else
       int cx = w_ech.cx;
 #endif
@@ -2474,7 +2474,7 @@ Fcount_column (lisp string, lisp start, lisp lbuffer)
   if (column < 0)
     FErange_error (start);
   int tab = ((!lbuffer || lbuffer == Qnil)
-             ? active_app().default_tab_columns
+             ? active_app_frame().default_tab_columns
              : Buffer::coerce_to_buffer (lbuffer)->b_tab_columns);
   for (const Char *p = xstring_contents (string), *pe = p + xstring_length (string);
        p < pe; p++)

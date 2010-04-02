@@ -1766,6 +1766,7 @@ static symbols ed[] =
   DEFUN3 (wait-object-p, 1, 0, 0),
   DEFUN3 (char-encoding-p, 1, 0, 0),
   MAKE_SYMBOL2Q (window),
+  MAKE_SYMBOL2Q (appframe),
   MAKE_SYMBOL2Q (buffer),
   MAKE_SYMBOL2Q (marker),
   MAKE_SYMBOL2Q (regexp),

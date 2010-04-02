@@ -182,7 +182,7 @@ status_area::set_parts () const
   if (s_nitems)
     {
       int cx = s_clwidth;
-      if (!IsZoomed (active_app().toplev))
+      if (!IsZoomed (active_app_frame().toplev))
         cx -= s_borders[0] + sysdep.vscroll + sysdep.border.cx * 2;
 
       w[s_nitems] = cx;

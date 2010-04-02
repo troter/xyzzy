@@ -17,7 +17,6 @@ Global
 		{1A59C6A3-2169-4B39-9ABC-94C411E21F3D}.Release|Win32.Build.0 = Release|Win32
 		{8E447303-073A-4162-A6BE-844804A90DD1}.Debug|Win32.ActiveCfg = Debug|Win32
 		{8E447303-073A-4162-A6BE-844804A90DD1}.Release|Win32.ActiveCfg = Release|Win32
-		{8E447303-073A-4162-A6BE-844804A90DD1}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

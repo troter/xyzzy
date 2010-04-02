@@ -11,6 +11,7 @@
 
 struct Window;
 struct Buffer;
+class ApplicationFrame;
 
 class lwindow: public lisp_object
 {
@@ -31,6 +32,27 @@ xwindow_wp (lisp x)
 {
   assert (windowp (x));
   return ((lwindow *)x)->wp;
+}
+
+class lappframe: public lisp_object
+{
+public:
+  ApplicationFrame *fp;
+};
+
+#define appframep(X) typep((X), Tappframe)
+
+inline void
+check_appframe(lisp x)
+{
+  check_type (x, Tappframe, Qappframe);
+}
+
+inline ApplicationFrame *&
+xappframe_fp (lisp x)
+{
+  assert (appframep (x));
+  return ((lappframe *)x)->fp;
 }
 
 class lbuffer: public lisp_object
@@ -237,6 +259,14 @@ make_window ()
   return p;
 }
 
+inline lappframe *
+make_appframe()
+{
+  lappframe *p = ldata <lappframe, Tappframe>::lalloc ();
+  p->fp = 0;
+  return p;
+}
+
 inline lbuffer *
 make_buffer ()
 {
@@ -372,7 +402,7 @@ class ApplicationFrame
 {
 public:
   ApplicationFrame ();
-  ~ApplicationFrame();
+  // ~ApplicationFrame();
 
   HINSTANCE hinst;
   HWND toplev;
@@ -433,6 +463,7 @@ public:
   utimer user_timer;
 
   ApplicationFrame *a_next;
+  lisp lfp;
 };
 
 
@@ -448,78 +479,20 @@ public:
   static const char ModelineClassName[];
 
   HINSTANCE hinst;
-  HWND toplev;
-  HWND hwnd_sw;
 
-  HWND hwnd_clipboard;
-
-  kbd_queue kbdq;
-  mouse_state mouse;
-  ime_comp_queue ime_compq;
-
-  Frame active_frame;
-
-  FontSet text_font;
-  ModelineParam modeline_param;
-  StatusWindow status_window;
-  key_sequence keyseq;
   itimer gc_itimer;
-  itimer as_itimer;
 
-  status_area stat_area;
-
-  int default_tab_columns;
-  int auto_save_count;
-
-  int toplevel_is_active;
-  int ime_composition;
-  int ime_open_mode;
-
-  int last_vkeycode;
-  int kbd_repeat_count;
-  int wait_cursor_depth;
-
-  u_int quit_thread_id;
-  int sleep_timer_exhausted;
-  int f_protect_quit;
-
-  int f_in_drop;
-  Window *drop_window;
-  Window *drag_window;
-  Buffer *drag_buffer;
-  Region drag_region;
-
-  DWORD last_cmd_tick;
-  int f_auto_save_pending;
-
-  UINT default_caret_blink_time;
-  int last_blink_caret;
-
-  char dump_image[PATH_MAX + 8];
   char *ini_file_path;
-
-  lisp lquit_char;
-  int quit_vkey;
-  int quit_mod;
-
-  ATOM atom_toplev;
-  int minibuffer_prompt_column;
-
-  utimer user_timer;
-
-  Application *a_next;
-
-  ApplicationFrame *app_frame;
-
 
   void *initial_stack;
   int in_gc;
 
 };
 
-extern Application& active_app();
-extern Application* retrieve_app(HWND hwnd);
-extern void insert_app(HWND hwnd, Application *app);
+extern ApplicationFrame& active_app_frame();
+extern ApplicationFrame* retrieve_app_frame(HWND hwnd);
+extern void insert_app_frame(HWND hwnd, ApplicationFrame *app);
+extern Application g_app;
 
 class enable_quit
 {
@@ -531,7 +504,7 @@ public:
       if (!q_save)
         {
           q_enable = 1;
-          PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_REGISTER_HOTKEY, 0, 0);
+          PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_REGISTER_HOTKEY, 0, 0);
         }
     }
   ~enable_quit () {if (!q_save) disable ();}
@@ -539,7 +512,7 @@ public:
     {
       if (q_enable)
         {
-          PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_UNREGISTER_HOTKEY, 0, 0);
+          PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_UNREGISTER_HOTKEY, 0, 0);
           q_enable = 0;
         }
     }
@@ -554,7 +527,7 @@ public:
 inline Window *
 selected_window ()
 {
-  return active_app().active_frame.selected;
+  return active_app_frame().active_frame.selected;
 }
 
 inline Buffer *
@@ -568,7 +541,7 @@ inline HWND
 get_active_window ()
 {
   HWND hwnd = GetActiveWindow ();
-  return hwnd ? hwnd : active_app().toplev;
+  return hwnd ? hwnd : active_app_frame().toplev;
 }
 
 inline
@@ -644,13 +617,13 @@ class save_cursor_depth
 {
   int odepth;
 public:
-  save_cursor_depth () : odepth (active_app().wait_cursor_depth) {}
+  save_cursor_depth () : odepth (active_app_frame().wait_cursor_depth) {}
   ~save_cursor_depth ()
     {
       if (!odepth)
         end_wait_cursor (1);
       else
-        active_app().wait_cursor_depth = odepth;
+        active_app_frame().wait_cursor_depth = odepth;
     }
 };
 

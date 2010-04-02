@@ -121,6 +121,7 @@ enum lisp_object_type
   Tdll_function,         // DLL内の関数
   Tc_callable,           // Cから呼べる関数
   Twindow,               // ウィンドウ
+  Tappframe,			 // AppFrame, what emacs call frame.
   Tbuffer,               // バッファ
   Tmarker,               // マーカ
   Tsyntax_table,         // シンタックステーブル

@@ -207,22 +207,22 @@ $(OUTDIR): force
 force:
 
 clean:
-	rm -f $(OBJS:/=\) $(PRIVCTRLOBJS:/=\) $(OUTDIR)\$(BUILD)
-	rm -f $(OUTDIR)\xyzzy.res $(OUTDIR)\xyzzy.rc $(OUTDIR)\$(BUILD:.exe=.map) \
+	del /F $(OBJS:/=\) $(PRIVCTRLOBJS:/=\) $(OUTDIR)\$(BUILD)
+	del /F $(OUTDIR)\xyzzy.res $(OUTDIR)\xyzzy.rc $(OUTDIR)\$(BUILD:.exe=.map) \
 	  $(OUTDIR)\$(BUILD:.exe=.ilk)
-	rm -f gen-syms.obj gen-syms.exe gen-ctab.obj gen-ctab.exe
-	rm -f gen-ktab.obj gen-ktab.exe gen-msg.obj gen-msg.exe
-	rm -f gen-vinf.obj gen-vinf.exe verinfo.h
-	rm -f gen-ucs2tab.obj gen-ucs2tab.exe
-	rm -f gen-utf2sjis.obj gen-utf2sjis.exe
-	rm -f gen-char-width.obj gen-char-width.exe
-	rm -f gen-jisx0212-hash.exe gen-jisx0212-hash.obj
-	rm -f gen-iso2022state.obj gen-iso2022state.exe
-	rm -f gen-ibmext.obj gen-ibmext.exe
-	rm -f dpp.exe dpp.obj num-arith.h
+	del /F gen-syms.obj gen-syms.exe gen-ctab.obj gen-ctab.exe
+	del /F gen-ktab.obj gen-ktab.exe gen-msg.obj gen-msg.exe
+	del /F gen-vinf.obj gen-vinf.exe verinfo.h
+	del /F gen-ucs2tab.obj gen-ucs2tab.exe
+	del /F gen-utf2sjis.obj gen-utf2sjis.exe
+	del /F gen-char-width.obj gen-char-width.exe
+	del /F gen-jisx0212-hash.exe gen-jisx0212-hash.obj
+	del /F gen-iso2022state.obj gen-iso2022state.exe
+	del /F gen-ibmext.obj gen-ibmext.exe
+	del /F dpp.exe dpp.obj num-arith.h
 
 distclean: clean
-	rm -f vars-decl.h fns-decl.h symtable.cc chtab.cc msgcode.h \
+	del /F vars-decl.h fns-decl.h symtable.cc chtab.cc msgcode.h \
 	  dumpver.cc msgdef.cc kanjitab.h char-width.h \
 	  gen-jisx0212-width.obj gen-jisx0212-width.exe \
 	  gen-lucida-width.obj gen-lucida-width.exe \
@@ -234,7 +234,7 @@ distclean: clean
 	  $(PRIVCTRLDIR)/#* $(PRIVCTRLDIR)/*~
 
 realclean: distclean
-	rm -f jisx0212-width.h lucida-width.h ucs2tab.h fontrange.h
+	del /F jisx0212-width.h lucida-width.h ucs2tab.h fontrange.h
 
 ../$(BUILD): $(OUTDIR)/$(BUILD)
 	copy $(OUTDIR)\$(BUILD) .. > nul

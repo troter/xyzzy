@@ -316,7 +316,7 @@ public:
     {
       return dock_bar::create (0, WC_TABCONTROL, "",
                                style, 0, 0, 0, 0, hwnd_parent,
-                               (HMENU)id, active_app().hinst, 0);
+                               (HMENU)id, active_app_frame().hinst, 0);
     }
   int create (HWND);
   virtual void calc_client_size (SIZE &, int) const;

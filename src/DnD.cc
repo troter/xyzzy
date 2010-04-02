@@ -363,7 +363,7 @@ shell_context_menu (HWND hwnd, IShellFolder *sf,
     return 0;
 
   HWND hwnd_active = GetActiveWindow ();
-  int enabled = IsWindowEnabled (active_app().toplev);
+  int enabled = IsWindowEnabled (active_app_frame().toplev);
 
   CMINVOKECOMMANDINFO ci;
   ci.cbSize = sizeof ci;
@@ -376,8 +376,8 @@ shell_context_menu (HWND hwnd, IShellFolder *sf,
   ole_error (ctx_menu->InvokeCommand (&ci));
 
   SetActiveWindow (hwnd_active);
-  if (!enabled && IsWindowEnabled (active_app().toplev))
-    EnableWindow (active_app().toplev, 0);
+  if (!enabled && IsWindowEnabled (active_app_frame().toplev))
+    EnableWindow (active_app_frame().toplev, 0);
 
   return 1;
 }
@@ -824,7 +824,7 @@ filer_drop_target::ask_user (DWORD *effect, DWORD req)
   if (*effect == DROPEFFECT_NONE)
     return;
 
-  HMENU hmenu = LoadMenu (active_app().hinst, MAKEINTRESOURCE (IDM_DnD));
+  HMENU hmenu = LoadMenu (active_app_frame().hinst, MAKEINTRESOURCE (IDM_DnD));
   HMENU hsub = GetSubMenu (hmenu, 0);
   set_menu_state (hsub, *effect, req, IDC_MOVE, DROPEFFECT_MOVE);
   set_menu_state (hsub, *effect, req, IDC_COPY, DROPEFFECT_COPY);
@@ -935,14 +935,14 @@ filer_drop_target::Drop (IDataObject *data_obj, DWORD key,
 
   if (hr != S_OK)
     *effect = DROPEFFECT_NONE;
-  active_app().status_window.clear ();
+  active_app_frame().status_window.clear ();
   return hr;
 }
 
 int
 goto_pt (const POINTL &pt)
 {
-  for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     if (wp->w_bufp)
       {
         RECT r;
@@ -957,14 +957,14 @@ goto_pt (const POINTL &pt)
               break;
             int x = p.x;
             int y = p.y;
-            if (x < r.left + active_app().text_font.cell ().cx / 2)
-              x -= active_app().text_font.cell ().cx / 2;
-            if (x >= r.right - active_app().text_font.cell ().cx / 2)
-              x += active_app().text_font.cell ().cx / 2;
-            if (y < r.top + active_app().text_font.cell ().cy / 2)
-              y -= active_app().text_font.cell ().cy / 2;
-            if (y >= r.bottom - active_app().text_font.cell ().cy / 2)
-              y += active_app().text_font.cell ().cy / 2;
+            if (x < r.left + active_app_frame().text_font.cell ().cx / 2)
+              x -= active_app_frame().text_font.cell ().cx / 2;
+            if (x >= r.right - active_app_frame().text_font.cell ().cx / 2)
+              x += active_app_frame().text_font.cell ().cx / 2;
+            if (y < r.top + active_app_frame().text_font.cell ().cy / 2)
+              y -= active_app_frame().text_font.cell ().cy / 2;
+            if (y >= r.bottom - active_app_frame().text_font.cell ().cy / 2)
+              y += active_app_frame().text_font.cell ().cy / 2;
             rowcol_from_point (wp, &x, &y);
             if (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE)
               {
@@ -977,12 +977,12 @@ goto_pt (const POINTL &pt)
                 wp->w_bufp->folded_goto_column (wp->w_point, x, 0);
               }
             wp->w_bufp->check_range (wp->w_point);
-            active_app().drop_window = wp;
+            active_app_frame().drop_window = wp;
             refresh_screen (0);
             return 1;
           }
       }
-  active_app().drop_window = 0;
+  active_app_frame().drop_window = 0;
   refresh_screen (0);
   return 0;
 }
@@ -995,7 +995,7 @@ text_drop_target::query_drop (DWORD key, const POINTL &pt, DWORD *effect)
   else
     {
       DWORD req = *effect;
-      if (active_app().drag_window && active_app().drag_window->w_bufp != active_app().drag_buffer)
+      if (active_app_frame().drag_window && active_app_frame().drag_window->w_bufp != active_app_frame().drag_buffer)
         *effect = DROPEFFECT_COPY;
       else
         *effect = key & MK_CONTROL ? DROPEFFECT_COPY : DROPEFFECT_MOVE;
@@ -1010,7 +1010,7 @@ STDMETHODIMP
 text_drop_target::DragEnter (IDataObject *data_obj, DWORD key,
                              POINTL pt, DWORD *effect)
 {
-  active_app().f_in_drop = 1;
+  active_app_frame().f_in_drop = 1;
 
   if (xsymbol_value (Venable_DnD_edit) == Qnil)
     tdt_accept = 0;
@@ -1040,8 +1040,8 @@ text_drop_target::DragOver (DWORD key, POINTL pt, DWORD *effect)
 STDMETHODIMP
 text_drop_target::DragLeave ()
 {
-  active_app().drop_window = 0;
-  active_app().f_in_drop = 0;
+  active_app_frame().drop_window = 0;
+  active_app_frame().f_in_drop = 0;
   refresh_screen (0);
   return S_OK;
 }
@@ -1058,17 +1058,17 @@ STDMETHODIMP
 text_drop_target::Drop (IDataObject *data_obj, DWORD key,
                         POINTL pt, DWORD *effect)
 {
-  active_app().f_in_drop = 0;
+  active_app_frame().f_in_drop = 0;
   query_drop (key, pt, effect);
   if (*effect == DROPEFFECT_NONE)
     return S_OK;
 
   if (*effect == DROPEFFECT_MOVE
-      && active_app().drag_window
-      && active_app().drag_window->w_bufp == active_app().drag_buffer
-      && active_app().drop_window->w_bufp == active_app().drag_window->w_bufp
-      && active_app().drop_window->w_point.p_point >= active_app().drag_region.p1
-      && active_app().drop_window->w_point.p_point <= active_app().drag_region.p2)
+      && active_app_frame().drag_window
+      && active_app_frame().drag_window->w_bufp == active_app_frame().drag_buffer
+      && active_app_frame().drop_window->w_bufp == active_app_frame().drag_window->w_bufp
+      && active_app_frame().drop_window->w_point.p_point >= active_app_frame().drag_region.p1
+      && active_app_frame().drop_window->w_point.p_point <= active_app_frame().drag_region.p2)
     {
       *effect = DROPEFFECT_NONE;
       return S_OK;
@@ -1104,7 +1104,7 @@ text_drop_target::Drop (IDataObject *data_obj, DWORD key,
     {
       try
         {
-          Window *wp = active_app().drop_window;
+          Window *wp = active_app_frame().drop_window;
           Buffer *bp = wp->w_bufp;
           bp->check_read_only ();
           hr = E_OUTOFMEMORY;
@@ -1115,7 +1115,7 @@ text_drop_target::Drop (IDataObject *data_obj, DWORD key,
               if (make_string_from_clipboard_text (x, ptr, etc.cfFormat,
                                                    ENCODING_LANG_NIL))
                 {
-                  bp->insert_chars (active_app().drop_window->w_point,
+                  bp->insert_chars (active_app_frame().drop_window->w_point,
                                     xstring_contents (x), xstring_length (x));
                   hr = S_OK;
                 }
@@ -1123,7 +1123,7 @@ text_drop_target::Drop (IDataObject *data_obj, DWORD key,
           else
             {
               xyzzytext_header *x = (xyzzytext_header *)ptr;
-              bp->insert_chars (active_app().drop_window->w_point, x->data, x->size);
+              bp->insert_chars (active_app_frame().drop_window->w_point, x->data, x->size);
               hr = S_OK;
             }
           if (hr == S_OK)
@@ -1136,8 +1136,8 @@ text_drop_target::Drop (IDataObject *data_obj, DWORD key,
         }
       GlobalUnlock (medium.hGlobal);
     }
-  refresh_screen (!active_app().drag_window
-                  || active_app().drop_window->w_bufp != active_app().drag_window->w_bufp);
+  refresh_screen (!active_app_frame().drag_window
+                  || active_app_frame().drop_window->w_bufp != active_app_frame().drag_window->w_bufp);
 
   if (hr != S_OK)
     *effect = DROPEFFECT_NONE;
@@ -1333,16 +1333,16 @@ Fdrag_region (lisp from, lisp to)
   point_t p2 = bp->coerce_to_point (to);
   if (p1 > p2)
     swap (p1, p2);
-  active_app().drop_window = 0;
+  active_app_frame().drop_window = 0;
   text_data_object *data_obj = new text_data_object (bp, p1, p2);
   HRESULT hr = 0;
   DWORD effect = DROPEFFECT_COPY | DROPEFFECT_MOVE;
   try
     {
-      active_app().drag_window = selected_window ();
-      active_app().drag_buffer = selected_buffer ();
-      active_app().drag_region.p1 = p1;
-      active_app().drag_region.p2 = p2;
+      active_app_frame().drag_window = selected_window ();
+      active_app_frame().drag_buffer = selected_buffer ();
+      active_app_frame().drag_region.p1 = p1;
+      active_app_frame().drag_region.p2 = p2;
       text_drop_source drop_src;
       hr = DoDragDrop (data_obj, &drop_src, effect, &effect);
     }
@@ -1350,8 +1350,8 @@ Fdrag_region (lisp from, lisp to)
     {
     }
 
-  active_app().drag_window = 0;
-  active_app().drag_buffer = 0;
+  active_app_frame().drag_window = 0;
+  active_app_frame().drag_buffer = 0;
   data_obj->make_invalid ();
   data_obj->Release ();
 
@@ -1376,8 +1376,8 @@ Fdrag_region (lisp from, lisp to)
     }
 
   multiple_value::count () = 2;
-  multiple_value::value (1) = active_app().drop_window ? active_app().drop_window->lwp : Qnil;
-  active_app().drop_window = 0;
+  multiple_value::value (1) = active_app_frame().drop_window ? active_app_frame().drop_window->lwp : Qnil;
+  active_app_frame().drop_window = 0;
   return leffect;
 }
 

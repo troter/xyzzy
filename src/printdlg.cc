@@ -190,7 +190,7 @@ print_dialog::add_lang () const
     {
       char buf[128];
       *buf = 0;
-      LoadString (active_app().hinst, FontSet::lang_id (i), buf, sizeof buf);
+      LoadString (active_app_frame().hinst, FontSet::lang_id (i), buf, sizeof buf);
       int idx = SendDlgItemMessage (m_hwnd, IDC_LANG, CB_ADDSTRING, 0, LPARAM (buf));
       SendDlgItemMessage (m_hwnd, IDC_LANG, CB_SETITEMDATA, idx, i);
     }
@@ -843,7 +843,7 @@ print_dialog::format_popup (UINT id_btn, subclass_combo &sc)
   RECT r;
   GetWindowRect (hwnd_btn, &r);
 
-  HMENU hmenu = LoadMenu (active_app().hinst, MAKEINTRESOURCE (IDM_PRINTFMT));
+  HMENU hmenu = LoadMenu (active_app_frame().hinst, MAKEINTRESOURCE (IDM_PRINTFMT));
   HMENU hsub = GetSubMenu (hmenu, 0);
   int cmd = TrackPopupMenu (hsub, (TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_TOPALIGN
                                    | TPM_NONOTIFY | TPM_RETURNCMD),
@@ -985,7 +985,7 @@ print_dialog::wndproc (UINT msg, WPARAM wparam, LPARAM lparam)
       return quit ();
 
     case WM_ACTIVATEAPP:
-      PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
+      PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
                          wparam, lparam);
       return 0;
 
@@ -1016,7 +1016,7 @@ print_dialog::wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 int
 print_dialog::do_modal (HWND hwnd)
 {
-  return DialogBoxParam (active_app().hinst, MAKEINTRESOURCE (IDD_PRINT),
+  return DialogBoxParam (active_app_frame().hinst, MAKEINTRESOURCE (IDD_PRINT),
                          hwnd, wndproc, LPARAM (this));
 }
 

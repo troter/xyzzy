@@ -1811,16 +1811,16 @@ print_engine::doprint1 (HWND hwnd)
   di.lpszDocName = docname;
 
   user_abort = 0;
-  HWND printing = CreateDialog (active_app().hinst, MAKEINTRESOURCE (IDD_PRINTING),
-                                active_app().toplev, printing_dlgproc);
+  HWND printing = CreateDialog (active_app_frame().hinst, MAKEINTRESOURCE (IDD_PRINTING),
+                                active_app_frame().toplev, printing_dlgproc);
   SetDlgItemText (printing, IDC_DOCNAME, docname);
   ShowWindow (printing, SW_SHOW);
   UpdateWindow (printing);
-  EnableWindow (active_app().toplev, 0);
+  EnableWindow (active_app_frame().toplev, 0);
 
   if (StartDoc (pe_dev, &di) == SP_ERROR)
     {
-      EnableWindow (active_app().toplev, 1);
+      EnableWindow (active_app_frame().toplev, 1);
       DestroyWindow (printing);
       FEsimple_win32_error (GetLastError ());
     }
@@ -1863,7 +1863,7 @@ print_engine::doprint1 (HWND hwnd)
   else
     AbortDoc (pe_dev);
 
-  EnableWindow (active_app().toplev, 1);
+  EnableWindow (active_app_frame().toplev, 1);
   DestroyWindow (printing);
 
   if (user_abort)
@@ -1924,7 +1924,7 @@ int
 print_engine::notice (HWND hwnd, UINT id, UINT ids)
 {
   char b[256];
-  LoadString (active_app().hinst, ids, b, sizeof b);
+  LoadString (active_app_frame().hinst, ids, b, sizeof b);
   MsgBox (hwnd, b, TitleBarString, MB_OK | MB_ICONEXCLAMATION,
           xsymbol_value (Vbeep_on_error) != Qnil);
   if (id != UINT (-1))
@@ -1936,7 +1936,7 @@ int
 print_engine::notice (HWND hwnd, UINT id, UINT ids, int arg)
 {
   char fmt[256], b[512];
-  LoadString (active_app().hinst, ids, fmt, sizeof fmt);
+  LoadString (active_app_frame().hinst, ids, fmt, sizeof fmt);
   wsprintf (b, fmt, arg);
   MsgBox (hwnd, b, TitleBarString, MB_OK | MB_ICONEXCLAMATION,
           xsymbol_value (Vbeep_on_error) != Qnil);

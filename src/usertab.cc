@@ -117,7 +117,7 @@ user_tab_bar::notify (NMHDR *nm, LRESULT &result)
 
     case TCN_SELCHANGE:
     case TCN_SELCHANGING:
-      if (!active_app().kbdq.idlep ())
+      if (!active_app_frame().kbdq.idlep ())
         {
           result = 1; // prevent the selection
           return 1;
@@ -332,7 +332,7 @@ Fcreate_tab_bar (lisp name, lisp callback)
 
   try
     {
-      bar->create (active_app().toplev);
+      bar->create (active_app_frame().toplev);
     }
   catch (nonlocal_jump &)
     {

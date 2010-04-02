@@ -9,12 +9,12 @@ Frun_winhelp (lisp file, lisp topic)
   char path[PATH_MAX + 1];
   pathname2cstr (file, path);
   if (!topic || topic == Qnil)
-    return boole (WinHelp (active_app().toplev, path, HELP_CONTENTS, 0));
+    return boole (WinHelp (active_app_frame().toplev, path, HELP_CONTENTS, 0));
 
   check_string (topic);
   char *b = (char *)alloca (xstring_length (topic) * 2 + 1);
   w2s (b, topic);
-  return boole (WinHelp (active_app().toplev, path, HELP_PARTIALKEY, DWORD (b)));
+  return boole (WinHelp (active_app_frame().toplev, path, HELP_PARTIALKEY, DWORD (b)));
 }
 
 lisp
@@ -22,7 +22,7 @@ Fkill_winhelp (lisp file)
 {
   char path[PATH_MAX + 1];
   pathname2cstr (file, path);
-  return boole (WinHelp (active_app().toplev, path, HELP_QUIT, 0));
+  return boole (WinHelp (active_app_frame().toplev, path, HELP_QUIT, 0));
 }
 
 struct iheader
@@ -353,7 +353,7 @@ iset::lookup ()
 {
   return (is_files
           && (find_index () == 1
-              || DialogBoxParam (active_app().hinst, MAKEINTRESOURCE (IDD_HELPDLG),
+              || DialogBoxParam (active_app_frame().hinst, MAKEINTRESOURCE (IDD_HELPDLG),
                                  get_active_window (), select_dialog_proc,
                                  LPARAM (this)) == IDOK));
 }

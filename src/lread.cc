@@ -2128,7 +2128,7 @@ load_file (lisp filename, lisp realname, lisp if_does_not_exist,
           b += l;
         }
       b = a2w (b, "...\n");
-      active_app().status_window.puts (buf, b - buf);
+      active_app_frame().status_window.puts (buf, b - buf);
       b--;
     }
 
@@ -2156,7 +2156,7 @@ load_file (lisp filename, lisp realname, lisp if_does_not_exist,
   if (verbose)
     {
       b = a2w (b, "done\n");
-      active_app().status_window.puts (buf, b - buf);
+      active_app_frame().status_window.puts (buf, b - buf);
     }
 
   return Qt;

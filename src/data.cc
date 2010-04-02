@@ -584,6 +584,7 @@ gc_mark_object (lisp object)
 
         case Trandom_state:
         case Twindow:
+		case Tappframe:
         case Tbuffer:
         case Tsyntax_table:
         case Tmarker:
@@ -777,7 +778,7 @@ gc_mark_in_stack ()
   setjmp (regs);
 
   int tem = 0;
-  lisp *beg = (lisp *)&tem, *end = (lisp *)active_app().initial_stack;
+  lisp *beg = (lisp *)&tem, *end = (lisp *)g_app.initial_stack;
   for (; beg < end; beg++)
     {
       lisp p = *beg;
@@ -797,6 +798,8 @@ gc_mark_in_stack ()
         gc_mark_object (p);
     }
 }
+
+extern void app_frame_gc_mark(void (*f)(lisp));
 
 void
 gc_mark_object ()
@@ -851,11 +854,11 @@ gc_mark_object ()
     }
 
   Window *wp;
-  for (wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     gc_mark_object (wp->lwp);
-  for (wp = active_app().active_frame.reserved; wp; wp = wp->w_next)
+  for (wp = active_app_frame().active_frame.reserved; wp; wp = wp->w_next)
     gc_mark_object (wp->lwp);
-  for (wp = active_app().active_frame.deleted; wp; wp = wp->w_next)
+  for (wp = active_app_frame().active_frame.deleted; wp; wp = wp->w_next)
     gc_mark_object (wp->lwp);
 
   Buffer *bp;
@@ -870,7 +873,7 @@ gc_mark_object ()
   toplev_gc_mark (gc_mark_object);
   process_gc_mark (gc_mark_object);
   g_frame.gc_mark (gc_mark_object);
-  active_app().user_timer.gc_mark (gc_mark_object);
+  app_frame_gc_mark(gc_mark_object);
 
   gc_mark_in_stack ();
 
@@ -887,14 +890,14 @@ gc (int nomsg)
   if (suppress_gc::gc_suppressed_p ())
     return;
 
-  active_app().in_gc = 1;
+  g_app.in_gc = 1;
 
   if (nomsg < 0)
     nomsg = xsymbol_value (Vgarbage_collection_messages) == Qnil;
 
   int msglen = 0;
   if (!nomsg)
-    msglen = active_app().status_window.text (get_message_string (Mgarbage_collecting));
+    msglen = active_app_frame().status_window.text (get_message_string (Mgarbage_collecting));
 
   ldataP::ld_nwasted = 0;
   gc_mark_object ();
@@ -914,13 +917,13 @@ gc (int nomsg)
   if (!nomsg)
     {
       if (msglen)
-        active_app().status_window.restore ();
+        active_app_frame().status_window.restore ();
       else
-        active_app().status_window.text (get_message_string (Mgarbage_collecting_done));
+        active_app_frame().status_window.text (get_message_string (Mgarbage_collecting_done));
     }
 
   _heapmin ();
-  active_app().in_gc = 0;
+  g_app.in_gc = 0;
 }
 
 lisp
@@ -2105,6 +2108,22 @@ rdump_object (FILE *fp, lwindow *d, int n,
 }
 
 static inline void
+dump_object (FILE *, const lappframe *, int,
+             const u_long [LDATA_MAX_OBJECTS_PER_LONG])
+{
+}
+
+static void
+rdump_object (FILE *fp, lappframe *d, int n,
+              const u_long used[LDATA_MAX_OBJECTS_PER_LONG])
+{
+  for (lappframe *de = d + n; d < de; d++)
+    if (bitisset (used, bit_index (d)))
+      d->fp = 0;
+}
+
+
+static inline void
 dump_object (FILE *, const lbuffer *, int,
              const u_long [LDATA_MAX_OBJECTS_PER_LONG])
 {
@@ -2673,7 +2692,7 @@ Fdump_xyzzy (lisp filename)
   if (!filename || filename == Qnil)
     {
       filename = xsymbol_value (Qdump_image_path);
-      path = active_app().dump_image;
+      path = active_app_frame().dump_image;
     }
   else
     {
@@ -2790,7 +2809,7 @@ static int dump_flag;
 int
 rdump_xyzzy ()
 {
-  FILE *fp = _fsopen (active_app().dump_image, "rb", _SH_DENYWR);
+  FILE *fp = _fsopen (active_app_frame().dump_image, "rb", _SH_DENYWR);
   if (!fp)
     return 0;
 

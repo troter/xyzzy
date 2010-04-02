@@ -113,7 +113,7 @@ auto_scroll_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       PAINTSTRUCT ps;
       HDC hdc = BeginPaint (hwnd, &ps);
       HDC mem = CreateCompatibleDC (hdc);
-      HGDIOBJ obm = SelectObject (mem, LoadBitmap (active_app().hinst, MAKEINTRESOURCE (IDB_WHEEL)));
+      HGDIOBJ obm = SelectObject (mem, LoadBitmap (active_app_frame().hinst, MAKEINTRESOURCE (IDB_WHEEL)));
       BitBlt (hdc, 0, 0, BMWIDTH, BMHEIGHT, mem, 0, 0, SRCCOPY);
       DeleteObject (SelectObject (mem, obm));
       DeleteDC (mem);
@@ -133,7 +133,7 @@ register_wndclass ()
       wc.lpfnWndProc = auto_scroll_wndproc;
       wc.cbClsExtra = 0;
       wc.cbWndExtra = 0;
-      wc.hInstance = active_app().hinst;
+      wc.hInstance = active_app_frame().hinst;
       wc.hIcon = 0;
       wc.hCursor = 0;
       wc.hbrBackground = 0;
@@ -202,7 +202,7 @@ begin_auto_scroll (HWND hwnd_parent, const POINT &point,
 
   HWND hwnd_scroll = CreateWindow (auto_scroll_class_name, "", WS_POPUP,
                                    0, 0, 0, 0, hwnd_parent,
-                                   0, active_app().hinst, 0);
+                                   0, active_app_frame().hinst, 0);
   if (!hwnd_scroll)
     return 0;
 
@@ -219,9 +219,9 @@ begin_auto_scroll (HWND hwnd_parent, const POINT &point,
   param.callback = callback;
   param.arg = arg;
 
-  param.hcur[STATE_CENTER] = LoadCursor (active_app().hinst, MAKEINTRESOURCE (IDC_WHEEL_UD));
-  param.hcur[STATE_UP] = LoadCursor (active_app().hinst, MAKEINTRESOURCE (IDC_WHEEL_U));
-  param.hcur[STATE_DOWN] = LoadCursor (active_app().hinst, MAKEINTRESOURCE (IDC_WHEEL_D));
+  param.hcur[STATE_CENTER] = LoadCursor (active_app_frame().hinst, MAKEINTRESOURCE (IDC_WHEEL_UD));
+  param.hcur[STATE_UP] = LoadCursor (active_app_frame().hinst, MAKEINTRESOURCE (IDC_WHEEL_U));
+  param.hcur[STATE_DOWN] = LoadCursor (active_app_frame().hinst, MAKEINTRESOURCE (IDC_WHEEL_D));
 
   param.o = point;
   SetWindowPos (hwnd_scroll, 0, param.o.x - HOTSPOTX, param.o.y - HOTSPOTY,

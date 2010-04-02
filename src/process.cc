@@ -326,7 +326,7 @@ protected:
   void terminated (int);
 
   void notify_term () const
-    {PostMessage (active_app().toplev, WM_PRIVATE_PROCESS_TERMINATE, 0, LPARAM (this));}
+    {PostMessage (active_app_frame().toplev, WM_PRIVATE_PROCESS_TERMINATE, 0, LPARAM (this));}
 
 public:
   virtual ~Process ();
@@ -361,7 +361,7 @@ public:
           LeaveCriticalSection (&p_cri);
           if (!empty_p)
             {
-              PostMessage (active_app().toplev, WM_PRIVATE_PROCESS_OUTPUT, 0, LPARAM (this));
+              PostMessage (active_app_frame().toplev, WM_PRIVATE_PROCESS_OUTPUT, 0, LPARAM (this));
               p_pending = 1;
             }
         }
@@ -432,7 +432,7 @@ Process::terminated (int exit_code)
     }
 
   p_bufp->modify_mode_line ();
-  for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     if (wp->w_bufp == p_bufp)
       {
         refresh_screen (0);
@@ -508,7 +508,7 @@ Process::insert_process_output (void *p)
           if (goto_tail)
             p_bufp->goto_char (wp->w_point, xmarker_point (p_marker));
           int f = 0;
-          for (wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+          for (wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
             if (wp->w_bufp == p_bufp)
               {
                 wp->w_disp_flags |= Window::WDF_REFRAME_SCROLL;
@@ -560,10 +560,10 @@ Process::store_output (const Char *w, int l)
       DWORD result;
 
       do
-        if (SendMessageTimeout (active_app().toplev, WM_PRIVATE_PROCESS_OUTPUT,
+        if (SendMessageTimeout (active_app_frame().toplev, WM_PRIVATE_PROCESS_OUTPUT,
                                 WPARAM (&r), LPARAM (this),
                                 SMTO_NORMAL, 1000, &result)
-            || !IsWindow (active_app().toplev)
+            || !IsWindow (active_app_frame().toplev)
             || r.done)
           return;
       while (!p_in_send_string);

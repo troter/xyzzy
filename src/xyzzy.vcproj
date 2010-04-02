@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(InputDir)/zlib/zlib.lib $(InputDir)/r/privctrl.obj $(InputDir)/r/listviewex.obj $(InputDir)/r/url.obj comctl32.lib imm32.lib mpr.lib oleaut32.lib winspool.lib"
+				AdditionalDependencies="$(InputDir)/zlib/zlib.lib $(InputDir)/d/privctrl.obj $(InputDir)/d/listviewex.obj $(InputDir)/d/url.obj comctl32.lib imm32.lib mpr.lib oleaut32.lib winspool.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"

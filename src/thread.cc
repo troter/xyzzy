@@ -61,5 +61,5 @@ worker_thread::wait ()
 {
   if (!w_hthread)
     return 0;
-  return active_app().kbdq.wait_event (w_hterm_event, 1);
+  return active_app_frame().kbdq.wait_event (w_hterm_event, 1);
 }

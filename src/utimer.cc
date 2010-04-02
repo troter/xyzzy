@@ -165,12 +165,12 @@ Fstart_timer (lisp linterval, lisp lfn, lisp lone_shot_p)
   double interval (coerce_to_double_float (linterval) * 1000);
   if (interval < 0 || interval > LONG_MAX)
     FErange_error (linterval);
-  active_app().user_timer.add (u_long (interval), lfn, lone_shot_p && lone_shot_p != Qnil);
+  active_app_frame().user_timer.add (u_long (interval), lfn, lone_shot_p && lone_shot_p != Qnil);
   return Qt;
 }
 
 lisp
 Fstop_timer (lisp fn)
 {
-  return boole (active_app().user_timer.remove (fn));
+  return boole (active_app_frame().user_timer.remove (fn));
 }

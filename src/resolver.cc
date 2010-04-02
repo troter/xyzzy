@@ -46,7 +46,7 @@ resolver::create (HINSTANCE hinst)
                                  0, 0, 0, 0, HWND_DESKTOP, 0, hinst, this);
 #else
   return r_hwnd || CreateWindow (resolver_wndclass, "", WS_CHILD,
-                                 0, 0, 0, 0, active_app().toplev, 0, hinst, this);
+                                 0, 0, 0, 0, active_app_frame().toplev, 0, hinst, this);
 #endif
 }
 
@@ -146,7 +146,7 @@ resolver::wait (HANDLE h)
     }
 
 #ifdef __XYZZY__
-  kbd_queue::disable_kbd dkbd (active_app().kbdq);
+  kbd_queue::disable_kbd dkbd (active_app_frame().kbdq);
 #endif
   int quit = 0;
 

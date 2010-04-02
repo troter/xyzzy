@@ -122,7 +122,7 @@ user_tool_bar::update_ui ()
       {
         int flags;
         if (u_item[i].ti_init == Kend_macro)
-          flags = (active_app().kbdq.save_p ()
+          flags = (active_app_frame().kbdq.save_p ()
                    ? MF_ENABLED | MF_UNCHECKED
                    : MF_GRAYED | MF_UNCHECKED);
         else
@@ -265,7 +265,7 @@ user_tool_bar::create (lisp bitmap, lisp items)
   for (p = items, i = 0; consp (p); p = xcdr (p), i++)
     has_tooltips |= set_item (u_item[i], xcar (p));
 
-  if (!tool_bar::create (active_app().toplev,
+  if (!tool_bar::create (active_app_frame().toplev,
                          (WS_CHILD | WS_CLIPSIBLINGS | CCS_NOMOVEY
                           | CCS_NORESIZE | CCS_NOPARENTALIGN | CCS_NODIVIDER
                           | (has_tooltips ? TBSTYLE_TOOLTIPS : 0)),

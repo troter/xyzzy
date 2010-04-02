@@ -400,7 +400,7 @@ Buffer::adjust_insertion (const Point &point, int size)
       ADJINS (xmarker_point (x));
     }
 
-  for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     if (wp->w_bufp == this)
       {
         ADJINS (wp->w_point.p_point);
@@ -845,7 +845,7 @@ Buffer::adjust_deletion (const Point &point, int size)
       ADJDEL (xmarker_point (x));
     }
 
-  for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
     if (wp->w_bufp == this)
       {
         if (point.p_point < wp->w_disp && point.p_point + size > wp->w_disp)
@@ -1204,7 +1204,7 @@ Fcopy_to_clipboard (lisp string)
     }
 
   int result = 0;
-  if (open_clipboard (active_app().toplev))
+  if (open_clipboard (active_app_frame().toplev))
     {
       if (EmptyClipboard ())
         for (int i = 0; i < numberof (clp) && clp[i].hgl; i++)
@@ -1470,7 +1470,7 @@ Fget_clipboard_data ()
 {
   int result = -1;
   lisp lstring = make_simple_string ();
-  if (open_clipboard (active_app().toplev))
+  if (open_clipboard (active_app_frame().toplev))
     {
       lisp encoding = symbol_value (Vclipboard_char_encoding,
                                     selected_buffer ());

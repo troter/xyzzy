@@ -787,7 +787,7 @@ environ::save_geometry ()
     {
       WINDOWPLACEMENT w;
       w.length = sizeof w;
-      if (GetWindowPlacement (active_app().toplev, &w))
+      if (GetWindowPlacement (active_app_frame().toplev, &w))
         {
           char name[256];
           sprintf (name, "%dx%d",

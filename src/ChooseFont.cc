@@ -3,7 +3,7 @@
 
 ChooseFontP::ChooseFontP ()
 {
-  cf_hil = ImageList_LoadBitmap (active_app().hinst,
+  cf_hil = ImageList_LoadBitmap (g_app.hinst,
                                 MAKEINTRESOURCE (IDB_TT),
                                 18, 1, RGB (0, 0, 255));
 }
@@ -21,7 +21,7 @@ ChooseFontP::add_lang (HWND hwnd)
     {
       char buf[128];
       *buf = 0;
-      LoadString (active_app().hinst, FontSet::lang_id (i), buf, sizeof buf);
+      LoadString (g_app.hinst, FontSet::lang_id (i), buf, sizeof buf);
       int idx = SendDlgItemMessage (hwnd, IDC_LANG, CB_ADDSTRING, 0, LPARAM (buf));
       SendDlgItemMessage (hwnd, IDC_LANG, CB_SETITEMDATA, idx, i);
     }

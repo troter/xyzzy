@@ -59,7 +59,7 @@ quit_thread_entry (void *p)
                   }
                 if (!quit_on && quit_ok)
                   {
-                    RegisterHotKey (0, HK_QUIT, active_app().quit_mod, active_app().quit_vkey);
+                    RegisterHotKey (0, HK_QUIT, active_app_frame().quit_mod, active_app_frame().quit_vkey);
                     quit_on = 1;
                   }
               }
@@ -82,7 +82,7 @@ quit_thread_entry (void *p)
             quit_ok = 1;
             if (fg && !quit_on)
               {
-                RegisterHotKey (0, HK_QUIT, active_app().quit_mod, active_app().quit_vkey);
+                RegisterHotKey (0, HK_QUIT, active_app_frame().quit_mod, active_app_frame().quit_vkey);
                 quit_on = 1;
               }
             break;
@@ -100,14 +100,14 @@ quit_thread_entry (void *p)
             if (quit_on)
               {
                 UnregisterHotKey (0, HK_QUIT);
-                RegisterHotKey (0, HK_QUIT, active_app().quit_mod, active_app().quit_vkey);
+                RegisterHotKey (0, HK_QUIT, active_app_frame().quit_mod, active_app_frame().quit_vkey);
               }
             break;
 
           case WM_HOTKEY:
-            if (!active_app().f_protect_quit)
+            if (!active_app_frame().f_protect_quit)
               {
-                PostMessage (active_app().toplev, WM_PRIVATE_QUIT, 0, 0);
+                PostMessage (active_app_frame().toplev, WM_PRIVATE_QUIT, 0, 0);
                 xsymbol_value (Vquit_flag) = Qt;
               }
             break;
@@ -120,7 +120,7 @@ int
 start_quit_thread ()
 {
   u_long h = _beginthreadex (0, 0, quit_thread_entry, (void *)GetCurrentThreadId (),
-                             0, &active_app().quit_thread_id);
+                             0, &active_app_frame().quit_thread_id);
   if (h == -1)
     return 0;
   CloseHandle (HANDLE (h));
@@ -130,7 +130,7 @@ start_quit_thread ()
 static void
 set_current_cursor (const Window *wp)
 {
-  if (active_app().wait_cursor_depth)
+  if (active_app_frame().wait_cursor_depth)
     SetCursor (sysdep.hcur_wait);
   else if (!wp || !wp->w_bufp)
     SetCursor (sysdep.hcur_arrow);
@@ -139,9 +139,9 @@ set_current_cursor (const Window *wp)
       POINT p;
       GetCursorPos (&p);
       ScreenToClient (wp->w_hwnd, &p);
-      int l = active_app().text_font.cell ().cx / 2;
+      int l = active_app_frame().text_font.cell ().cx / 2;
       if (wp->w_last_flags & Window::WF_LINE_NUMBER)
-        l += (Window::LINENUM_COLUMNS + 1) * active_app().text_font.cell ().cx;
+        l += (Window::LINENUM_COLUMNS + 1) * active_app_frame().text_font.cell ().cx;
       SetCursor (p.x < l ? sysdep.hcur_revarrow : sysdep.hcur_current);
     }
 }
@@ -157,8 +157,8 @@ set_current_cursor ()
 lisp
 Fbegin_wait_cursor ()
 {
-  active_app().wait_cursor_depth++;
-  if (active_app().toplevel_is_active)
+  active_app_frame().wait_cursor_depth++;
+  if (active_app_frame().toplevel_is_active)
     {
       SetCursor (sysdep.hcur_wait);
       mouse_state::show_cursor ();
@@ -169,19 +169,19 @@ Fbegin_wait_cursor ()
 int
 end_wait_cursor (int f)
 {
-  if (!active_app().wait_cursor_depth)
+  if (!active_app_frame().wait_cursor_depth)
     return 1;
   if (f)
-    active_app().wait_cursor_depth = 0;
+    active_app_frame().wait_cursor_depth = 0;
   else
     {
-      active_app().wait_cursor_depth--;
-      if (active_app().wait_cursor_depth)
+      active_app_frame().wait_cursor_depth--;
+      if (active_app_frame().wait_cursor_depth)
         return 0;
     }
-  if (active_app().toplevel_is_active)
+  if (active_app_frame().toplevel_is_active)
     {
-      if (GetFocus () == active_app().toplev)
+      if (GetFocus () == active_app_frame().toplev)
         mouse_state::hide_cursor ();
       set_current_cursor ();
     }
@@ -203,7 +203,7 @@ Fset_cursor (lisp cur)
     sysdep.hcur_current = sysdep.hcur_arrow;
   else
     return Qnil;
-  if (active_app().toplevel_is_active)
+  if (active_app_frame().toplevel_is_active)
     set_current_cursor ();
   xsymbol_value (Vcursor_shape) = cur;
   return Qt;
@@ -212,13 +212,13 @@ Fset_cursor (lisp cur)
 static void
 frame_rect (int w, int h, RECT &r)
 {
-  GetClientRect (active_app().hwnd_sw, &r);
+  GetClientRect (active_app_frame().hwnd_sw, &r);
   r.left = 0;
   r.top = 0;
   r.right = w;
   r.bottom = h - r.bottom;
   if (Window::w_default_flags & Window::WF_FUNCTION_BAR)
-    r.bottom -= active_app().active_frame.fnkey->height ();
+    r.bottom -= active_app_frame().active_frame.fnkey->height ();
 }
 
 static void
@@ -229,17 +229,17 @@ resize_toplevel (int cx, int cy)
   HWND hwnd_before;
   if (Window::w_default_flags & Window::WF_FUNCTION_BAR)
     {
-      hwnd_before = active_app().active_frame.fnkey->hwnd ();
-      SetWindowPos (active_app().active_frame.fnkey->hwnd (),
-                    active_app().hwnd_sw,
+      hwnd_before = active_app_frame().active_frame.fnkey->hwnd ();
+      SetWindowPos (active_app_frame().active_frame.fnkey->hwnd (),
+                    active_app_frame().hwnd_sw,
                     0, r.bottom,
-                    cx, active_app().active_frame.fnkey->height (),
+                    cx, active_app_frame().active_frame.fnkey->height (),
                     SWP_DRAWFRAME | SWP_NOACTIVATE | SWP_SHOWWINDOW);
     }
   else
     {
-      hwnd_before = active_app().hwnd_sw;
-      ShowWindow (active_app().active_frame.fnkey->hwnd (), SW_HIDE);
+      hwnd_before = active_app_frame().hwnd_sw;
+      ShowWindow (active_app_frame().active_frame.fnkey->hwnd (), SW_HIDE);
     }
 
   g_frame.resize (r, hwnd_before);
@@ -249,7 +249,7 @@ void
 recalc_toplevel ()
 {
   RECT r;
-  GetClientRect (active_app().toplev, &r);
+  GetClientRect (active_app_frame().toplev, &r);
   resize_toplevel (r.right, r.bottom);
 }
 
@@ -257,7 +257,7 @@ static void
 do_dnd (HDROP hdrop)
 {
   int drag_finish_called = 0;
-  if (active_app().kbdq.idlep ())
+  if (active_app_frame().kbdq.idlep ())
     {
       Window *wp;
       POINT pt;
@@ -265,7 +265,7 @@ do_dnd (HDROP hdrop)
         wp = selected_window ();
       else
         {
-          ClientToScreen (active_app().toplev, &pt);
+          ClientToScreen (active_app_frame().toplev, &pt);
           wp = Window::find_scr_point_window (pt, 1, 0);
         }
 
@@ -279,9 +279,9 @@ do_dnd (HDROP hdrop)
             {
               if (xsymbol_value (Vdrag_and_drop_auto_activate) != Qnil)
                 {
-                  if (IsIconic (active_app().toplev))
-                    ShowWindow (active_app().toplev, SW_RESTORE);
-                  ForceSetForegroundWindow (active_app().toplev);
+                  if (IsIconic (active_app_frame().toplev))
+                    ShowWindow (active_app_frame().toplev, SW_RESTORE);
+                  ForceSetForegroundWindow (active_app_frame().toplev);
                 }
               lisp list = Qnil;
               int nfiles = DragQueryFile (hdrop, UINT (-1), 0, 0);
@@ -313,46 +313,46 @@ do_dnd (HDROP hdrop)
 void
 set_ime_caret ()
 {
-  if (active_app().active_frame.has_caret && active_app().ime_composition)
+  if (active_app_frame().active_frame.has_caret && active_app_frame().ime_composition)
     {
-      HIMC hIMC = active_app().kbdq.gime.ImmGetContext (active_app().toplev);
+      HIMC hIMC = active_app_frame().kbdq.gime.ImmGetContext (active_app_frame().toplev);
       if (!hIMC)
         return;
 
       if (xsymbol_value (Vno_input_language_change_notification) != Qnil)
-        active_app().kbdq.init_kbd_encoding ();
+        active_app_frame().kbdq.init_kbd_encoding ();
 
       const FontObject &font = kbd_queue::kbd_encoding_font ();
 
-      POINT pt (active_app().active_frame.caret_pos);
-      MapWindowPoints (active_app().active_frame.has_caret, active_app().toplev, &pt, 1);
+      POINT pt (active_app_frame().active_frame.caret_pos);
+      MapWindowPoints (active_app_frame().active_frame.has_caret, active_app_frame().toplev, &pt, 1);
       pt.x += font.offset ().x;
       pt.y += font.offset ().y;
 
       RECT r;
-      int need_rect = (/*!active_app().kbdq.gime.enable_p () // ‚æ‚¤‚í‚©‚ç‚ñ‚¯‚Ç‚Æ‚è‚ ‚¦‚¸(^^;
-                       ||*/ PRIMARYLANGID (active_app().kbdq.kbd_langid ()) != LANG_KOREAN);
+      int need_rect = (/*!active_app_frame().kbdq.gime.enable_p () // ‚æ‚¤‚í‚©‚ç‚ñ‚¯‚Ç‚Æ‚è‚ ‚¦‚¸(^^;
+                       ||*/ PRIMARYLANGID (active_app_frame().kbdq.kbd_langid ()) != LANG_KOREAN);
       if (need_rect)
         {
-          GetClientRect (active_app().active_frame.has_caret, &r);
+          GetClientRect (active_app_frame().active_frame.has_caret, &r);
 
-		  Window *wp = active_app().active_frame.windows;
+		  Window *wp = active_app_frame().active_frame.windows;
           for (; wp; wp = wp->w_next)
-            if (wp->w_hwnd == active_app().active_frame.has_caret)
+            if (wp->w_hwnd == active_app_frame().active_frame.has_caret)
               break;
-          r.left += active_app().text_font.cell ().cx / 2;
+          r.left += active_app_frame().text_font.cell ().cx / 2;
           if (wp && wp->w_bufp)
             {
               if (wp->w_last_flags & Window::WF_LINE_NUMBER)
-                r.left += (Window::LINENUM_COLUMNS + 1) * active_app().text_font.cell ().cx;
+                r.left += (Window::LINENUM_COLUMNS + 1) * active_app_frame().text_font.cell ().cx;
               if (wp->w_bufp->b_fold_columns != Buffer::FOLD_NONE)
                 {
-                  LONG t = r.left + wp->w_bufp->b_fold_columns * active_app().text_font.cell ().cx;
-                  if (t > active_app().active_frame.caret_pos.x)
+                  LONG t = r.left + wp->w_bufp->b_fold_columns * active_app_frame().text_font.cell ().cx;
+                  if (t > active_app_frame().active_frame.caret_pos.x)
                     r.right = min (r.right, t);
                 }
             }
-          MapWindowPoints (active_app().active_frame.has_caret, active_app().toplev,
+          MapWindowPoints (active_app_frame().active_frame.has_caret, active_app_frame().toplev,
                            (POINT *)&r, 2);
           pt.y = max (pt.y, r.top);
         }
@@ -360,30 +360,30 @@ set_ime_caret ()
       COMPOSITIONFORM cf;
       cf.dwStyle = CFS_POINT;
       cf.ptCurrentPos = pt;
-      active_app().kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
+      active_app_frame().kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
 
       if (need_rect)
         {
           cf.dwStyle = CFS_RECT;
           cf.rcArea = r;
-          active_app().kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
+          active_app_frame().kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
         }
 
-      active_app().kbdq.gime.ImmSetCompositionFont (hIMC, (LOGFONT *)&font.logfont ());
-      active_app().kbdq.gime.ImmReleaseContext (active_app().toplev, hIMC);
+      active_app_frame().kbdq.gime.ImmSetCompositionFont (hIMC, (LOGFONT *)&font.logfont ());
+      active_app_frame().kbdq.gime.ImmReleaseContext (active_app_frame().toplev, hIMC);
     }
 }
 
 static void
 ime_open_status (HWND hwnd)
 {
-  HIMC imc = active_app().kbdq.gime.ImmGetContext (hwnd);
+  HIMC imc = active_app_frame().kbdq.gime.ImmGetContext (hwnd);
   if (imc)
     {
-      active_app().ime_open_mode = (active_app().kbdq.gime.ImmGetOpenStatus (imc)
+      active_app_frame().ime_open_mode = (active_app_frame().kbdq.gime.ImmGetOpenStatus (imc)
                            ? kbd_queue::IME_MODE_ON
                            : kbd_queue::IME_MODE_OFF);
-      active_app().kbdq.gime.ImmReleaseContext (hwnd, imc);
+      active_app_frame().kbdq.gime.ImmReleaseContext (hwnd, imc);
       Window::update_last_caret ();
       PostMessage (hwnd, WM_PRIVATE_IME_MODE, 0, 0);
     }
@@ -394,36 +394,36 @@ ime_composition (HWND hwnd, LPARAM lparam)
 {
   if (lparam & GCS_RESULTSTR)
     {
-      HIMC hIMC = active_app().kbdq.gime.ImmGetContext (hwnd);
+      HIMC hIMC = active_app_frame().kbdq.gime.ImmGetContext (hwnd);
       if (!hIMC)
         return lparam;
 
       if (xsymbol_value (Vno_input_language_change_notification) != Qnil)
-        active_app().kbdq.init_kbd_encoding ();
+        active_app_frame().kbdq.init_kbd_encoding ();
 
       if (xsymbol_value (Vunicode_ime) == Qnil
-          ? !(active_app().kbdq.ime_property () & IME_PROP_UNICODE)
+          ? !(active_app_frame().kbdq.ime_property () & IME_PROP_UNICODE)
           : xsymbol_value (Vunicode_ime) != Qt)
         {
-          int l = active_app().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, 0, 0);
+          int l = active_app_frame().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, 0, 0);
           if (l > 0)
             {
               char *s = (char *)alloca (l + 1);
-              if (active_app().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, s, l) == l)
+              if (active_app_frame().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, s, l) == l)
                 {
-                  active_app().kbdq.puts (s, l);
+                  active_app_frame().kbdq.puts (s, l);
 
                   lparam &= ~GCS_RESULTSTR;
 
-                  int rl = active_app().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR, 0, 0);
+                  int rl = active_app_frame().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR, 0, 0);
                   if (rl > 0)
                     {
                       char *rs = (char *)alloca (rl + 1);
-                      if (active_app().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR,
+                      if (active_app_frame().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR,
                                                                  rs, rl) == rl)
                         {
                           s[l] = rs[rl] = 0;
-                          active_app().ime_compq.push (s, l, rs, rl);
+                          active_app_frame().ime_compq.push (s, l, rs, rl);
                         }
                     }
                 }
@@ -431,14 +431,14 @@ ime_composition (HWND hwnd, LPARAM lparam)
         }
       else
         {
-          int l = active_app().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, 0, 0);
+          int l = active_app_frame().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, 0, 0);
           if (l > 0)
             {
               ucs2_t *s = (ucs2_t *)alloca (l + sizeof (ucs2_t));
-              if (active_app().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, s, l) == l)
+              if (active_app_frame().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, s, l) == l)
                 {
                   const Char *tab = 0;
-                  switch (PRIMARYLANGID (active_app().kbdq.kbd_langid ()))
+                  switch (PRIMARYLANGID (active_app_frame().kbdq.kbd_langid ()))
                     {
                     case LANG_JAPANESE:
                       tab = wc2cp932_table;
@@ -450,7 +450,7 @@ ime_composition (HWND hwnd, LPARAM lparam)
                       break;
 
                     case LANG_CHINESE:
-                      switch (SUBLANGID (active_app().kbdq.kbd_langid ()))
+                      switch (SUBLANGID (active_app_frame().kbdq.kbd_langid ()))
                         {
                         case SUBLANG_CHINESE_TRADITIONAL:
                         case SUBLANG_CHINESE_HONGKONG:
@@ -474,29 +474,29 @@ ime_composition (HWND hwnd, LPARAM lparam)
                       if ((!tab || (cc = tab[*sp]) == Char (-1))
                           && (cc = w2i (*sp)) == Char (-1))
                         {
-                          active_app().kbdq.putc (utf16_ucs2_to_undef_pair_high (*sp));
+                          active_app_frame().kbdq.putc (utf16_ucs2_to_undef_pair_high (*sp));
                           cc = utf16_ucs2_to_undef_pair_low (*sp);
                         }
-                      active_app().kbdq.putc (cc);
+                      active_app_frame().kbdq.putc (cc);
                     }
                   lparam &= ~GCS_RESULTSTR;
 
-                  int rl = active_app().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR, 0, 0);
+                  int rl = active_app_frame().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR, 0, 0);
                   if (rl > 0)
                     {
                       ucs2_t *rs = (ucs2_t *)alloca (rl + sizeof (ucs2_t));
-                      if (active_app().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR,
+                      if (active_app_frame().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR,
                                                                   rs, rl) == rl)
                         {
                           rl /= sizeof (ucs2_t);
                           s[l] = rs[rl] = 0;
-                          active_app().ime_compq.push (s, l, rs, rl, tab);
+                          active_app_frame().ime_compq.push (s, l, rs, rl, tab);
                         }
                     }
                 }
             }
         }
-      active_app().kbdq.gime.ImmReleaseContext (hwnd, hIMC);
+      active_app_frame().kbdq.gime.ImmReleaseContext (hwnd, hIMC);
     }
   return lparam;
 }
@@ -506,9 +506,9 @@ set_caret_blink_time ()
 {
   if (xsymbol_value (Vblink_caret) == Qnil)
     {
-      if (!active_app().default_caret_blink_time)
-        active_app().default_caret_blink_time = GetCaretBlinkTime ();
-      if (active_app().default_caret_blink_time)
+      if (!active_app_frame().default_caret_blink_time)
+        active_app_frame().default_caret_blink_time = GetCaretBlinkTime ();
+      if (active_app_frame().default_caret_blink_time)
         SetCaretBlinkTime (10000);
     }
 }
@@ -516,22 +516,22 @@ set_caret_blink_time ()
 void
 restore_caret_blink_time ()
 {
-  if (active_app().default_caret_blink_time)
+  if (active_app_frame().default_caret_blink_time)
     {
-      SetCaretBlinkTime (active_app().default_caret_blink_time);
-      active_app().default_caret_blink_time = 0;
+      SetCaretBlinkTime (active_app_frame().default_caret_blink_time);
+      active_app_frame().default_caret_blink_time = 0;
     }
 }
 
 static void
 refresh_blink_interval ()
 {
-  if (active_app().ime_composition || GetFocus () != active_app().toplev)
+  if (active_app_frame().ime_composition || GetFocus () != active_app_frame().toplev)
     return;
   if (xsymbol_value (Vblink_caret) == Qnil)
     {
       set_caret_blink_time ();
-      if (active_app().active_frame.has_caret)
+      if (active_app_frame().active_frame.has_caret)
         {
           Window *wp = selected_window ();
           if (wp)
@@ -549,7 +549,7 @@ static int
 process_mouse_activate (LPARAM lparam)
 {
   int r;
-  if (active_app().toplevel_is_active
+  if (active_app_frame().toplevel_is_active
       || xsymbol_value (Veat_mouse_activate) == Qnil)
     r = MA_ACTIVATE;
   else
@@ -566,8 +566,8 @@ process_mouse_activate (LPARAM lparam)
         break;
       }
 
-  if (GetFocus () != active_app().toplev)
-    SetFocus (active_app().toplev);
+  if (GetFocus () != active_app_frame().toplev)
+    SetFocus (active_app_frame().toplev);
 
   return r;
 }
@@ -576,17 +576,17 @@ LRESULT CALLBACK
 toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
   CREATESTRUCT *cs = (CREATESTRUCT *)lparam;
-  Application *app1 = (Application *)cs->lpCreateParams;
+  ApplicationFrame *app1 = (ApplicationFrame *)cs->lpCreateParams;
   app1->toplev = hwnd;
-  insert_app(hwnd, app1);
+  insert_app_frame(hwnd, app1);
   app1->hwnd_sw = CreateStatusWindow ((SBARS_SIZEGRIP | WS_CHILD | WS_VISIBLE
                                      | WS_CLIPCHILDREN | WS_CLIPSIBLINGS),
                                     0, hwnd, 0);
   if (!app1->hwnd_sw)
     return -1;
 
-  app1->stat_area.init (active_app().hwnd_sw);
-  app1->status_window.set (active_app().hwnd_sw);
+  app1->stat_area.init (active_app_frame().hwnd_sw);
+  app1->status_window.set (active_app_frame().hwnd_sw);
 
   try
     {
@@ -625,10 +625,10 @@ toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
   return 0;
 }
 
-extern Application *default_app();
-extern void notify_focus(Application *app1);
-extern bool is_last_app();
-extern void delete_app(Application *app1);
+extern ApplicationFrame *default_app_frame();
+extern void notify_focus(ApplicationFrame *app1);
+extern bool is_last_app_frame();
+extern void delete_app_frame(ApplicationFrame *app1);
 
 LRESULT CALLBACK
 toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -639,15 +639,15 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
   if(msg == WM_CREATE) /* retrieve_app not yet available. */
       return toplevel_wnd_create(hwnd, msg, wparam, lparam);  
 
-  Application *app1 = retrieve_app(hwnd);
+  ApplicationFrame *app1 = retrieve_app_frame(hwnd);
   if(app1 == NULL)
-    app1 = default_app();
-  else if(app1 == (Application*)1)
+    app1 = default_app_frame();
+  else if(app1 == (ApplicationFrame*)1)
 	return DefWindowProc (hwnd, msg, wparam, lparam);
   switch (msg)
     {
     case WM_DESTROY:
-	  if(is_last_app())
+	  if(is_last_app_frame())
 	  {
 		  end_listen_server ();
 	#ifdef DnDTEST
@@ -657,18 +657,15 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		  environ::save_geometry ();
 		  ChangeClipboardChain (hwnd, app1->hwnd_clipboard);
 		  PostQuitMessage (0);
-		  app1->toplev = 0;
-		  delete_app(app1);
-		  insert_app(hwnd, (Application *)1);
 	  }
 	  else
 	  {
 		  app1->user_timer.cleanup ();
 		  ChangeClipboardChain (hwnd, app1->hwnd_clipboard);
-		  app1->toplev = 0;
-		  delete_app(app1);
-		  insert_app(hwnd, (Application *)1);
 	  }
+	  app1->toplev = 0;
+	  delete_app_frame(app1);
+	  insert_app_frame(hwnd, (ApplicationFrame *)1);
       return 0;
 
     case WM_PAINT:
@@ -996,14 +993,14 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
         case TID_ITIMER:
           app1->stat_area.timer ();
-          app1->gc_itimer.inc ();
+          g_app.gc_itimer.inc ();
           app1->as_itimer.inc ();
           refresh_blink_interval ();
           if (app1->kbdq.idlep ())
             {
-              if (app1->gc_itimer.expired (30))
+              if (g_app.gc_itimer.expired (30))
                 {
-                  app1->gc_itimer.reset ();
+                  g_app.gc_itimer.reset ();
                   if (ldataP::ld_nwasted)
                     app1->kbdq.gc_timer_expired ();
                 }
@@ -1051,7 +1048,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         break;
       /* fall thru... */
     case WM_CLOSE:
-	  if(is_last_app())
+	  if(is_last_app_frame())
 	  {
         Buffer::kill_xyzzy (1);
         return 0;
@@ -1155,7 +1152,7 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_CREATE:
       {
         RECT r;
-        GetClientRect (active_app().toplev, &r);
+        GetClientRect (active_app_frame().toplev, &r);
         frame_rect (r.right, r.bottom, r);
         MoveWindow (hwnd, r.left, r.top, r.right - r.left, r.bottom - r.top, 0);
         return 0;
@@ -1166,7 +1163,7 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint (hwnd, &ps);
         fill_rect (hdc, ps.rcPaint, sysdep.btn_face);
-        for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
+        for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
           if (wp->flags () & Window::WF_RULER)
             wp->paint_ruler (hdc);
         EndPaint (hwnd, &ps);
@@ -1177,11 +1174,11 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       return Window::frame_window_resize (hwnd, lparam);
 
     case WM_SIZE:
-      if (active_app().active_frame.windows)
+      if (active_app_frame().active_frame.windows)
         {
-          SIZE osize = active_app().active_frame.size;
-          active_app().active_frame.size.cx = LOWORD (lparam);
-          active_app().active_frame.size.cy = HIWORD (lparam);
+          SIZE osize = active_app_frame().active_frame.size;
+          active_app_frame().active_frame.size.cx = LOWORD (lparam);
+          active_app_frame().active_frame.size.cy = HIWORD (lparam);
           Window::compute_geometry (osize);
           Window::move_all_windows ();
           Window::repaint_all_windows ();
@@ -1221,7 +1218,7 @@ on_vedge_p (HWND hwnd, POINT &p)
 
   RECT r;
   GetWindowRect (hwnd, &r);
-  MapWindowPoints (HWND_DESKTOP, active_app().active_frame.hwnd, (POINT *)&r, 2);
+  MapWindowPoints (HWND_DESKTOP, active_app_frame().active_frame.hwnd, (POINT *)&r, 2);
   return r.left;
 }
 
@@ -1250,31 +1247,31 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       }
 
     case WM_VSCROLL:
-      if (GetFocus () != active_app().toplev)
-        SetFocus (active_app().toplev);
+      if (GetFocus () != active_app_frame().toplev)
+        SetFocus (active_app_frame().toplev);
       get_window (hwnd)->process_vscroll (LOWORD (wparam));
       return 0;
 
     case WM_HSCROLL:
-      if (GetFocus () != active_app().toplev)
-        SetFocus (active_app().toplev);
+      if (GetFocus () != active_app_frame().toplev)
+        SetFocus (active_app_frame().toplev);
       get_window (hwnd)->process_hscroll (LOWORD (wparam));
       return 0;
 
     case WM_LBUTTONDOWN:
-      active_app().mouse.down (get_window (hwnd), wparam, lparam, MK_LBUTTON);
+      active_app_frame().mouse.down (get_window (hwnd), wparam, lparam, MK_LBUTTON);
       return 0;
 
     case WM_MBUTTONDOWN:
-      active_app().mouse.down (get_window (hwnd), wparam, lparam, MK_MBUTTON);
+      active_app_frame().mouse.down (get_window (hwnd), wparam, lparam, MK_MBUTTON);
       return 0;
 
     case WM_RBUTTONDOWN:
-      active_app().mouse.down (get_window (hwnd), wparam, lparam, MK_RBUTTON);
+      active_app_frame().mouse.down (get_window (hwnd), wparam, lparam, MK_RBUTTON);
       return 0;
 
     case WM_XBUTTONDOWN:
-      active_app().mouse.down (get_window (hwnd), LOWORD (wparam), lparam,
+      active_app_frame().mouse.down (get_window (hwnd), LOWORD (wparam), lparam,
                       (HIWORD (wparam) == XBUTTON1
                        ? MK_XBUTTON1 : MK_XBUTTON2));
       return 0;
@@ -1284,28 +1281,28 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       if (wparam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON
                     | MK_XBUTTON1 | MK_XBUTTON2))
         set_current_cursor (wp);
-      active_app().mouse.move (wp, wparam, lparam);
+      active_app_frame().mouse.move (wp, wparam, lparam);
       return 0;
 
     case WM_LBUTTONUP:
-      active_app().mouse.up (get_window (hwnd), wparam, lparam, MK_LBUTTON);
+      active_app_frame().mouse.up (get_window (hwnd), wparam, lparam, MK_LBUTTON);
       return 0;
 
     case WM_MBUTTONUP:
-      active_app().mouse.up (get_window (hwnd), wparam, lparam, MK_MBUTTON);
+      active_app_frame().mouse.up (get_window (hwnd), wparam, lparam, MK_MBUTTON);
       return 0;
 
     case WM_RBUTTONUP:
-      active_app().mouse.up (get_window (hwnd), wparam, lparam, MK_RBUTTON);
+      active_app_frame().mouse.up (get_window (hwnd), wparam, lparam, MK_RBUTTON);
       return 0;
 
     case WM_XBUTTONUP:
-      active_app().mouse.up (get_window (hwnd), LOWORD (wparam), lparam,
+      active_app_frame().mouse.up (get_window (hwnd), LOWORD (wparam), lparam,
                     HIWORD (wparam) == XBUTTON1 ? MK_XBUTTON1 : MK_XBUTTON2);
       return 0;
 
     case WM_CANCELMODE:
-      active_app().mouse.cancel ();
+      active_app_frame().mouse.cancel ();
       break;
 
     case WM_ERASEBKGND:
@@ -1344,8 +1341,8 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             {
               point.x = short (LOWORD (lparam));
               point.y = short (HIWORD (lparam));
-              ScreenToClient (active_app().active_frame.hwnd, &point);
-              Window::frame_window_resize (active_app().active_frame.hwnd,
+              ScreenToClient (active_app_frame().active_frame.hwnd, &point);
+              Window::frame_window_resize (active_app_frame().active_frame.hwnd,
                                            MAKELONG (x - 1, point.y),
                                            &point);
               return 0;
@@ -1367,7 +1364,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_PASTE:
-      active_app().kbdq.paste ();
+      active_app_frame().kbdq.paste ();
       break;
 
     case WM_NCMOUSEMOVE:
@@ -1378,7 +1375,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       return process_mouse_activate (lparam);
 
     case WM_SETFOCUS:
-      SetFocus (active_app().toplev);
+      SetFocus (active_app_frame().toplev);
       return 0;
     }
 
@@ -1408,8 +1405,8 @@ modeline_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         Window *wp = get_window (hwnd);
         if (!wp)
           return 0;
-        MapWindowPoints (hwnd, active_app().active_frame.hwnd, &point, 1);
-        return wp->frame_window_resize (active_app().active_frame.hwnd, point, 0);
+        MapWindowPoints (hwnd, active_app_frame().active_frame.hwnd, &point, 1);
+        return wp->frame_window_resize (active_app_frame().active_frame.hwnd, point, 0);
       }
 
     case WM_PAINT:
@@ -1517,9 +1514,9 @@ dispatch (lChar cc)
   lisp command;
   Char c = Char (cc);
 
-  active_app().gc_itimer.reset ();
-  active_app().as_itimer.reset ();
-  active_app().last_cmd_tick = GetTickCount ();
+  g_app.gc_itimer.reset ();
+  active_app_frame().as_itimer.reset ();
+  active_app_frame().last_cmd_tick = GetTickCount ();
 
   if (cc & LCHAR_MENU)
     {
@@ -1558,9 +1555,9 @@ dispatch (lChar cc)
       command = g_map.lookup (c);
       if (!command)
         {
-          active_app().keyseq.push (c, !active_app().kbdq.macro_is_running ());
+          active_app_frame().keyseq.push (c, !active_app_frame().kbdq.macro_is_running ());
           Fcontinue_pre_selection ();
-          active_app().kbdq.close_ime ();
+          active_app_frame().kbdq.close_ime ();
           return Qt;
         }
     }
@@ -1579,9 +1576,9 @@ run_command:
             {
               xsymbol_value (Vthis_command) = xsymbol_value (Vlast_command);
               g_map.translate (command, new_command);
-              active_app().keyseq.push (c, !active_app().kbdq.macro_is_running ());
+              active_app_frame().keyseq.push (c, !active_app_frame().kbdq.macro_is_running ());
               Fcontinue_pre_selection ();
-              active_app().kbdq.close_ime ();
+              active_app_frame().kbdq.close_ime ();
               return Qt;
             }
           command = new_command;
@@ -1590,24 +1587,24 @@ run_command:
 
   g_map.finish ();
 
-  if (!active_app().kbdq.macro_is_running ())
-    active_app().status_window.clear ();
-  active_app().keyseq.done (c, !active_app().kbdq.macro_is_running ());
-  active_app().kbdq.restore_ime ();
-  active_app().kbdq.set_next_command_key ();
+  if (!active_app_frame().kbdq.macro_is_running ())
+    active_app_frame().status_window.clear ();
+  active_app_frame().keyseq.done (c, !active_app_frame().kbdq.macro_is_running ());
+  active_app_frame().kbdq.restore_ime ();
+  active_app_frame().kbdq.set_next_command_key ();
 
-  selected_buffer ()->b_ime_mode = active_app().ime_open_mode;
+  selected_buffer ()->b_ime_mode = active_app_frame().ime_open_mode;
 
   if (command == Qnil)
     {
       if (!char_mouse_move_p (CCF_MOUSEMOVE))
         {
-          active_app().status_window.puts (Ekey_not_bound, 1);
+          active_app_frame().status_window.puts (Ekey_not_bound, 1);
           if (xsymbol_value (Vbeep_on_warn) != Qnil)
             Fding ();
         }
-      active_app().kbdq.clear ();
-      active_app().kbdq.end_last_command_key ();
+      active_app_frame().kbdq.clear ();
+      active_app_frame().kbdq.end_last_command_key ();
       return Qnil;
     }
 
@@ -1623,11 +1620,11 @@ run_command:
       if (nld->type == Qexit_this_level)
         throw;
       print_condition (nonlocal_jump::data ());
-      active_app().kbdq.clear ();
+      active_app_frame().kbdq.clear ();
     }
   protect_gc gcpro (result);
   selected_buffer ()->safe_run_hook (Vpost_command_hook, 1);
-  active_app().kbdq.end_last_command_key ();
+  active_app_frame().kbdq.end_last_command_key ();
   erase_popup (0, 0);
   end_wait_cursor (1);
   WINFS::clear_share_cache ();
@@ -1635,6 +1632,8 @@ run_command:
 }
 
 #include <exception>
+
+extern void delete_floating_app_frame();
 
 void
 main_loop ()
@@ -1647,10 +1646,10 @@ main_loop ()
   dynamic_bind dynb5 (Vthis_command, Qnil);
   dynamic_bind dynb6 (Vlast_command, Qnil);
 
-  save_command_key_index sck (active_app().kbdq);
+  save_command_key_index sck (active_app_frame().kbdq);
   while (1)
     {
-      if (active_app().kbdq.macro_is_running ())
+      if (active_app_frame().kbdq.macro_is_running ())
         pending_refresh_screen ();
       else
         {
@@ -1666,14 +1665,15 @@ main_loop ()
       xsymbol_value (Vsi_find_motion) = Qt;
       xsymbol_value (Vevalhook) = Qnil;
       xsymbol_value (Vapplyhook) = Qnil;
-      active_app().mouse.clear_move ();
+      active_app_frame().mouse.clear_move ();
 	  lChar c;
 	  try
 	  {
-		  c = active_app().kbdq.fetch (1, toplev_accept_mouse_move_p ());
+		  c = active_app_frame().kbdq.fetch (1, toplev_accept_mouse_move_p ());
 	  }
 	  catch(std::exception)
 	  {
+		  delete_floating_app_frame();
 		  continue;
 	  }
       if (c == lChar_EOF)
@@ -1682,23 +1682,23 @@ main_loop ()
       while (1)
         {
           dispatch (c);
-          c = active_app().kbdq.peek (toplev_accept_mouse_move_p ());
+          c = active_app_frame().kbdq.peek (toplev_accept_mouse_move_p ());
           if (c == lChar_EOF)
             break;
           pending_refresh_screen ();
-          if (!active_app().kbdq.macro_is_running ())
+          if (!active_app_frame().kbdq.macro_is_running ())
             Fundo_boundary ();
         }
 
-      if (!active_app().f_auto_save_pending
-          && !active_app().kbdq.macro_is_running ())
+      if (!active_app_frame().f_auto_save_pending
+          && !active_app_frame().kbdq.macro_is_running ())
         {
-          active_app().auto_save_count++;
+          active_app_frame().auto_save_count++;
           long interval;
           if (safe_fixnum_value (xsymbol_value (Vauto_save_interval),
                                  &interval)
-              && interval > 0 && active_app().auto_save_count >= interval)
-            active_app().f_auto_save_pending = 1;
+              && interval > 0 && active_app_frame().auto_save_count >= interval)
+            active_app_frame().f_auto_save_pending = 1;
         }
     }
 }
@@ -1707,9 +1707,9 @@ lisp
 execute_string (lisp string)
 {
   check_stack_overflow ();
-  save_command_key_index sck (active_app().kbdq);
+  save_command_key_index sck (active_app_frame().kbdq);
   check_string (string);
-  if (active_app().kbdq.lookup_kbd_macro (string))
+  if (active_app_frame().kbdq.lookup_kbd_macro (string))
     FEsimple_error (Ekbd_macro_called_recursively);
   lisp val = xsymbol_value (Vprefix_value);
   int n = val == Qnil ? 1 : fixnum_value (val);
@@ -1717,12 +1717,12 @@ execute_string (lisp string)
   if (xstring_length (string))
     for (int i = 0; !n || i < n; i++)
       {
-        kbd_macro_context macro (active_app().kbdq, string);
+        kbd_macro_context macro (active_app_frame().kbdq, string);
         while (macro.running ())
           {
             xsymbol_value (Vquit_flag) = Qnil;
             xsymbol_value (Vinhibit_quit) = Qnil;
-            lChar c = active_app().kbdq.fetch (0, 0);
+            lChar c = active_app_frame().kbdq.fetch (0, 0);
             if (c == lChar_EOF)
               return result;
             result = dispatch (c);
@@ -1739,7 +1739,7 @@ execute_string (lisp string)
 lisp
 Fsi_minibuffer_message (lisp message, lisp prompt)
 {
-  active_app().minibuffer_prompt_column = -1;
+  active_app_frame().minibuffer_prompt_column = -1;
   if (message == Qnil)
     xsymbol_value (Vminibuffer_message) = Qnil;
   else
@@ -1749,7 +1749,7 @@ Fsi_minibuffer_message (lisp message, lisp prompt)
       xsymbol_value (Vminibuffer_prompt) = boole (prompt && prompt != Qnil);
     }
   Window::minibuffer_window ()->w_disp_flags |= Window::WDF_WINDOW;
-  if (!active_app().kbdq.macro_is_running ())
+  if (!active_app_frame().kbdq.macro_is_running ())
     refresh_screen (0);
   return Qt;
 }
@@ -1757,14 +1757,14 @@ Fsi_minibuffer_message (lisp message, lisp prompt)
 lisp
 Fcancel_mouse_event ()
 {
-  active_app().mouse.cancel ();
+  active_app_frame().mouse.cancel ();
   return Qt;
 }
 
 int
 wait_process_terminate (HANDLE h)
 {
-  active_app().kbdq.wait_event (h);
+  active_app_frame().kbdq.wait_event (h);
   return 1;
 }
 
@@ -1792,8 +1792,8 @@ Fmain_loop ()
 lisp
 Fsi_show_window_foreground ()
 {
-  if (IsIconic (active_app().toplev))
-    ShowWindow (active_app().toplev, SW_RESTORE);
+  if (IsIconic (active_app_frame().toplev))
+    ShowWindow (active_app_frame().toplev, SW_RESTORE);
   ForceSetForegroundWindow (get_active_window ());
   return Qnil;
 }
@@ -1801,11 +1801,11 @@ Fsi_show_window_foreground ()
 lisp
 Fsi_activate_toplevel ()
 {
-  if (IsWindowEnabled (active_app().toplev))
+  if (IsWindowEnabled (active_app_frame().toplev))
     {
-      if (IsIconic (active_app().toplev))
-        ShowWindow (active_app().toplev, SW_RESTORE);
-      SetActiveWindow (active_app().toplev);
+      if (IsIconic (active_app_frame().toplev))
+        ShowWindow (active_app_frame().toplev, SW_RESTORE);
+      SetActiveWindow (active_app_frame().toplev);
       return Qt;
     }
   return Qnil;
@@ -1815,7 +1815,7 @@ lisp
 Fcall_menu (lisp ln)
 {
   int req = fixnum_value (ln);
-  HMENU hmenu = GetMenu (active_app().toplev);
+  HMENU hmenu = GetMenu (active_app_frame().toplev);
   if (!hmenu)
     return Qnil;
   int n = GetMenuItemCount (hmenu);
@@ -1834,7 +1834,7 @@ Fcall_menu (lisp ln)
       else
         break;
     }
-  PostMessage (active_app().toplev, WM_PRIVATE_CALL_MENU, b[1], (1 << 29) | 1);
+  PostMessage (active_app_frame().toplev, WM_PRIVATE_CALL_MENU, b[1], (1 << 29) | 1);
   return Qt;
 }
 
@@ -1908,11 +1908,11 @@ Fset_quit_char (lisp ch)
       vk = LOBYTE (vk);
     }
 
-  active_app().lquit_char = ch;
-  active_app().quit_vkey = vk;
-  active_app().quit_mod = mod;
+  active_app_frame().lquit_char = ch;
+  active_app_frame().quit_vkey = vk;
+  active_app_frame().quit_mod = mod;
 
-  PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_MODIFY_HOTKEY, 0, 0);
+  PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_MODIFY_HOTKEY, 0, 0);
 
   return ch;
 }
@@ -1920,5 +1920,5 @@ Fset_quit_char (lisp ch)
 lisp
 Fquit_char ()
 {
-  return active_app().lquit_char;
+  return active_app_frame().lquit_char;
 }

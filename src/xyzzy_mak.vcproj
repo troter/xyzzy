@@ -26,7 +26,7 @@
 				Name="VCNMakeTool"
 				BuildCommandLine="nmake CFG=d"
 				ReBuildCommandLine=""
-				CleanCommandLine=""
+				CleanCommandLine="nmake clean"
 				Output="xyzzy.exe"
 				PreprocessorDefinitions="WIN32;_DEBUG;"
 				IncludeSearchPath="../privctrl"
@@ -44,7 +44,7 @@
 			>
 			<Tool
 				Name="VCNMakeTool"
-				BuildCommandLine="cl"
+				BuildCommandLine="nmake"
 				ReBuildCommandLine=""
 				CleanCommandLine=""
 				Output="xyzzy_mak.exe"
