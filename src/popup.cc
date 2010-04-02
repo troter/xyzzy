@@ -194,7 +194,7 @@ create_popup ()
   wc.lpfnWndProc = wndproc;
   wc.cbClsExtra = 0;
   wc.cbWndExtra = 0;
-  wc.hInstance = app.hinst;
+  wc.hInstance = active_app().hinst;
   wc.hIcon = 0;
   wc.hCursor = LoadCursor (0, IDC_ARROW);
   wc.hbrBackground = 0;
@@ -206,7 +206,7 @@ create_popup ()
   hwnd_popup = CreateWindow (wclass, "",
                              WS_POPUP | WS_BORDER,
                              0, 0, 0, 0,
-                             app.toplev, 0, app.hinst, 0);
+                             active_app().toplev, 0, active_app().hinst, 0);
   if (!hwnd_popup)
     return 0;
 
@@ -236,7 +236,7 @@ calc_pos (lisp lpoint, RECT &r)
   wp->point2window_pos (wp->w_bufp->coerce_to_point (lpoint), *(POINT *)&r);
 
   r.right = r.left;
-  r.bottom = r.top + app.text_font.cell ().cy;
+  r.bottom = r.top + active_app().text_font.cell ().cy;
 
   r.top -= 4;
   r.bottom += 8;

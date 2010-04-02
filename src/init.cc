@@ -31,7 +31,7 @@ const char Application::ClientClassName[] = "   ";
 const char Application::ModelineClassName[] = "    ";
 const char FunctionKeyClassName[] = "     ";
 
-Application app;
+
 
 char enable_quit::q_enable;
 
@@ -62,6 +62,8 @@ Application::Application ()
   quit_mod = MOD_CONTROL;
   ini_file_path = 0;
   minibuffer_prompt_column = -1;
+
+  memset((void*)&active_frame, 0, sizeof(active_frame));
 
   int tem;
   initial_stack = &tem;
@@ -235,7 +237,7 @@ init_user_inifile_path (const char *ini_file)
           if (h != INVALID_HANDLE_VALUE)
             {
               CloseHandle (h);
-              app.ini_file_path = xstrdup (path);
+              active_app().ini_file_path = xstrdup (path);
               return;
             }
         }
@@ -247,16 +249,16 @@ init_user_inifile_path (const char *ini_file)
   char *path = (char *)alloca (w2sl (xsymbol_value (Quser_config_path))
                                + strlen (ini_file) + 32);
   strcpy (w2s (path, xsymbol_value (Quser_config_path)), ini_file);
-  app.ini_file_path = xstrdup (path);
+  active_app().ini_file_path = xstrdup (path);
 }
 
 static void
 init_dump_path ()
 {
-  if (!*app.dump_image)
+  if (!*active_app().dump_image)
     {
-      int l = GetModuleFileName (0, app.dump_image, PATH_MAX);
-      char *e = app.dump_image + l;
+      int l = GetModuleFileName (0, active_app().dump_image, PATH_MAX);
+      char *e = active_app().dump_image + l;
       if (l > 4 && !_stricmp (e - 4, ".exe"))
         e -= 3;
       else
@@ -269,7 +271,7 @@ static void
 init_env_symbols (const char *config_path, const char *ini_file)
 {
   xsymbol_value (Vfeatures) = xcons (Kxyzzy, xcons (Kieee_floating_point, Qnil));
-  xsymbol_value (Qdump_image_path) = make_path (app.dump_image, 0);
+  xsymbol_value (Qdump_image_path) = make_path (active_app().dump_image, 0);
   init_module_dir ();
   init_current_dir ();
   init_environ ();
@@ -569,17 +571,17 @@ static int
 init_lisp_objects ()
 {
   const char *config_path = 0, *ini_file = 0;
-  *app.dump_image = 0;
+  *active_app().dump_image = 0;
 
   int ac;
   for (ac = 1; ac < __argc - 1; ac += 2)
     if (!strcmp (__argv[ac], "-image"))
       {
         char *tem;
-        int l = WINFS::GetFullPathName (__argv[ac + 1], sizeof app.dump_image,
-                                        app.dump_image, &tem);
-        if (!l || l >= sizeof app.dump_image)
-          *app.dump_image = 0;
+        int l = WINFS::GetFullPathName (__argv[ac + 1], sizeof active_app().dump_image,
+                                        active_app().dump_image, &tem);
+        if (!l || l >= sizeof active_app().dump_image)
+          *active_app().dump_image = 0;
       }
     else if (!strcmp (__argv[ac], "-config"))
       config_path = __argv[ac + 1];
@@ -611,7 +613,7 @@ init_lisp_objects ()
     }
   catch (nonlocal_jump &)
     {
-      app.active_frame.selected = 0;
+      active_app().active_frame.selected = 0;
       report_out_of_memory ();
       return 0;
     }
@@ -619,7 +621,7 @@ init_lisp_objects ()
 }
 
 static int
-init_editor_objects ()
+init_editor_objects (Application& app1)
 {
   try
     {
@@ -628,7 +630,7 @@ init_editor_objects ()
     }
   catch (nonlocal_jump &)
     {
-      app.active_frame.selected = 0;
+      app1.active_frame.selected = 0;
       report_out_of_memory ();
       return 0;
     }
@@ -649,15 +651,15 @@ register_wndclasses (HINSTANCE hinst)
   wc.style = 0;
   wc.lpfnWndProc = toplevel_wndproc;
   wc.cbClsExtra = 0;
-  wc.cbWndExtra = 0;
+  wc.cbWndExtra = sizeof(Application*);
   wc.hInstance = hinst;
   wc.hIcon = LoadIcon (hinst, MAKEINTRESOURCE (IDI_XYZZY));
   wc.hCursor = sysdep.hcur_arrow;
   wc.hbrBackground = 0;
   wc.lpszMenuName = 0;
   wc.lpszClassName = Application::ToplevelClassName;
-  app.atom_toplev = RegisterClass (&wc);
-  if (!app.atom_toplev)
+  active_app().atom_toplev = RegisterClass (&wc);
+  if (!active_app().atom_toplev)
     return 0;
 
   wc.style = 0;
@@ -780,11 +782,13 @@ sw_maximized_p (int sw)
   return sw == SW_SHOWMAXIMIZED;
 }
 
+extern Application app;
+
 static int
-init_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
+init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 {
   SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
-  app.toplev = 0;
+  active_app().toplev = 0;
 
   init_ucs2_table ();
 
@@ -810,7 +814,7 @@ init_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
   if (!init_lisp_objects ())
     return 0;
 
-  app.hinst = hinst;
+  active_app().hinst = hinst;
   if (!register_wndclasses (hinst))
     return 0;
 
@@ -837,11 +841,12 @@ init_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 
   ole_initialized = SUCCEEDED (OleInitialize (0));
 
-  app.toplev = CreateWindow (Application::ToplevelClassName, TitleBarString,
+  active_app().toplev = CreateWindow (Application::ToplevelClassName, TitleBarString,
                              WS_OVERLAPPEDWINDOW,
                              point.x, point.y, size.cx, size.cy,
-                             HWND_DESKTOP, 0, hinst, 0);
-  if (!app.toplev)
+                             HWND_DESKTOP, 0, hinst, &active_app());
+
+  if (!active_app().toplev)
     return 0;
 
   mouse_state::install_hook ();
@@ -851,7 +856,7 @@ init_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 
   WINDOWPLACEMENT wp;
   wp.length = sizeof wp;
-  GetWindowPlacement (app.toplev, &wp);
+  GetWindowPlacement (active_app().toplev, &wp);
 
   if (point.x != CW_USEDEFAULT)
     {
@@ -872,10 +877,10 @@ init_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
       wp.flags = 0;
       wp.showCmd = cmdshow;
     }
-  SetWindowPlacement (app.toplev, &wp);
+  SetWindowPlacement (active_app().toplev, &wp);
 
   if (point.x != CW_USEDEFAULT && show_normal)
-    SetWindowPos (app.toplev, 0, 0, 0,
+    SetWindowPos (active_app().toplev, 0, 0, 0,
                   wp.rcNormalPosition.right - wp.rcNormalPosition.left,
                   wp.rcNormalPosition.bottom - wp.rcNormalPosition.top,
                   SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOZORDER);
@@ -884,14 +889,14 @@ init_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
   if (size.cx != CW_USEDEFAULT && show_normal)
     {
       RECT r;
-      GetClientRect (app.toplev, &r);
+      GetClientRect (active_app().toplev, &r);
       AdjustWindowRect (&r, WS_OVERLAPPEDWINDOW, 0);
       int aw = r.right - r.left, ah = r.bottom - r.top;
-      GetWindowRect (app.toplev, &r);
+      GetWindowRect (active_app().toplev, &r);
       int ww = r.right - r.left, wh = r.bottom - r.top;
       ww = min (ww, aw);
       wh = min (wh, ah);
-      SetWindowPos (app.toplev, 0, 0, 0, ww, wh,
+      SetWindowPos (active_app().toplev, 0, 0, 0, ww, wh,
                     SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOZORDER);
     }
 #endif /* WINDOWBLINDS_FIXED */
@@ -901,16 +906,49 @@ init_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 
   Fbegin_wait_cursor ();
 
-  ShowWindow (app.toplev, cmdshow);
+  ShowWindow (active_app().toplev, cmdshow);
   if (sysdep.Win5p ())
-    UpdateWindow (app.toplev);
+    UpdateWindow (active_app().toplev);
 
-  app.modeline_param.init (HFONT (SendMessage (app.hwnd_sw, WM_GETFONT, 0, 0)));
+  active_app().modeline_param.init (HFONT (SendMessage (active_app().hwnd_sw, WM_GETFONT, 0, 0)));
 
-  if (!init_editor_objects ())
+  if (!init_editor_objects (active_app()))
     return 0;
 
   try {Dde::initialize ();} catch (Dde::Exception &) {}
+
+  return 1;
+}
+
+int
+init_app(HINSTANCE hinst, Application* app1)
+{
+  app1->toplev = 0;
+  app1->hinst = hinst;
+
+  app1->toplev = CreateWindow (Application::ToplevelClassName, TitleBarString,
+                             WS_OVERLAPPEDWINDOW,
+                             // point.x, point.y, size.cx, size.cy,
+							 10, 10, 600, 480,
+                             HWND_DESKTOP, 0, hinst, app1);
+
+  if (!app1->toplev)
+    return 0;
+
+  if (!start_quit_thread())
+	return 0;
+
+  Fbegin_wait_cursor ();
+
+  ShowWindow(app1->toplev, SW_SHOW);
+
+  if (sysdep.Win5p ())
+    UpdateWindow (app1->toplev);
+
+  app1->modeline_param.init (HFONT (SendMessage (app1->hwnd_sw, WM_GETFONT, 0, 0)));
+
+  if (!init_editor_objects (*app1))
+    return 0;
 
   return 1;
 }
@@ -919,9 +957,9 @@ int PASCAL
 WinMain (HINSTANCE hinst, HINSTANCE, LPSTR, int cmdshow)
 {
   int ole_initialized = 0;
-  if (init_app (hinst, cmdshow, ole_initialized))
+  if (init_root_app (hinst, cmdshow, ole_initialized))
     {
-      xyzzy_instance xi (app.toplev);
+      xyzzy_instance xi (active_app().toplev);
 
       MSG msg;
       while (PeekMessage (&msg, 0, 0, 0, PM_REMOVE))
@@ -949,7 +987,7 @@ WinMain (HINSTANCE hinst, HINSTANCE, LPSTR, int cmdshow)
               start_listen_server ();
               Fset_cursor (xsymbol_value (Vcursor_shape));
               end_wait_cursor (1);
-              app.kbdq.init_kbd_encoding ();
+              active_app().kbdq.init_kbd_encoding ();
 
               while (1)
                 {
@@ -963,7 +1001,7 @@ WinMain (HINSTANCE hinst, HINSTANCE, LPSTR, int cmdshow)
                     }
                 }
             }
-          app.kbdq.gime.disable ();
+          active_app().kbdq.gime.disable ();
           cleanup_lisp_objects ();
           terminate_normally = 1;
         }
@@ -983,10 +1021,10 @@ WinMain (HINSTANCE hinst, HINSTANCE, LPSTR, int cmdshow)
 
   mouse_state::remove_hook ();
 
-  if (app.toplev)
+  if (active_app().toplev)
     {
       end_listen_server ();
-      DestroyWindow (app.toplev);
+      DestroyWindow (active_app().toplev);
     }
 
   if (ole_initialized)
@@ -1001,7 +1039,7 @@ WinMain (HINSTANCE hinst, HINSTANCE, LPSTR, int cmdshow)
         b_next = bp->b_next;
         delete bp;
       }
-    for (Window *wp = app.active_frame.windows, *w_next; wp; wp = w_next)
+    for (Window *wp = active_app().active_frame.windows, *w_next; wp; wp = w_next)
       {
         w_next = wp->w_next;
         delete wp;

@@ -473,10 +473,10 @@ struct Window
   int caret_line () const
     {return w_linenum - w_last_top_linenum;}
   static int caret_xpixel (int column)
-    {return (column * app.text_font.cell ().cx
-             + app.text_font.cell ().cx / 2);}
+    {return (column * active_app().text_font.cell ().cx
+             + active_app().text_font.cell ().cx / 2);}
   static int caret_ypixel (int line)
-    {return line * app.text_font.cell ().cy;}
+    {return line * active_app().text_font.cell ().cy;}
   int caret_x () const
     {return caret_xpixel (caret_column ());}
   int caret_y () const
@@ -486,8 +486,8 @@ struct Window
   static void update_last_caret ();
   static void update_caret (HWND, int, int, int, int, COLORREF);
   static void delete_caret ();
-  static void compute_geometry (const SIZE & = app.active_frame.size,
-                                int = app.text_font.cell ().cy);
+  static void compute_geometry (const SIZE & = active_app().active_frame.size,
+                                int = active_app().text_font.cell ().cy);
   static void move_all_windows (int = 1);
   static void repaint_all_windows ();
   static void destroy_windows ();

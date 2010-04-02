@@ -119,7 +119,7 @@ main (int argc, char **argv)
               "get_message_string (int code)\n"
               "{\n"
               "  static char buf[256];\n"
-              "  if (!LoadString (app.hinst, 1024 + code, buf, sizeof buf))\n"
+              "  if (!LoadString (active_app().hinst, 1024 + code, buf, sizeof buf))\n"
               "    sprintf (buf, \"String resource %%d not found.\", code);\n"
               "  return buf;\n"
               "}\n");

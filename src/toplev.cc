@@ -59,7 +59,7 @@ quit_thread_entry (void *p)
                   }
                 if (!quit_on && quit_ok)
                   {
-                    RegisterHotKey (0, HK_QUIT, app.quit_mod, app.quit_vkey);
+                    RegisterHotKey (0, HK_QUIT, active_app().quit_mod, active_app().quit_vkey);
                     quit_on = 1;
                   }
               }
@@ -82,7 +82,7 @@ quit_thread_entry (void *p)
             quit_ok = 1;
             if (fg && !quit_on)
               {
-                RegisterHotKey (0, HK_QUIT, app.quit_mod, app.quit_vkey);
+                RegisterHotKey (0, HK_QUIT, active_app().quit_mod, active_app().quit_vkey);
                 quit_on = 1;
               }
             break;
@@ -100,14 +100,14 @@ quit_thread_entry (void *p)
             if (quit_on)
               {
                 UnregisterHotKey (0, HK_QUIT);
-                RegisterHotKey (0, HK_QUIT, app.quit_mod, app.quit_vkey);
+                RegisterHotKey (0, HK_QUIT, active_app().quit_mod, active_app().quit_vkey);
               }
             break;
 
           case WM_HOTKEY:
-            if (!app.f_protect_quit)
+            if (!active_app().f_protect_quit)
               {
-                PostMessage (app.toplev, WM_PRIVATE_QUIT, 0, 0);
+                PostMessage (active_app().toplev, WM_PRIVATE_QUIT, 0, 0);
                 xsymbol_value (Vquit_flag) = Qt;
               }
             break;
@@ -120,7 +120,7 @@ int
 start_quit_thread ()
 {
   u_long h = _beginthreadex (0, 0, quit_thread_entry, (void *)GetCurrentThreadId (),
-                             0, &app.quit_thread_id);
+                             0, &active_app().quit_thread_id);
   if (h == -1)
     return 0;
   CloseHandle (HANDLE (h));
@@ -130,7 +130,7 @@ start_quit_thread ()
 static void
 set_current_cursor (const Window *wp)
 {
-  if (app.wait_cursor_depth)
+  if (active_app().wait_cursor_depth)
     SetCursor (sysdep.hcur_wait);
   else if (!wp || !wp->w_bufp)
     SetCursor (sysdep.hcur_arrow);
@@ -139,9 +139,9 @@ set_current_cursor (const Window *wp)
       POINT p;
       GetCursorPos (&p);
       ScreenToClient (wp->w_hwnd, &p);
-      int l = app.text_font.cell ().cx / 2;
+      int l = active_app().text_font.cell ().cx / 2;
       if (wp->w_last_flags & Window::WF_LINE_NUMBER)
-        l += (Window::LINENUM_COLUMNS + 1) * app.text_font.cell ().cx;
+        l += (Window::LINENUM_COLUMNS + 1) * active_app().text_font.cell ().cx;
       SetCursor (p.x < l ? sysdep.hcur_revarrow : sysdep.hcur_current);
     }
 }
@@ -157,8 +157,8 @@ set_current_cursor ()
 lisp
 Fbegin_wait_cursor ()
 {
-  app.wait_cursor_depth++;
-  if (app.toplevel_is_active)
+  active_app().wait_cursor_depth++;
+  if (active_app().toplevel_is_active)
     {
       SetCursor (sysdep.hcur_wait);
       mouse_state::show_cursor ();
@@ -169,19 +169,19 @@ Fbegin_wait_cursor ()
 int
 end_wait_cursor (int f)
 {
-  if (!app.wait_cursor_depth)
+  if (!active_app().wait_cursor_depth)
     return 1;
   if (f)
-    app.wait_cursor_depth = 0;
+    active_app().wait_cursor_depth = 0;
   else
     {
-      app.wait_cursor_depth--;
-      if (app.wait_cursor_depth)
+      active_app().wait_cursor_depth--;
+      if (active_app().wait_cursor_depth)
         return 0;
     }
-  if (app.toplevel_is_active)
+  if (active_app().toplevel_is_active)
     {
-      if (GetFocus () == app.toplev)
+      if (GetFocus () == active_app().toplev)
         mouse_state::hide_cursor ();
       set_current_cursor ();
     }
@@ -203,7 +203,7 @@ Fset_cursor (lisp cur)
     sysdep.hcur_current = sysdep.hcur_arrow;
   else
     return Qnil;
-  if (app.toplevel_is_active)
+  if (active_app().toplevel_is_active)
     set_current_cursor ();
   xsymbol_value (Vcursor_shape) = cur;
   return Qt;
@@ -212,13 +212,13 @@ Fset_cursor (lisp cur)
 static void
 frame_rect (int w, int h, RECT &r)
 {
-  GetClientRect (app.hwnd_sw, &r);
+  GetClientRect (active_app().hwnd_sw, &r);
   r.left = 0;
   r.top = 0;
   r.right = w;
   r.bottom = h - r.bottom;
   if (Window::w_default_flags & Window::WF_FUNCTION_BAR)
-    r.bottom -= app.active_frame.fnkey->height ();
+    r.bottom -= active_app().active_frame.fnkey->height ();
 }
 
 static void
@@ -229,17 +229,17 @@ resize_toplevel (int cx, int cy)
   HWND hwnd_before;
   if (Window::w_default_flags & Window::WF_FUNCTION_BAR)
     {
-      hwnd_before = app.active_frame.fnkey->hwnd ();
-      SetWindowPos (app.active_frame.fnkey->hwnd (),
-                    app.hwnd_sw,
+      hwnd_before = active_app().active_frame.fnkey->hwnd ();
+      SetWindowPos (active_app().active_frame.fnkey->hwnd (),
+                    active_app().hwnd_sw,
                     0, r.bottom,
-                    cx, app.active_frame.fnkey->height (),
+                    cx, active_app().active_frame.fnkey->height (),
                     SWP_DRAWFRAME | SWP_NOACTIVATE | SWP_SHOWWINDOW);
     }
   else
     {
-      hwnd_before = app.hwnd_sw;
-      ShowWindow (app.active_frame.fnkey->hwnd (), SW_HIDE);
+      hwnd_before = active_app().hwnd_sw;
+      ShowWindow (active_app().active_frame.fnkey->hwnd (), SW_HIDE);
     }
 
   g_frame.resize (r, hwnd_before);
@@ -249,7 +249,7 @@ void
 recalc_toplevel ()
 {
   RECT r;
-  GetClientRect (app.toplev, &r);
+  GetClientRect (active_app().toplev, &r);
   resize_toplevel (r.right, r.bottom);
 }
 
@@ -257,7 +257,7 @@ static void
 do_dnd (HDROP hdrop)
 {
   int drag_finish_called = 0;
-  if (app.kbdq.idlep ())
+  if (active_app().kbdq.idlep ())
     {
       Window *wp;
       POINT pt;
@@ -265,7 +265,7 @@ do_dnd (HDROP hdrop)
         wp = selected_window ();
       else
         {
-          ClientToScreen (app.toplev, &pt);
+          ClientToScreen (active_app().toplev, &pt);
           wp = Window::find_scr_point_window (pt, 1, 0);
         }
 
@@ -279,9 +279,9 @@ do_dnd (HDROP hdrop)
             {
               if (xsymbol_value (Vdrag_and_drop_auto_activate) != Qnil)
                 {
-                  if (IsIconic (app.toplev))
-                    ShowWindow (app.toplev, SW_RESTORE);
-                  ForceSetForegroundWindow (app.toplev);
+                  if (IsIconic (active_app().toplev))
+                    ShowWindow (active_app().toplev, SW_RESTORE);
+                  ForceSetForegroundWindow (active_app().toplev);
                 }
               lisp list = Qnil;
               int nfiles = DragQueryFile (hdrop, UINT (-1), 0, 0);
@@ -313,46 +313,46 @@ do_dnd (HDROP hdrop)
 void
 set_ime_caret ()
 {
-  if (app.active_frame.has_caret && app.ime_composition)
+  if (active_app().active_frame.has_caret && active_app().ime_composition)
     {
-      HIMC hIMC = app.kbdq.gime.ImmGetContext (app.toplev);
+      HIMC hIMC = active_app().kbdq.gime.ImmGetContext (active_app().toplev);
       if (!hIMC)
         return;
 
       if (xsymbol_value (Vno_input_language_change_notification) != Qnil)
-        app.kbdq.init_kbd_encoding ();
+        active_app().kbdq.init_kbd_encoding ();
 
       const FontObject &font = kbd_queue::kbd_encoding_font ();
 
-      POINT pt (app.active_frame.caret_pos);
-      MapWindowPoints (app.active_frame.has_caret, app.toplev, &pt, 1);
+      POINT pt (active_app().active_frame.caret_pos);
+      MapWindowPoints (active_app().active_frame.has_caret, active_app().toplev, &pt, 1);
       pt.x += font.offset ().x;
       pt.y += font.offset ().y;
 
       RECT r;
-      int need_rect = (/*!app.kbdq.gime.enable_p () // ‚æ‚¤‚í‚©‚ç‚ñ‚¯‚Ç‚Æ‚è‚ ‚¦‚¸(^^;
-                       ||*/ PRIMARYLANGID (app.kbdq.kbd_langid ()) != LANG_KOREAN);
+      int need_rect = (/*!active_app().kbdq.gime.enable_p () // ‚æ‚¤‚í‚©‚ç‚ñ‚¯‚Ç‚Æ‚è‚ ‚¦‚¸(^^;
+                       ||*/ PRIMARYLANGID (active_app().kbdq.kbd_langid ()) != LANG_KOREAN);
       if (need_rect)
         {
-          GetClientRect (app.active_frame.has_caret, &r);
+          GetClientRect (active_app().active_frame.has_caret, &r);
 
-		  Window *wp = app.active_frame.windows;
+		  Window *wp = active_app().active_frame.windows;
           for (; wp; wp = wp->w_next)
-            if (wp->w_hwnd == app.active_frame.has_caret)
+            if (wp->w_hwnd == active_app().active_frame.has_caret)
               break;
-          r.left += app.text_font.cell ().cx / 2;
+          r.left += active_app().text_font.cell ().cx / 2;
           if (wp && wp->w_bufp)
             {
               if (wp->w_last_flags & Window::WF_LINE_NUMBER)
-                r.left += (Window::LINENUM_COLUMNS + 1) * app.text_font.cell ().cx;
+                r.left += (Window::LINENUM_COLUMNS + 1) * active_app().text_font.cell ().cx;
               if (wp->w_bufp->b_fold_columns != Buffer::FOLD_NONE)
                 {
-                  LONG t = r.left + wp->w_bufp->b_fold_columns * app.text_font.cell ().cx;
-                  if (t > app.active_frame.caret_pos.x)
+                  LONG t = r.left + wp->w_bufp->b_fold_columns * active_app().text_font.cell ().cx;
+                  if (t > active_app().active_frame.caret_pos.x)
                     r.right = min (r.right, t);
                 }
             }
-          MapWindowPoints (app.active_frame.has_caret, app.toplev,
+          MapWindowPoints (active_app().active_frame.has_caret, active_app().toplev,
                            (POINT *)&r, 2);
           pt.y = max (pt.y, r.top);
         }
@@ -360,30 +360,30 @@ set_ime_caret ()
       COMPOSITIONFORM cf;
       cf.dwStyle = CFS_POINT;
       cf.ptCurrentPos = pt;
-      app.kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
+      active_app().kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
 
       if (need_rect)
         {
           cf.dwStyle = CFS_RECT;
           cf.rcArea = r;
-          app.kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
+          active_app().kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
         }
 
-      app.kbdq.gime.ImmSetCompositionFont (hIMC, (LOGFONT *)&font.logfont ());
-      app.kbdq.gime.ImmReleaseContext (app.toplev, hIMC);
+      active_app().kbdq.gime.ImmSetCompositionFont (hIMC, (LOGFONT *)&font.logfont ());
+      active_app().kbdq.gime.ImmReleaseContext (active_app().toplev, hIMC);
     }
 }
 
 static void
 ime_open_status (HWND hwnd)
 {
-  HIMC imc = app.kbdq.gime.ImmGetContext (hwnd);
+  HIMC imc = active_app().kbdq.gime.ImmGetContext (hwnd);
   if (imc)
     {
-      app.ime_open_mode = (app.kbdq.gime.ImmGetOpenStatus (imc)
+      active_app().ime_open_mode = (active_app().kbdq.gime.ImmGetOpenStatus (imc)
                            ? kbd_queue::IME_MODE_ON
                            : kbd_queue::IME_MODE_OFF);
-      app.kbdq.gime.ImmReleaseContext (hwnd, imc);
+      active_app().kbdq.gime.ImmReleaseContext (hwnd, imc);
       Window::update_last_caret ();
       PostMessage (hwnd, WM_PRIVATE_IME_MODE, 0, 0);
     }
@@ -394,36 +394,36 @@ ime_composition (HWND hwnd, LPARAM lparam)
 {
   if (lparam & GCS_RESULTSTR)
     {
-      HIMC hIMC = app.kbdq.gime.ImmGetContext (hwnd);
+      HIMC hIMC = active_app().kbdq.gime.ImmGetContext (hwnd);
       if (!hIMC)
         return lparam;
 
       if (xsymbol_value (Vno_input_language_change_notification) != Qnil)
-        app.kbdq.init_kbd_encoding ();
+        active_app().kbdq.init_kbd_encoding ();
 
       if (xsymbol_value (Vunicode_ime) == Qnil
-          ? !(app.kbdq.ime_property () & IME_PROP_UNICODE)
+          ? !(active_app().kbdq.ime_property () & IME_PROP_UNICODE)
           : xsymbol_value (Vunicode_ime) != Qt)
         {
-          int l = app.kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, 0, 0);
+          int l = active_app().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, 0, 0);
           if (l > 0)
             {
               char *s = (char *)alloca (l + 1);
-              if (app.kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, s, l) == l)
+              if (active_app().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, s, l) == l)
                 {
-                  app.kbdq.puts (s, l);
+                  active_app().kbdq.puts (s, l);
 
                   lparam &= ~GCS_RESULTSTR;
 
-                  int rl = app.kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR, 0, 0);
+                  int rl = active_app().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR, 0, 0);
                   if (rl > 0)
                     {
                       char *rs = (char *)alloca (rl + 1);
-                      if (app.kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR,
+                      if (active_app().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR,
                                                                  rs, rl) == rl)
                         {
                           s[l] = rs[rl] = 0;
-                          app.ime_compq.push (s, l, rs, rl);
+                          active_app().ime_compq.push (s, l, rs, rl);
                         }
                     }
                 }
@@ -431,14 +431,14 @@ ime_composition (HWND hwnd, LPARAM lparam)
         }
       else
         {
-          int l = app.kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, 0, 0);
+          int l = active_app().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, 0, 0);
           if (l > 0)
             {
               ucs2_t *s = (ucs2_t *)alloca (l + sizeof (ucs2_t));
-              if (app.kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, s, l) == l)
+              if (active_app().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, s, l) == l)
                 {
                   const Char *tab = 0;
-                  switch (PRIMARYLANGID (app.kbdq.kbd_langid ()))
+                  switch (PRIMARYLANGID (active_app().kbdq.kbd_langid ()))
                     {
                     case LANG_JAPANESE:
                       tab = wc2cp932_table;
@@ -450,7 +450,7 @@ ime_composition (HWND hwnd, LPARAM lparam)
                       break;
 
                     case LANG_CHINESE:
-                      switch (SUBLANGID (app.kbdq.kbd_langid ()))
+                      switch (SUBLANGID (active_app().kbdq.kbd_langid ()))
                         {
                         case SUBLANG_CHINESE_TRADITIONAL:
                         case SUBLANG_CHINESE_HONGKONG:
@@ -474,29 +474,29 @@ ime_composition (HWND hwnd, LPARAM lparam)
                       if ((!tab || (cc = tab[*sp]) == Char (-1))
                           && (cc = w2i (*sp)) == Char (-1))
                         {
-                          app.kbdq.putc (utf16_ucs2_to_undef_pair_high (*sp));
+                          active_app().kbdq.putc (utf16_ucs2_to_undef_pair_high (*sp));
                           cc = utf16_ucs2_to_undef_pair_low (*sp);
                         }
-                      app.kbdq.putc (cc);
+                      active_app().kbdq.putc (cc);
                     }
                   lparam &= ~GCS_RESULTSTR;
 
-                  int rl = app.kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR, 0, 0);
+                  int rl = active_app().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR, 0, 0);
                   if (rl > 0)
                     {
                       ucs2_t *rs = (ucs2_t *)alloca (rl + sizeof (ucs2_t));
-                      if (app.kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR,
+                      if (active_app().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR,
                                                                   rs, rl) == rl)
                         {
                           rl /= sizeof (ucs2_t);
                           s[l] = rs[rl] = 0;
-                          app.ime_compq.push (s, l, rs, rl, tab);
+                          active_app().ime_compq.push (s, l, rs, rl, tab);
                         }
                     }
                 }
             }
         }
-      app.kbdq.gime.ImmReleaseContext (hwnd, hIMC);
+      active_app().kbdq.gime.ImmReleaseContext (hwnd, hIMC);
     }
   return lparam;
 }
@@ -506,9 +506,9 @@ set_caret_blink_time ()
 {
   if (xsymbol_value (Vblink_caret) == Qnil)
     {
-      if (!app.default_caret_blink_time)
-        app.default_caret_blink_time = GetCaretBlinkTime ();
-      if (app.default_caret_blink_time)
+      if (!active_app().default_caret_blink_time)
+        active_app().default_caret_blink_time = GetCaretBlinkTime ();
+      if (active_app().default_caret_blink_time)
         SetCaretBlinkTime (10000);
     }
 }
@@ -516,22 +516,22 @@ set_caret_blink_time ()
 void
 restore_caret_blink_time ()
 {
-  if (app.default_caret_blink_time)
+  if (active_app().default_caret_blink_time)
     {
-      SetCaretBlinkTime (app.default_caret_blink_time);
-      app.default_caret_blink_time = 0;
+      SetCaretBlinkTime (active_app().default_caret_blink_time);
+      active_app().default_caret_blink_time = 0;
     }
 }
 
 static void
 refresh_blink_interval ()
 {
-  if (app.ime_composition || GetFocus () != app.toplev)
+  if (active_app().ime_composition || GetFocus () != active_app().toplev)
     return;
   if (xsymbol_value (Vblink_caret) == Qnil)
     {
       set_caret_blink_time ();
-      if (app.active_frame.has_caret)
+      if (active_app().active_frame.has_caret)
         {
           Window *wp = selected_window ();
           if (wp)
@@ -549,7 +549,7 @@ static int
 process_mouse_activate (LPARAM lparam)
 {
   int r;
-  if (app.toplevel_is_active
+  if (active_app().toplevel_is_active
       || xsymbol_value (Veat_mouse_activate) == Qnil)
     r = MA_ACTIVATE;
   else
@@ -566,11 +566,69 @@ process_mouse_activate (LPARAM lparam)
         break;
       }
 
-  if (GetFocus () != app.toplev)
-    SetFocus (app.toplev);
+  if (GetFocus () != active_app().toplev)
+    SetFocus (active_app().toplev);
 
   return r;
 }
+
+LRESULT CALLBACK 
+toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+  CREATESTRUCT *cs = (CREATESTRUCT *)lparam;
+  Application *app1 = (Application *)cs->lpCreateParams;
+  app1->toplev = hwnd;
+  insert_app(hwnd, app1);
+  app1->hwnd_sw = CreateStatusWindow ((SBARS_SIZEGRIP | WS_CHILD | WS_VISIBLE
+                                     | WS_CLIPCHILDREN | WS_CLIPSIBLINGS),
+                                    0, hwnd, 0);
+  if (!app1->hwnd_sw)
+    return -1;
+
+  app1->stat_area.init (active_app().hwnd_sw);
+  app1->status_window.set (active_app().hwnd_sw);
+
+  try
+    {
+      app1->active_frame.fnkey = new FKWin;
+    }
+  catch (nonlocal_jump &)
+    {
+      report_out_of_memory ();
+      return -1;
+    }
+  if (!CreateWindow (FunctionKeyClassName, "",
+                     (((Window::w_default_flags & Window::WF_FUNCTION_BAR)
+                       ? WS_VISIBLE : 0)
+                      | WS_CHILD | WS_CLIPSIBLINGS),
+                     0, 0, 0, 0,
+                     hwnd, 0, app1->hinst, app1->active_frame.fnkey))
+    return -1;
+
+  app1->active_frame.hwnd = CreateWindow (Application::FrameClassName, "",
+                                        (WS_VISIBLE | WS_CHILD
+                                         | WS_CLIPCHILDREN | WS_CLIPSIBLINGS),
+                                        0, 0, 0, 0,
+                                        hwnd, 0, app1->hinst, 0);
+  if (!app1->active_frame.hwnd)
+    return -1;
+
+  g_frame.init (hwnd, app1->active_frame.hwnd);
+  app1->user_timer.init (hwnd);
+
+  DragAcceptFiles (hwnd, 1);
+#ifdef DnDTEST
+  RegisterDragDrop (hwnd, &tdropt);
+#endif
+  app1->hwnd_clipboard = SetClipboardViewer (hwnd);
+  SetTimer (hwnd, TID_ITIMER, itimer::interval * 1000, 0);
+  return 0;
+}
+
+extern Application *default_app();
+extern void notify_focus(Application *app1);
+extern bool is_last_app();
+extern void delete_app(Application *app1);
 
 LRESULT CALLBACK
 toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -578,65 +636,39 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
   lChar cc;
 
   mouse_state::update_cursor (msg, wparam);
+  if(msg == WM_CREATE) /* retrieve_app not yet available. */
+      return toplevel_wnd_create(hwnd, msg, wparam, lparam);  
+
+  Application *app1 = retrieve_app(hwnd);
+  if(app1 == NULL)
+    app1 = default_app();
+  else if(app1 == (Application*)1)
+	return DefWindowProc (hwnd, msg, wparam, lparam);
   switch (msg)
     {
-    case WM_CREATE:
-      app.toplev = hwnd;
-      app.hwnd_sw = CreateStatusWindow ((SBARS_SIZEGRIP | WS_CHILD | WS_VISIBLE
-                                         | WS_CLIPCHILDREN | WS_CLIPSIBLINGS),
-                                        0, hwnd, 0);
-      if (!app.hwnd_sw)
-        return -1;
-
-      app.stat_area.init (app.hwnd_sw);
-      app.status_window.set (app.hwnd_sw);
-
-      try
-        {
-          app.active_frame.fnkey = new FKWin;
-        }
-      catch (nonlocal_jump &)
-        {
-          report_out_of_memory ();
-          return -1;
-        }
-      if (!CreateWindow (FunctionKeyClassName, "",
-                         (((Window::w_default_flags & Window::WF_FUNCTION_BAR)
-                           ? WS_VISIBLE : 0)
-                          | WS_CHILD | WS_CLIPSIBLINGS),
-                         0, 0, 0, 0,
-                         hwnd, 0, app.hinst, app.active_frame.fnkey))
-        return -1;
-
-      app.active_frame.hwnd = CreateWindow (Application::FrameClassName, "",
-                                            (WS_VISIBLE | WS_CHILD
-                                             | WS_CLIPCHILDREN | WS_CLIPSIBLINGS),
-                                            0, 0, 0, 0,
-                                            hwnd, 0, app.hinst, 0);
-      if (!app.active_frame.hwnd)
-        return -1;
-
-      g_frame.init (hwnd, app.active_frame.hwnd);
-      app.user_timer.init (hwnd);
-
-      DragAcceptFiles (hwnd, 1);
-#ifdef DnDTEST
-      RegisterDragDrop (hwnd, &tdropt);
-#endif
-      app.hwnd_clipboard = SetClipboardViewer (hwnd);
-      SetTimer (hwnd, TID_ITIMER, itimer::interval * 1000, 0);
-      return 0;
-
     case WM_DESTROY:
-      end_listen_server ();
-#ifdef DnDTEST
-      RevokeDragDrop (hwnd);
-#endif
-      app.user_timer.cleanup ();
-      environ::save_geometry ();
-      ChangeClipboardChain (hwnd, app.hwnd_clipboard);
-      PostQuitMessage (0);
-      app.toplev = 0;
+	  if(is_last_app())
+	  {
+		  end_listen_server ();
+	#ifdef DnDTEST
+		  RevokeDragDrop (hwnd);
+	#endif
+		  app1->user_timer.cleanup ();
+		  environ::save_geometry ();
+		  ChangeClipboardChain (hwnd, app1->hwnd_clipboard);
+		  PostQuitMessage (0);
+		  app1->toplev = 0;
+		  delete_app(app1);
+		  insert_app(hwnd, (Application *)1);
+	  }
+	  else
+	  {
+		  app1->user_timer.cleanup ();
+		  ChangeClipboardChain (hwnd, app1->hwnd_clipboard);
+		  app1->toplev = 0;
+		  delete_app(app1);
+		  insert_app(hwnd, (Application *)1);
+	  }
       return 0;
 
     case WM_PAINT:
@@ -653,7 +685,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         GetClientRect (hwnd, &r);
         draw_hline (hdc, 0, r.right, 0, sysdep.btn_shadow);
 
-        GetWindowRect (app.active_frame.hwnd, &r);
+        GetWindowRect (app1->active_frame.hwnd, &r);
         MapWindowPoints (HWND_DESKTOP, hwnd, (POINT *)&r, 1);
         draw_hline (hdc, r.left, r.right, r.top - 1, sysdep.btn_shadow);
 
@@ -680,15 +712,15 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       }
 
     case WM_CHANGECBCHAIN:
-      if (HWND (wparam) == app.hwnd_clipboard)
-        app.hwnd_clipboard = HWND (lparam);
-      else if (app.hwnd_clipboard)
-        SendMessage (app.hwnd_clipboard, msg, wparam, lparam);
+      if (HWND (wparam) == app1->hwnd_clipboard)
+        app1->hwnd_clipboard = HWND (lparam);
+      else if (app1->hwnd_clipboard)
+        SendMessage (app1->hwnd_clipboard, msg, wparam, lparam);
       break;
 
     case WM_DRAWCLIPBOARD:
-      if (app.hwnd_clipboard)
-        SendMessage (app.hwnd_clipboard, msg, wparam, lparam);
+      if (app1->hwnd_clipboard)
+        SendMessage (app1->hwnd_clipboard, msg, wparam, lparam);
       xsymbol_value (Vclipboard_newer_than_kill_ring_p) = Qt;
       xsymbol_value (Vkill_ring_newer_than_clipboard_p) = Qnil;
       break;
@@ -699,11 +731,11 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       Window::init_colors ();
       reload_caret_colors ();
       Window::update_last_caret ();
-      SendMessage (app.hwnd_sw, msg, wparam, lparam);
+      SendMessage (app1->hwnd_sw, msg, wparam, lparam);
       break;
 
     case WM_INPUTLANGCHANGE:
-      app.kbdq.init_kbd_encoding (LANGID (lparam));
+      app1->kbdq.init_kbd_encoding (LANGID (lparam));
       ime_open_status (hwnd);
       return 1;
 
@@ -714,10 +746,10 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       g_frame.reload_settings ();
       {
         RECT or, nr;
-        GetClientRect (app.hwnd_sw, &or);
-        SendMessage (app.hwnd_sw, msg, wparam, lparam);
-        GetClientRect (app.hwnd_sw, &nr);
-        app.stat_area.reload_settings ();
+        GetClientRect (app1->hwnd_sw, &or);
+        SendMessage (app1->hwnd_sw, msg, wparam, lparam);
+        GetClientRect (app1->hwnd_sw, &nr);
+        app1->stat_area.reload_settings ();
         if (or.bottom != nr.bottom)
           {
             GetWindowRect (hwnd, &nr);
@@ -738,11 +770,11 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 #endif
           }
         else
-          app.stat_area.resize ();
+          app1->stat_area.resize ();
       }
       if (!sysdep.Win4p ())
         {
-          app.kbdq.init_kbd_encoding ();
+          app1->kbdq.init_kbd_encoding ();
           ime_open_status (hwnd);
         }
       return 0;
@@ -751,8 +783,8 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       return 0;
 
     case WM_SIZE:
-      SendMessage (app.hwnd_sw, msg, wparam, lparam);
-      app.stat_area.resize ();
+      SendMessage (app1->hwnd_sw, msg, wparam, lparam);
+      app1->stat_area.resize ();
       if (wparam != SIZE_MINIMIZED)
         resize_toplevel (LOWORD (lparam), HIWORD (lparam));
       return 0;
@@ -762,24 +794,25 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_SETFOCUS:
-      app.active_frame.has_focus = 1;
-      app.kbdq.toggle_ime (app.ime_open_mode, 0);
+	  notify_focus(app1);
+      app1->active_frame.has_focus = 1;
+      app1->kbdq.toggle_ime (app1->ime_open_mode, 0);
       set_caret_blink_time ();
       Window::update_last_caret ();
-      app.active_frame.fnkey->update_vkey (0);
+      app1->active_frame.fnkey->update_vkey (0);
       return 0;
 
     case WM_KILLFOCUS:
-      app.active_frame.has_focus = 0;
+      app1->active_frame.has_focus = 0;
       restore_caret_blink_time ();
       Window::delete_caret ();
-      app.active_frame.fnkey->update_vkey (1);
+      app1->active_frame.fnkey->update_vkey (1);
       break;
 
     case WM_KEYUP:
     case WM_SYSKEYUP:
-      app.last_vkeycode = -1;
-      app.active_frame.fnkey->unset_vkey (wparam);
+      app1->last_vkeycode = -1;
+      app1->active_frame.fnkey->unset_vkey (wparam);
       break;
 
     case WM_SYSKEYDOWN:
@@ -788,18 +821,18 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           || wparam == VK_F10)
 #endif
         {
-          app.active_frame.fnkey->set_vkey (wparam);
-          if (int (wparam) == app.last_vkeycode)
-            app.kbd_repeat_count++;
+          app1->active_frame.fnkey->set_vkey (wparam);
+          if (int (wparam) == app1->last_vkeycode)
+            app1->kbd_repeat_count++;
           else
             {
-              app.last_vkeycode = wparam;
-              app.kbd_repeat_count = 1;
+              app1->last_vkeycode = wparam;
+              app1->kbd_repeat_count = 1;
             }
           cc = decode_syskeys (wparam, lparam);
           if (cc != lChar_EOF)
             {
-              app.kbdq.putc (cc);
+              app1->kbdq.putc (cc);
               return 0;
             }
         }
@@ -808,38 +841,38 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_MENUCHAR:
       if (HIWORD (wparam))
         return 0;
-      app.kbdq.putc (decode_syschars (LOWORD (wparam)));
+      app1->kbdq.putc (decode_syschars (LOWORD (wparam)));
       return 1;
 
     case WM_SYSCHAR:
       if (xsymbol_value (Venable_meta_key) != Qnil)
         {
-          app.kbdq.putc (decode_syschars (wparam));
+          app1->kbdq.putc (decode_syschars (wparam));
           return 0;
         }
       break;
 
     case WM_KEYDOWN:
-      app.active_frame.fnkey->set_vkey (wparam);
-      if (int (wparam) == app.last_vkeycode)
-        app.kbd_repeat_count++;
+      app1->active_frame.fnkey->set_vkey (wparam);
+      if (int (wparam) == app1->last_vkeycode)
+        app1->kbd_repeat_count++;
       else
         {
-          app.last_vkeycode = wparam;
-          app.kbd_repeat_count = 1;
+          app1->last_vkeycode = wparam;
+          app1->kbd_repeat_count = 1;
         }
       cc = decode_keys (wparam, lparam);
       if (cc != lChar_EOF)
         {
-          app.kbdq.putc (cc);
+          app1->kbdq.putc (cc);
           return 0;
         }
       break;
 
     case WM_CHAR:
       if (xsymbol_value (Vno_input_language_change_notification) != Qnil)
-        app.kbdq.init_kbd_encoding ();
-      app.kbdq.putc (decode_chars (wparam));
+        app1->kbdq.init_kbd_encoding ();
+      app1->kbdq.putc (decode_chars (wparam));
       return 0;
 
     case WM_PRIVATE_WCHAR:
@@ -847,21 +880,21 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         ucs2_t wc = ucs2_t (wparam);
         Char cc = w2i_half_width (wc);
         if (cc != Char (-1))
-          app.kbdq.putc (decode_chars (cc));
+          app1->kbdq.putc (decode_chars (cc));
         else
           {
-            app.kbdq.putc (utf16_ucs2_to_undef_pair_high (wc));
-            app.kbdq.putc (utf16_ucs2_to_undef_pair_low (wc));
+            app1->kbdq.putc (utf16_ucs2_to_undef_pair_high (wc));
+            app1->kbdq.putc (utf16_ucs2_to_undef_pair_low (wc));
           }
         return 0;
       }
 
     case WM_IME_ENDCOMPOSITION:
-      app.ime_composition = 0;
+      app1->ime_composition = 0;
       break;
 
     case WM_IME_STARTCOMPOSITION:
-      app.ime_composition = 1;
+      app1->ime_composition = 1;
       set_ime_caret ();
       break;
 
@@ -873,7 +906,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_PRIVATE_IME_MODE:
       {
         selected_buffer ()->safe_run_hook (Vime_mode_hook, 0);
-        for (Window *wp = app.active_frame.windows; wp; wp = wp->w_next)
+        for (Window *wp = app1->active_frame.windows; wp; wp = wp->w_next)
           if (wp->w_ime_mode_line)
             {
               wp->w_disp_flags |= Window::WDF_MODELINE;
@@ -884,8 +917,8 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     case WM_IME_CHAR:
       if (xsymbol_value (Vno_input_language_change_notification) != Qnil)
-        app.kbdq.init_kbd_encoding ();
-      app.kbdq.putw (wparam);
+        app1->kbdq.init_kbd_encoding ();
+      app1->kbdq.putw (wparam);
       return 0;
 
     case WM_IME_COMPOSITION:
@@ -896,7 +929,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       {
         HWND active = get_active_window ();
         if (active == hwnd)
-          app.kbdq.putc (xchar_code (app.lquit_char));
+          app1->kbdq.putc (xchar_code (app1->lquit_char));
         else
           PostMessage (active, msg, wparam, lparam);
         return 0;
@@ -908,7 +941,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_PRIVATE_DELAYED_ACTIVATE:
       {
         save_cursor_depth cursor_depth;
-        app.kbdq.activate (wparam);
+        app1->kbdq.activate (wparam);
         return 0;
       }
 
@@ -923,7 +956,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         int eq = pid == GetCurrentProcessId ();
         if (LOWORD (wparam) != WA_INACTIVE)
           {
-            app.status_window.set (app.hwnd_sw);
+            app1->status_window.set (app1->hwnd_sw);
             if (!eq && !HIWORD (wparam))
               PostMessage (hwnd, WM_PRIVATE_DELAYED_ACTIVATE, 1, 0);
           }
@@ -938,8 +971,8 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     case WM_ACTIVATEAPP:
     case WM_PRIVATE_ACTIVATEAPP:
-      app.toplevel_is_active = wparam;
-      PostThreadMessage (app.quit_thread_id, msg, wparam, lparam);
+      app1->toplevel_is_active = wparam;
+      PostThreadMessage (app1->quit_thread_id, msg, wparam, lparam);
       return 0;
 
     case WM_PRIVATE_PROCESS_OUTPUT:
@@ -954,39 +987,39 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       switch (wparam)
         {
         case TID_USER:
-          app.user_timer.timer ();
+          app1->user_timer.timer ();
           break;
 
         case TID_SLEEP:
-          app.sleep_timer_exhausted = 1;
+          app1->sleep_timer_exhausted = 1;
           break;
 
         case TID_ITIMER:
-          app.stat_area.timer ();
-          app.gc_itimer.inc ();
-          app.as_itimer.inc ();
+          app1->stat_area.timer ();
+          app1->gc_itimer.inc ();
+          app1->as_itimer.inc ();
           refresh_blink_interval ();
-          if (app.kbdq.idlep ())
+          if (app1->kbdq.idlep ())
             {
-              if (app.gc_itimer.expired (30))
+              if (app1->gc_itimer.expired (30))
                 {
-                  app.gc_itimer.reset ();
+                  app1->gc_itimer.reset ();
                   if (ldataP::ld_nwasted)
-                    app.kbdq.gc_timer_expired ();
+                    app1->kbdq.gc_timer_expired ();
                 }
 
               long interval;
-              if (app.f_auto_save_pending
-                  || (app.auto_save_count > 5
+              if (app1->f_auto_save_pending
+                  || (app1->auto_save_count > 5
                       && safe_fixnum_value (xsymbol_value (Vauto_save_interval_timer),
                                             &interval)
-                      && app.as_itimer.expired (interval)))
+                      && app1->as_itimer.expired (interval)))
                 {
-                  if (GetTickCount () - app.last_cmd_tick < 5000)
-                    app.f_auto_save_pending = 1;
+                  if (GetTickCount () - app1->last_cmd_tick < 5000)
+                    app1->f_auto_save_pending = 1;
                   else
                     {
-                      app.as_itimer.reset ();
+                      app1->as_itimer.reset ();
                       try
                         {
                           Fdo_auto_save (Qt);
@@ -995,8 +1028,8 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                         {
                           print_condition (nonlocal_jump::data ());
                         }
-                      app.auto_save_count = 0;
-                      app.f_auto_save_pending = 0;
+                      app1->auto_save_count = 0;
+                      app1->f_auto_save_pending = 0;
                     }
                   end_wait_cursor (1);
                 }
@@ -1018,9 +1051,12 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         break;
       /* fall thru... */
     case WM_CLOSE:
-      Buffer::kill_xyzzy (1);
-      return 0;
-
+	  if(is_last_app())
+	  {
+        Buffer::kill_xyzzy (1);
+        return 0;
+	  }
+	  break; /* call def proc */
     case WM_INITMENUPOPUP:
       if (!HIWORD (lparam))
         {
@@ -1032,7 +1068,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_COMMAND:
       if (!HIWORD (wparam))
         {
-          app.kbdq.putc (LCHAR_MENU | LOWORD (wparam));
+          app1->kbdq.putc (LCHAR_MENU | LOWORD (wparam));
           return 0;
         }
       break;
@@ -1045,7 +1081,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       return 0;
 
     case WM_SETCURSOR:
-      if (app.wait_cursor_depth)
+      if (app1->wait_cursor_depth)
         {
           SetCursor (sysdep.hcur_wait);
           return 1;
@@ -1055,12 +1091,12 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_ENTERMENULOOP:
-      app.f_protect_quit = 1;
+      app1->f_protect_quit = 1;
       erase_popup (1, 0);
       break;
 
     case WM_EXITMENULOOP:
-      app.f_protect_quit = 0;
+      app1->f_protect_quit = 0;
       break;
 #if 1
     case WM_PRIVATE_FOREGROUND:
@@ -1073,11 +1109,11 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     case WM_IME_REQUEST:
       if (wparam == IMR_RECONVERTSTRING)
-        return app.kbdq.reconvert ((RECONVERTSTRING *)lparam, 0);
+        return app1->kbdq.reconvert ((RECONVERTSTRING *)lparam, 0);
       break;
 
     case WM_DRAWITEM:
-      if (app.status_window.paint ((DRAWITEMSTRUCT *)lparam)
+      if (app1->status_window.paint ((DRAWITEMSTRUCT *)lparam)
           || g_frame.draw_item ((DRAWITEMSTRUCT *)lparam))
         return 1;
       break;
@@ -1092,7 +1128,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           static const UINT atok = RegisterWindowMessage (WM_ATOK_RECONVERT);
           if ((msg == msime || msg == atok)
               && wparam == IMR_RECONVERTSTRING)
-            return app.kbdq.reconvert ((RECONVERTSTRING *)lparam, 1);
+            return app1->kbdq.reconvert ((RECONVERTSTRING *)lparam, 1);
         }
 
       wheel_info wi;
@@ -1107,7 +1143,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
     }
 
-  return app.kbdq.gime.DefWindowProc (hwnd, msg, wparam, lparam);
+  return app1->kbdq.gime.DefWindowProc (hwnd, msg, wparam, lparam);
 }
 
 LRESULT CALLBACK
@@ -1119,7 +1155,7 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_CREATE:
       {
         RECT r;
-        GetClientRect (app.toplev, &r);
+        GetClientRect (active_app().toplev, &r);
         frame_rect (r.right, r.bottom, r);
         MoveWindow (hwnd, r.left, r.top, r.right - r.left, r.bottom - r.top, 0);
         return 0;
@@ -1130,7 +1166,7 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint (hwnd, &ps);
         fill_rect (hdc, ps.rcPaint, sysdep.btn_face);
-        for (Window *wp = app.active_frame.windows; wp; wp = wp->w_next)
+        for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
           if (wp->flags () & Window::WF_RULER)
             wp->paint_ruler (hdc);
         EndPaint (hwnd, &ps);
@@ -1141,11 +1177,11 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       return Window::frame_window_resize (hwnd, lparam);
 
     case WM_SIZE:
-      if (app.active_frame.windows)
+      if (active_app().active_frame.windows)
         {
-          SIZE osize = app.active_frame.size;
-          app.active_frame.size.cx = LOWORD (lparam);
-          app.active_frame.size.cy = HIWORD (lparam);
+          SIZE osize = active_app().active_frame.size;
+          active_app().active_frame.size.cx = LOWORD (lparam);
+          active_app().active_frame.size.cy = HIWORD (lparam);
           Window::compute_geometry (osize);
           Window::move_all_windows ();
           Window::repaint_all_windows ();
@@ -1185,7 +1221,7 @@ on_vedge_p (HWND hwnd, POINT &p)
 
   RECT r;
   GetWindowRect (hwnd, &r);
-  MapWindowPoints (HWND_DESKTOP, app.active_frame.hwnd, (POINT *)&r, 2);
+  MapWindowPoints (HWND_DESKTOP, active_app().active_frame.hwnd, (POINT *)&r, 2);
   return r.left;
 }
 
@@ -1214,31 +1250,31 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       }
 
     case WM_VSCROLL:
-      if (GetFocus () != app.toplev)
-        SetFocus (app.toplev);
+      if (GetFocus () != active_app().toplev)
+        SetFocus (active_app().toplev);
       get_window (hwnd)->process_vscroll (LOWORD (wparam));
       return 0;
 
     case WM_HSCROLL:
-      if (GetFocus () != app.toplev)
-        SetFocus (app.toplev);
+      if (GetFocus () != active_app().toplev)
+        SetFocus (active_app().toplev);
       get_window (hwnd)->process_hscroll (LOWORD (wparam));
       return 0;
 
     case WM_LBUTTONDOWN:
-      app.mouse.down (get_window (hwnd), wparam, lparam, MK_LBUTTON);
+      active_app().mouse.down (get_window (hwnd), wparam, lparam, MK_LBUTTON);
       return 0;
 
     case WM_MBUTTONDOWN:
-      app.mouse.down (get_window (hwnd), wparam, lparam, MK_MBUTTON);
+      active_app().mouse.down (get_window (hwnd), wparam, lparam, MK_MBUTTON);
       return 0;
 
     case WM_RBUTTONDOWN:
-      app.mouse.down (get_window (hwnd), wparam, lparam, MK_RBUTTON);
+      active_app().mouse.down (get_window (hwnd), wparam, lparam, MK_RBUTTON);
       return 0;
 
     case WM_XBUTTONDOWN:
-      app.mouse.down (get_window (hwnd), LOWORD (wparam), lparam,
+      active_app().mouse.down (get_window (hwnd), LOWORD (wparam), lparam,
                       (HIWORD (wparam) == XBUTTON1
                        ? MK_XBUTTON1 : MK_XBUTTON2));
       return 0;
@@ -1248,28 +1284,28 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       if (wparam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON
                     | MK_XBUTTON1 | MK_XBUTTON2))
         set_current_cursor (wp);
-      app.mouse.move (wp, wparam, lparam);
+      active_app().mouse.move (wp, wparam, lparam);
       return 0;
 
     case WM_LBUTTONUP:
-      app.mouse.up (get_window (hwnd), wparam, lparam, MK_LBUTTON);
+      active_app().mouse.up (get_window (hwnd), wparam, lparam, MK_LBUTTON);
       return 0;
 
     case WM_MBUTTONUP:
-      app.mouse.up (get_window (hwnd), wparam, lparam, MK_MBUTTON);
+      active_app().mouse.up (get_window (hwnd), wparam, lparam, MK_MBUTTON);
       return 0;
 
     case WM_RBUTTONUP:
-      app.mouse.up (get_window (hwnd), wparam, lparam, MK_RBUTTON);
+      active_app().mouse.up (get_window (hwnd), wparam, lparam, MK_RBUTTON);
       return 0;
 
     case WM_XBUTTONUP:
-      app.mouse.up (get_window (hwnd), LOWORD (wparam), lparam,
+      active_app().mouse.up (get_window (hwnd), LOWORD (wparam), lparam,
                     HIWORD (wparam) == XBUTTON1 ? MK_XBUTTON1 : MK_XBUTTON2);
       return 0;
 
     case WM_CANCELMODE:
-      app.mouse.cancel ();
+      active_app().mouse.cancel ();
       break;
 
     case WM_ERASEBKGND:
@@ -1308,8 +1344,8 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             {
               point.x = short (LOWORD (lparam));
               point.y = short (HIWORD (lparam));
-              ScreenToClient (app.active_frame.hwnd, &point);
-              Window::frame_window_resize (app.active_frame.hwnd,
+              ScreenToClient (active_app().active_frame.hwnd, &point);
+              Window::frame_window_resize (active_app().active_frame.hwnd,
                                            MAKELONG (x - 1, point.y),
                                            &point);
               return 0;
@@ -1331,7 +1367,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_PASTE:
-      app.kbdq.paste ();
+      active_app().kbdq.paste ();
       break;
 
     case WM_NCMOUSEMOVE:
@@ -1342,7 +1378,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       return process_mouse_activate (lparam);
 
     case WM_SETFOCUS:
-      SetFocus (app.toplev);
+      SetFocus (active_app().toplev);
       return 0;
     }
 
@@ -1372,8 +1408,8 @@ modeline_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         Window *wp = get_window (hwnd);
         if (!wp)
           return 0;
-        MapWindowPoints (hwnd, app.active_frame.hwnd, &point, 1);
-        return wp->frame_window_resize (app.active_frame.hwnd, point, 0);
+        MapWindowPoints (hwnd, active_app().active_frame.hwnd, &point, 1);
+        return wp->frame_window_resize (active_app().active_frame.hwnd, point, 0);
       }
 
     case WM_PAINT:
@@ -1481,9 +1517,9 @@ dispatch (lChar cc)
   lisp command;
   Char c = Char (cc);
 
-  app.gc_itimer.reset ();
-  app.as_itimer.reset ();
-  app.last_cmd_tick = GetTickCount ();
+  active_app().gc_itimer.reset ();
+  active_app().as_itimer.reset ();
+  active_app().last_cmd_tick = GetTickCount ();
 
   if (cc & LCHAR_MENU)
     {
@@ -1522,9 +1558,9 @@ dispatch (lChar cc)
       command = g_map.lookup (c);
       if (!command)
         {
-          app.keyseq.push (c, !app.kbdq.macro_is_running ());
+          active_app().keyseq.push (c, !active_app().kbdq.macro_is_running ());
           Fcontinue_pre_selection ();
-          app.kbdq.close_ime ();
+          active_app().kbdq.close_ime ();
           return Qt;
         }
     }
@@ -1543,9 +1579,9 @@ run_command:
             {
               xsymbol_value (Vthis_command) = xsymbol_value (Vlast_command);
               g_map.translate (command, new_command);
-              app.keyseq.push (c, !app.kbdq.macro_is_running ());
+              active_app().keyseq.push (c, !active_app().kbdq.macro_is_running ());
               Fcontinue_pre_selection ();
-              app.kbdq.close_ime ();
+              active_app().kbdq.close_ime ();
               return Qt;
             }
           command = new_command;
@@ -1554,24 +1590,24 @@ run_command:
 
   g_map.finish ();
 
-  if (!app.kbdq.macro_is_running ())
-    app.status_window.clear ();
-  app.keyseq.done (c, !app.kbdq.macro_is_running ());
-  app.kbdq.restore_ime ();
-  app.kbdq.set_next_command_key ();
+  if (!active_app().kbdq.macro_is_running ())
+    active_app().status_window.clear ();
+  active_app().keyseq.done (c, !active_app().kbdq.macro_is_running ());
+  active_app().kbdq.restore_ime ();
+  active_app().kbdq.set_next_command_key ();
 
-  selected_buffer ()->b_ime_mode = app.ime_open_mode;
+  selected_buffer ()->b_ime_mode = active_app().ime_open_mode;
 
   if (command == Qnil)
     {
       if (!char_mouse_move_p (CCF_MOUSEMOVE))
         {
-          app.status_window.puts (Ekey_not_bound, 1);
+          active_app().status_window.puts (Ekey_not_bound, 1);
           if (xsymbol_value (Vbeep_on_warn) != Qnil)
             Fding ();
         }
-      app.kbdq.clear ();
-      app.kbdq.end_last_command_key ();
+      active_app().kbdq.clear ();
+      active_app().kbdq.end_last_command_key ();
       return Qnil;
     }
 
@@ -1587,16 +1623,18 @@ run_command:
       if (nld->type == Qexit_this_level)
         throw;
       print_condition (nonlocal_jump::data ());
-      app.kbdq.clear ();
+      active_app().kbdq.clear ();
     }
   protect_gc gcpro (result);
   selected_buffer ()->safe_run_hook (Vpost_command_hook, 1);
-  app.kbdq.end_last_command_key ();
+  active_app().kbdq.end_last_command_key ();
   erase_popup (0, 0);
   end_wait_cursor (1);
   WINFS::clear_share_cache ();
   return result;
 }
+
+#include <exception>
 
 void
 main_loop ()
@@ -1609,10 +1647,10 @@ main_loop ()
   dynamic_bind dynb5 (Vthis_command, Qnil);
   dynamic_bind dynb6 (Vlast_command, Qnil);
 
-  save_command_key_index sck (app.kbdq);
+  save_command_key_index sck (active_app().kbdq);
   while (1)
     {
-      if (app.kbdq.macro_is_running ())
+      if (active_app().kbdq.macro_is_running ())
         pending_refresh_screen ();
       else
         {
@@ -1628,31 +1666,39 @@ main_loop ()
       xsymbol_value (Vsi_find_motion) = Qt;
       xsymbol_value (Vevalhook) = Qnil;
       xsymbol_value (Vapplyhook) = Qnil;
-      app.mouse.clear_move ();
-      lChar c = app.kbdq.fetch (1, toplev_accept_mouse_move_p ());
+      active_app().mouse.clear_move ();
+	  lChar c;
+	  try
+	  {
+		  c = active_app().kbdq.fetch (1, toplev_accept_mouse_move_p ());
+	  }
+	  catch(std::exception)
+	  {
+		  continue;
+	  }
       if (c == lChar_EOF)
         break;
 
       while (1)
         {
           dispatch (c);
-          c = app.kbdq.peek (toplev_accept_mouse_move_p ());
+          c = active_app().kbdq.peek (toplev_accept_mouse_move_p ());
           if (c == lChar_EOF)
             break;
           pending_refresh_screen ();
-          if (!app.kbdq.macro_is_running ())
+          if (!active_app().kbdq.macro_is_running ())
             Fundo_boundary ();
         }
 
-      if (!app.f_auto_save_pending
-          && !app.kbdq.macro_is_running ())
+      if (!active_app().f_auto_save_pending
+          && !active_app().kbdq.macro_is_running ())
         {
-          app.auto_save_count++;
+          active_app().auto_save_count++;
           long interval;
           if (safe_fixnum_value (xsymbol_value (Vauto_save_interval),
                                  &interval)
-              && interval > 0 && app.auto_save_count >= interval)
-            app.f_auto_save_pending = 1;
+              && interval > 0 && active_app().auto_save_count >= interval)
+            active_app().f_auto_save_pending = 1;
         }
     }
 }
@@ -1661,9 +1707,9 @@ lisp
 execute_string (lisp string)
 {
   check_stack_overflow ();
-  save_command_key_index sck (app.kbdq);
+  save_command_key_index sck (active_app().kbdq);
   check_string (string);
-  if (app.kbdq.lookup_kbd_macro (string))
+  if (active_app().kbdq.lookup_kbd_macro (string))
     FEsimple_error (Ekbd_macro_called_recursively);
   lisp val = xsymbol_value (Vprefix_value);
   int n = val == Qnil ? 1 : fixnum_value (val);
@@ -1671,12 +1717,12 @@ execute_string (lisp string)
   if (xstring_length (string))
     for (int i = 0; !n || i < n; i++)
       {
-        kbd_macro_context macro (app.kbdq, string);
+        kbd_macro_context macro (active_app().kbdq, string);
         while (macro.running ())
           {
             xsymbol_value (Vquit_flag) = Qnil;
             xsymbol_value (Vinhibit_quit) = Qnil;
-            lChar c = app.kbdq.fetch (0, 0);
+            lChar c = active_app().kbdq.fetch (0, 0);
             if (c == lChar_EOF)
               return result;
             result = dispatch (c);
@@ -1693,7 +1739,7 @@ execute_string (lisp string)
 lisp
 Fsi_minibuffer_message (lisp message, lisp prompt)
 {
-  app.minibuffer_prompt_column = -1;
+  active_app().minibuffer_prompt_column = -1;
   if (message == Qnil)
     xsymbol_value (Vminibuffer_message) = Qnil;
   else
@@ -1703,7 +1749,7 @@ Fsi_minibuffer_message (lisp message, lisp prompt)
       xsymbol_value (Vminibuffer_prompt) = boole (prompt && prompt != Qnil);
     }
   Window::minibuffer_window ()->w_disp_flags |= Window::WDF_WINDOW;
-  if (!app.kbdq.macro_is_running ())
+  if (!active_app().kbdq.macro_is_running ())
     refresh_screen (0);
   return Qt;
 }
@@ -1711,14 +1757,14 @@ Fsi_minibuffer_message (lisp message, lisp prompt)
 lisp
 Fcancel_mouse_event ()
 {
-  app.mouse.cancel ();
+  active_app().mouse.cancel ();
   return Qt;
 }
 
 int
 wait_process_terminate (HANDLE h)
 {
-  app.kbdq.wait_event (h);
+  active_app().kbdq.wait_event (h);
   return 1;
 }
 
@@ -1746,8 +1792,8 @@ Fmain_loop ()
 lisp
 Fsi_show_window_foreground ()
 {
-  if (IsIconic (app.toplev))
-    ShowWindow (app.toplev, SW_RESTORE);
+  if (IsIconic (active_app().toplev))
+    ShowWindow (active_app().toplev, SW_RESTORE);
   ForceSetForegroundWindow (get_active_window ());
   return Qnil;
 }
@@ -1755,11 +1801,11 @@ Fsi_show_window_foreground ()
 lisp
 Fsi_activate_toplevel ()
 {
-  if (IsWindowEnabled (app.toplev))
+  if (IsWindowEnabled (active_app().toplev))
     {
-      if (IsIconic (app.toplev))
-        ShowWindow (app.toplev, SW_RESTORE);
-      SetActiveWindow (app.toplev);
+      if (IsIconic (active_app().toplev))
+        ShowWindow (active_app().toplev, SW_RESTORE);
+      SetActiveWindow (active_app().toplev);
       return Qt;
     }
   return Qnil;
@@ -1769,7 +1815,7 @@ lisp
 Fcall_menu (lisp ln)
 {
   int req = fixnum_value (ln);
-  HMENU hmenu = GetMenu (app.toplev);
+  HMENU hmenu = GetMenu (active_app().toplev);
   if (!hmenu)
     return Qnil;
   int n = GetMenuItemCount (hmenu);
@@ -1788,7 +1834,7 @@ Fcall_menu (lisp ln)
       else
         break;
     }
-  PostMessage (app.toplev, WM_PRIVATE_CALL_MENU, b[1], (1 << 29) | 1);
+  PostMessage (active_app().toplev, WM_PRIVATE_CALL_MENU, b[1], (1 << 29) | 1);
   return Qt;
 }
 
@@ -1862,11 +1908,11 @@ Fset_quit_char (lisp ch)
       vk = LOBYTE (vk);
     }
 
-  app.lquit_char = ch;
-  app.quit_vkey = vk;
-  app.quit_mod = mod;
+  active_app().lquit_char = ch;
+  active_app().quit_vkey = vk;
+  active_app().quit_mod = mod;
 
-  PostThreadMessage (app.quit_thread_id, WM_PRIVATE_MODIFY_HOTKEY, 0, 0);
+  PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_MODIFY_HOTKEY, 0, 0);
 
   return ch;
 }
@@ -1874,5 +1920,5 @@ Fset_quit_char (lisp ch)
 lisp
 Fquit_char ()
 {
-  return app.lquit_char;
+  return active_app().lquit_char;
 }

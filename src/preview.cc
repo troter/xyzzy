@@ -588,7 +588,7 @@ preview_page_window::set_cursor (int hittest)
 {
   if (hittest != HTCLIENT)
     return 0;
-  SetCursor (LoadCursor (app.hinst, MAKEINTRESOURCE (IDC_MAGCUR)));
+  SetCursor (LoadCursor (active_app().hinst, MAKEINTRESOURCE (IDC_MAGCUR)));
   return 1;
 }
 
@@ -718,7 +718,7 @@ preview_page_window::register_wndclass (HINSTANCE hinst)
 int
 preview_page_window::create (HWND hwnd, const RECT &r)
 {
-  if (!register_wndclass (app.hinst))
+  if (!register_wndclass (active_app().hinst))
     return 0;
 
   if (!CreateWindowEx (sysdep.Win4p () ? WS_EX_CLIENTEDGE : 0,
@@ -727,7 +727,7 @@ preview_page_window::create (HWND hwnd, const RECT &r)
                         | WS_CLIPSIBLINGS | WS_TABSTOP
                         | (sysdep.Win4p () ? 0 : WS_BORDER)),
                        r.left, r.top, r.right - r.left, r.bottom - r.top,
-                       hwnd, 0, app.hinst, this))
+                       hwnd, 0, active_app().hinst, this))
     return 0;
   return 1;
 }
@@ -791,7 +791,7 @@ preview_dialog::init_dialog (HWND)
   for (int i = 0; i < numberof (preview_page_window::ids2scales); i++)
     {
       char b[128];
-      LoadString (app.hinst, preview_page_window::ids2scales[i].ids,
+      LoadString (active_app().hinst, preview_page_window::ids2scales[i].ids,
                   b, sizeof b);
       UINT idx = SendDlgItemMessage (p_hwnd, IDC_SCALE, CB_ADDSTRING, 0, LPARAM (b));
       SendDlgItemMessage (p_hwnd, IDC_SCALE, CB_SETITEMDATA,
@@ -962,7 +962,7 @@ preview_dialog::wndproc (UINT msg, WPARAM wparam, LPARAM lparam)
       return quit ();
 
     case WM_ACTIVATEAPP:
-      PostThreadMessage (app.quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
+      PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
                          wparam, lparam);
       return 0;
 
@@ -1006,6 +1006,6 @@ preview_dialog::wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 int
 preview_dialog::do_modal (HWND hwnd)
 {
-  return DialogBoxParam (app.hinst, MAKEINTRESOURCE (IDD_PREVIEW),
+  return DialogBoxParam (active_app().hinst, MAKEINTRESOURCE (IDD_PREVIEW),
                          hwnd, wndproc, LPARAM (this));
 }

@@ -186,7 +186,7 @@ SelectColor::draw_combo (DRAWITEMSTRUCT *dis)
   else
     {
       char b[256];
-      if (!LoadString (app.hinst, dis->itemData, b, sizeof b))
+      if (!LoadString (active_app().hinst, dis->itemData, b, sizeof b))
         *b = 0;
       paint_color_list (dis, b, GetSysColor (dis->itemData - IDS_COLOR_SCROLLBAR));
     }
@@ -343,7 +343,7 @@ SelectColor::select_color (HWND parent, XCOLORREF &c)
 {
   cc = c;
   current_id = find_match (cc);
-  if (DialogBoxParam (app.hinst, MAKEINTRESOURCE (IDD_SELECT_COLOR),
+  if (DialogBoxParam (active_app().hinst, MAKEINTRESOURCE (IDD_SELECT_COLOR),
                       parent, select_color_dlgproc, LPARAM (this)) == IDOK)
     {
       c = cc;
@@ -405,7 +405,7 @@ ChangeColorsPageP::init_page (UINT idd, PropSheet *sheet, int page_no,
 
   psp->dwSize = sizeof *psp;
   psp->dwFlags = ccp_hg ? PSP_DLGINDIRECT : 0;
-  psp->hInstance = app.hinst;
+  psp->hInstance = active_app().hinst;
   if (ccp_hg)
     psp->pResource = (DLGTEMPLATE *)GlobalLock (ccp_hg);
   else
@@ -684,12 +684,12 @@ ChooseFontPage::init_page (PropSheet *sheet, int page_no, PROPSHEETPAGE *psp)
 
   int i = 0;
   for (i = 0; i < FONT_MAX; i++)
-    GetObject (app.text_font.font (i), sizeof cfp_param.fs_logfont[i],
+    GetObject (active_app().text_font.font (i), sizeof cfp_param.fs_logfont[i],
                &cfp_param.fs_logfont[i]);
-  cfp_param.fs_line_spacing = app.text_font.line_spacing ();
-  cfp_param.fs_use_backsl = app.text_font.use_backsl_p ();
-  cfp_param.fs_recommend_size = app.text_font.recommend_size_p ();
-  cfp_param.fs_size_pixel = app.text_font.size_pixel_p ();
+  cfp_param.fs_line_spacing = active_app().text_font.line_spacing ();
+  cfp_param.fs_use_backsl = active_app().text_font.use_backsl_p ();
+  cfp_param.fs_recommend_size = active_app().text_font.recommend_size_p ();
+  cfp_param.fs_size_pixel = active_app().text_font.size_pixel_p ();
   cfp_font.cf_param = cfp_param;
   cfp_font.cf_fg = Window::default_xcolors[WCOLOR_TEXT];
   cfp_font.cf_bg = Window::default_xcolors[WCOLOR_BACK];

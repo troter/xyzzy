@@ -256,7 +256,7 @@ FKWin::OnLButtonUp (int x, int y, int keys)
   if (fk_vkey & FVK_CONTROL)
     cc |= CCF_CTRL_BIT;
 
-  app.kbdq.putc (cc);
+  active_app().kbdq.putc (cc);
 }
 
 void
@@ -452,7 +452,7 @@ Fset_function_bar_label (lisp lcc, lisp label)
 
   xvector_contents (xsymbol_value (Vfunction_bar_labels))[index] = label;
 
-  app.active_frame.fnkey->refresh_button (n);
+  active_app().active_frame.fnkey->refresh_button (n);
 
   return Qt;
 }
@@ -460,7 +460,7 @@ Fset_function_bar_label (lisp lcc, lisp label)
 lisp
 Fset_number_of_function_bar_labels (lisp n)
 {
-  if (!app.active_frame.fnkey->set_nbuttons (fixnum_value (n)))
+  if (!active_app().active_frame.fnkey->set_nbuttons (fixnum_value (n)))
     FEprogram_error (Ebad_function_bar_label_number, n);
   return Qt;
 }
@@ -468,5 +468,5 @@ Fset_number_of_function_bar_labels (lisp n)
 lisp
 Fnumber_of_function_bar_labels ()
 {
-  return make_fixnum (app.active_frame.fnkey->get_nbuttons ());
+  return make_fixnum (active_app().active_frame.fnkey->get_nbuttons ());
 }

@@ -31,6 +31,7 @@ class kbd_queue
   friend kbd_macro_context;
   int putraw (lChar);
 public:
+  static bool change_application_window;
   enum input_mode
     {
       im_normal,

@@ -146,18 +146,18 @@ NotifyWndProc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           if (*i->szDestFileName)
             {
               if (!wparam)
-                app.status_window.puts (i->szDestFileName, 1);
+                active_app().status_window.puts (i->szDestFileName, 1);
               else if (wparam == 1)
                 {
                   sprintf (buf, "%s(%u/%u)...",
                            i->szDestFileName, i->dwWriteSize, i->dwFileSize);
-                  app.status_window.puts (buf, 1);
+                  active_app().status_window.puts (buf, 1);
                 }
             }
           else if (wparam == 4)
             {
               sprintf (buf, "Updating %s...", i->szSourceFileName);
-              app.status_window.puts (buf, 1);
+              active_app().status_window.puts (buf, 1);
             }
           if (QUITP)
             return 1;
@@ -235,7 +235,7 @@ ArchiverP::doit (HWND hwnd, const char *data) const
     EnableWindow (hwnd, 1);
 
 #ifdef __XYZZY__
-  app.status_window.puts ("done", 1);
+  active_app().status_window.puts ("done", 1);
 #endif
 
 #ifdef NEED_EXTRACTINGINFO

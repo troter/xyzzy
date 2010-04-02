@@ -3912,13 +3912,13 @@ putmsg (wStream &stream, int msgboxp, int style, int beep)
   if (msgboxp)
     {
       w2s ((char *)b, b + 1, l);
-      app.status_window.clear ();
+      active_app().status_window.clear ();
       return MsgBox (get_active_window (), (char *)b, TitleBarString, style, beep);
     }
   else
     {
-      app.status_window.puts (b + 1, l);
-      app.status_window.putc ('\n');
+      active_app().status_window.puts (b + 1, l);
+      active_app().status_window.putc ('\n');
       if (beep)
         Fding ();
       return 0;
@@ -4259,7 +4259,7 @@ format_message (message_code m, ...)
   char buf[2048];
   vsprintf (buf, fmt, ap);
   va_end (ap);
-  app.status_window.puts (buf, 1);
+  active_app().status_window.puts (buf, 1);
 }
 
 int

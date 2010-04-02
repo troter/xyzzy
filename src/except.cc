@@ -411,7 +411,7 @@ cleanup_exception ()
 # error "yet"
 #endif
       fprintf (fp, "Initial stack: %08x  GC: %d\n\n",
-               app.initial_stack, app.in_gc);
+               active_app().initial_stack, active_app().in_gc);
 
       print_module_allocation (fp);
       lisp_stack_trace (fp);

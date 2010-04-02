@@ -92,7 +92,7 @@ FontSet::paint_newline_bitmap (HDC hdc)
   int h = fs_size.cy / 2;
   int y0 = fs_size.cy - 2;
   int ox = fs_cell.cx * newline + 2;
-  int y, x;
+  int y, x = 0;
   for (y = 0; y < h; y++)
     SetPixel (hdc, ox, y0 - y, RGB (0, 0, 0));
   for (y = 0; y < h / 2 - 1; y++)

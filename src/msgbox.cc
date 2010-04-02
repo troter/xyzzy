@@ -120,7 +120,7 @@ BOOL
 XMessageBox::init_dialog ()
 {
   SendMessage (hwnd, WM_SETICON, 1,
-               LPARAM (LoadIcon (app.hinst, MAKEINTRESOURCE (IDI_XYZZY))));
+               LPARAM (LoadIcon (active_app().hinst, MAKEINTRESOURCE (IDI_XYZZY))));
 
   hfont = HFONT (SendMessage (hwnd, WM_GETFONT, 0, 0));
 
@@ -312,7 +312,7 @@ MsgBoxEx (HWND hwnd, const char *msg, const char *title,
           int type, int defbtn, int icon, int beep,
           const char **captions, int ncaptions, int crlf, int no_wrap)
 {
-  XMessageBox mb (app.hinst, msg ? msg : "", title ? title : "エラー", crlf, no_wrap);
+  XMessageBox mb (active_app().hinst, msg ? msg : "", title ? title : "エラー", crlf, no_wrap);
   if (!captions)
     ncaptions = 0;
 

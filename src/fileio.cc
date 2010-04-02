@@ -185,12 +185,12 @@ Buffer::read_file_contents (ReadFileContext &rfc, xread_stream &sin)
           sprintf (msg, "Reading %d/%d bytes...",
                    total_bytes - sin.input_stream ().rest_chars (),
                    total_bytes);
-          app.status_window.text (msg);
+          active_app().status_window.text (msg);
         }
     }
 
   if (*msg)
-    app.status_window.restore ();
+    active_app().status_window.restore ();
 
   for (prev = 0, cp = rfc.r_chunk; cp; cp = cp->c_next)
     {
@@ -1359,7 +1359,7 @@ do_auto_save (int not_all, int unnamed)
       }
   if (f)
     format_message (Mauto_saving_done);
-  app.auto_save_count = 0;
+  active_app().auto_save_count = 0;
 }
 
 lisp

@@ -213,7 +213,7 @@ dock_bar::wndproc (UINT msg, WPARAM wparam, LPARAM lparam)
       return HTCLIENT;
 
     case WM_LBUTTONDOWN:
-      if (!app.kbdq.idlep ())
+      if (!active_app().kbdq.idlep ())
         return 0;
       if (lbtn_down (short (LOWORD (lparam)), short (HIWORD (lparam))))
         return 0;
@@ -232,12 +232,12 @@ dock_bar::wndproc (UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_XBUTTONDBLCLK:
     case WM_MOUSEMOVE:
     case WM_MOUSEWHEEL:
-      if (!app.kbdq.idlep ())
+      if (!active_app().kbdq.idlep ())
         return 0;
       break;
 
     case WM_KEYDOWN:
-      if (!app.kbdq.idlep ())
+      if (!active_app().kbdq.idlep ())
         return 0;
       switch (wparam)
         {
@@ -259,7 +259,7 @@ dock_bar::wndproc (UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_CONTEXTMENU:
-      if (!app.kbdq.idlep ())
+      if (!active_app().kbdq.idlep ())
         return 0;
       if (HWND (wparam) == b_hwnd)
         {
@@ -334,7 +334,7 @@ tool_bar::create (HWND hwnd_parent, DWORD style, UINT id)
 {
   if (!dock_bar::create (0, TOOLBARCLASSNAME, 0,
                          style, 0, 0, 0, 0, hwnd_parent,
-                         (HMENU)id, app.hinst, 0))
+                         (HMENU)id, active_app().hinst, 0))
     return 0;
   sendmsg (TB_BUTTONSTRUCTSIZE, sizeof (TBBUTTON), 0);
   return 1;
@@ -521,7 +521,7 @@ tab_bar::modify_spin ()
   HWND hwnd = CreateWindowEx (GetWindowLong (hwnd_spin, GWL_EXSTYLE),
                               UPDOWN_CLASS, "", (style ^ UDS_HORZ) & ~UDS_WRAP,
                               0, 0, 0, 0, b_hwnd, HMENU (IDC_TAB_SPIN),
-                              app.hinst, 0);
+                              active_app().hinst, 0);
   if (!hwnd)
     return;
 
@@ -1214,7 +1214,7 @@ tab_bar::adjust_gripper (HDC hdc, RECT &wr, const RECT &cr) const
 int
 tab_bar::set_cursor (WPARAM wparam, LPARAM lparam)
 {
-  if (app.kbdq.idlep () && HWND (wparam) == b_hwnd
+  if (active_app().kbdq.idlep () && HWND (wparam) == b_hwnd
       && t_horz_text && dock_vert_p ())
     {
       POINT p;
@@ -1235,7 +1235,7 @@ tab_bar::set_cursor (WPARAM wparam, LPARAM lparam)
 int
 tab_bar::lbtn_down (int x, int y)
 {
-  if (!app.kbdq.idlep () || !t_horz_text || !dock_vert_p ())
+  if (!active_app().kbdq.idlep () || !t_horz_text || !dock_vert_p ())
     return 0;
 
   RECT cr;
@@ -1356,7 +1356,7 @@ done:
 int
 tab_bar::move_tab (int x, int y)
 {
-  if (!app.kbdq.idlep () || GetKeyState (VK_LBUTTON) >= 0)
+  if (!active_app().kbdq.idlep () || GetKeyState (VK_LBUTTON) >= 0)
     return 0;
   POINT pt;
   GetCursorPos (&pt);
@@ -1372,7 +1372,7 @@ tab_bar::move_tab (int x, int y)
 
   HCURSOR hcur_old = GetCursor ();
   HCURSOR hcur_no = LoadCursor (0, IDC_NO);
-  HCURSOR hcur_mv = LoadCursor (app.hinst,
+  HCURSOR hcur_mv = LoadCursor (active_app().hinst,
                                 MAKEINTRESOURCE (dock_vert_p ()
                                                  ? IDC_MOVEUD : IDC_MOVELR));
 

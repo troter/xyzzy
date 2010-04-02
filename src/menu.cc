@@ -154,7 +154,7 @@ static void
 redraw_menu (lisp lmenu)
 {
   if (xsymbol_value (Vlast_active_menu) == lmenu)
-    DrawMenuBar (app.toplev);
+    DrawMenuBar (active_app().toplev);
 }
 
 static void
@@ -505,7 +505,7 @@ init_menu_popup (lisp lmenu, int enablep)
       else
         {
           if (xwin32_menu_init (item) == Kend_macro)
-            flags = (app.kbdq.save_p ()
+            flags = (active_app().kbdq.save_p ()
                      ? MF_ENABLED | MF_UNCHECKED
                      : MF_GRAYED | MF_UNCHECKED);
           else if (enablep)
@@ -685,7 +685,7 @@ init_menu_popup (WPARAM wparam, LPARAM lparam)
     return;
   modify_menu_string (lmenu);
   suppress_gc sgc;
-  init_menu_popup (lmenu, app.kbdq.idlep ());
+  init_menu_popup (lmenu, active_app().kbdq.idlep ());
 }
 
 static lisp
@@ -732,7 +732,7 @@ track_popup_menu (lisp lmenu, lisp lbutton, const POINT *point)
 {
   check_popup_menu (lmenu);
   dynamic_bind dynb (Vtracking_menu, lmenu);
-  int id = app.mouse.track_popup_menu (xwin32_menu_handle (lmenu), lbutton, point);
+  int id = active_app().mouse.track_popup_menu (xwin32_menu_handle (lmenu), lbutton, point);
   if (!id)
     return Qnil;
   lisp command = lookup_menu_command (lmenu, id);

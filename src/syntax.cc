@@ -1991,7 +1991,7 @@ lisp
 Ftab_columns (lisp lbuffer)
 {
   if (!lbuffer || lbuffer == Qnil)
-    return make_fixnum (app.default_tab_columns);
+    return make_fixnum (active_app().default_tab_columns);
   Buffer *bp = Buffer::coerce_to_buffer (lbuffer);
   multiple_value::count () = 2;
   multiple_value::value (1) = boole (bp->b_local_tab_columns);
@@ -2006,9 +2006,9 @@ Fset_tab_columns (lisp column, lisp lbuffer)
       int n = fixnum_value (column);
       if (n < 1 || n > 32)
         FErange_error (column);
-      if (app.default_tab_columns != n)
+      if (active_app().default_tab_columns != n)
         {
-          app.default_tab_columns = n;
+          active_app().default_tab_columns = n;
           for (Buffer *bp = Buffer::b_blist; bp; bp = bp->b_next)
             {
               bp->b_nfolded = -1;
@@ -2018,7 +2018,7 @@ Fset_tab_columns (lisp column, lisp lbuffer)
                   bp->fold_width_modified ();
                 }
             }
-          for (Window *wp = app.active_frame.windows; wp; wp = wp->w_next)
+          for (Window *wp = active_app().active_frame.windows; wp; wp = wp->w_next)
             if (wp->w_bufp && !wp->w_bufp->b_local_tab_columns)
               wp->w_disp_flags |= Window::WDF_WINDOW;
         }
@@ -2030,7 +2030,7 @@ Fset_tab_columns (lisp column, lisp lbuffer)
       if (column == Qnil)
         {
           bp->b_local_tab_columns = 0;
-          n = app.default_tab_columns;
+          n = active_app().default_tab_columns;
         }
       else
         {

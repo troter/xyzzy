@@ -147,7 +147,7 @@ buffer_info::ime_mode (char *b, char *be) const
   if (!b_ime)
     return b;
   *b_ime = 1;
-  return stpncpy (b, (app.ime_open_mode == kbd_queue::IME_MODE_ON
+  return stpncpy (b, (active_app().ime_open_mode == kbd_queue::IME_MODE_ON
                       ? "‚ " : "--"),
                   be - b);
 }

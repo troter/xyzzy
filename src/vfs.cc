@@ -91,7 +91,7 @@ NetPassDlg::netpass_dlgproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 int
 NetPassDlg::do_modal ()
 {
-  return DialogBoxParam (app.hinst, MAKEINTRESOURCE (IDD_NETPASSWD),
+  return DialogBoxParam (active_app().hinst, MAKEINTRESOURCE (IDD_NETPASSWD),
                          get_active_window (), netpass_dlgproc, LPARAM (this)) == IDOK;
 }
 

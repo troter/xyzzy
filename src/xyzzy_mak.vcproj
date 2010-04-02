@@ -4,6 +4,7 @@
 	Version="9.00"
 	Name="xyzzy_mak"
 	ProjectGUID="{1A59C6A3-2169-4B39-9ABC-94C411E21F3D}"
+	RootNamespace="xyzzy_mak"
 	Keyword="MakeFileProj"
 	TargetFrameworkVersion="196613"
 	>
@@ -23,11 +24,11 @@
 			>
 			<Tool
 				Name="VCNMakeTool"
-				BuildCommandLine="nmake"
+				BuildCommandLine="nmake CFG=d"
 				ReBuildCommandLine=""
 				CleanCommandLine=""
-				Output="xyzzy_mak.exe"
-				PreprocessorDefinitions="WIN32;_DEBUG"
+				Output="xyzzy.exe"
+				PreprocessorDefinitions="WIN32;_DEBUG;"
 				IncludeSearchPath="../privctrl"
 				ForcedIncludes=""
 				AssemblySearchPath=""
@@ -68,7 +69,7 @@
 				RelativePath=".\Makefile"
 				>
 			</File>
-    </Filter>
+		</Filter>
 		<Filter
 			Name="ヘッダー ファイル"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"

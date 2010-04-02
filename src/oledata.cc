@@ -866,7 +866,7 @@ DevStudio/SharedIDE/bin/ide/DEVDBG.PKG
 (set-ole-event-handler app "WindowActivate" #'(lambda (&rest x)))
 
 (require "ole")
-(setq deb #{app.debugger})
+(setq deb #{active_app().debugger})
 (ole-create-event-sink deb "IDispDebuggerEvents" "DevStudio/SharedIDE/bin/ide/DEVDBG.PKG")
 
  */

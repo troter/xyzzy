@@ -777,7 +777,7 @@ gc_mark_in_stack ()
   setjmp (regs);
 
   int tem = 0;
-  lisp *beg = (lisp *)&tem, *end = (lisp *)app.initial_stack;
+  lisp *beg = (lisp *)&tem, *end = (lisp *)active_app().initial_stack;
   for (; beg < end; beg++)
     {
       lisp p = *beg;
@@ -851,11 +851,11 @@ gc_mark_object ()
     }
 
   Window *wp;
-  for (wp = app.active_frame.windows; wp; wp = wp->w_next)
+  for (wp = active_app().active_frame.windows; wp; wp = wp->w_next)
     gc_mark_object (wp->lwp);
-  for (wp = app.active_frame.reserved; wp; wp = wp->w_next)
+  for (wp = active_app().active_frame.reserved; wp; wp = wp->w_next)
     gc_mark_object (wp->lwp);
-  for (wp = app.active_frame.deleted; wp; wp = wp->w_next)
+  for (wp = active_app().active_frame.deleted; wp; wp = wp->w_next)
     gc_mark_object (wp->lwp);
 
   Buffer *bp;
@@ -870,7 +870,7 @@ gc_mark_object ()
   toplev_gc_mark (gc_mark_object);
   process_gc_mark (gc_mark_object);
   g_frame.gc_mark (gc_mark_object);
-  app.user_timer.gc_mark (gc_mark_object);
+  active_app().user_timer.gc_mark (gc_mark_object);
 
   gc_mark_in_stack ();
 
@@ -887,14 +887,14 @@ gc (int nomsg)
   if (suppress_gc::gc_suppressed_p ())
     return;
 
-  app.in_gc = 1;
+  active_app().in_gc = 1;
 
   if (nomsg < 0)
     nomsg = xsymbol_value (Vgarbage_collection_messages) == Qnil;
 
   int msglen = 0;
   if (!nomsg)
-    msglen = app.status_window.text (get_message_string (Mgarbage_collecting));
+    msglen = active_app().status_window.text (get_message_string (Mgarbage_collecting));
 
   ldataP::ld_nwasted = 0;
   gc_mark_object ();
@@ -914,13 +914,13 @@ gc (int nomsg)
   if (!nomsg)
     {
       if (msglen)
-        app.status_window.restore ();
+        active_app().status_window.restore ();
       else
-        app.status_window.text (get_message_string (Mgarbage_collecting_done));
+        active_app().status_window.text (get_message_string (Mgarbage_collecting_done));
     }
 
   _heapmin ();
-  app.in_gc = 0;
+  active_app().in_gc = 0;
 }
 
 lisp
@@ -2673,7 +2673,7 @@ Fdump_xyzzy (lisp filename)
   if (!filename || filename == Qnil)
     {
       filename = xsymbol_value (Qdump_image_path);
-      path = app.dump_image;
+      path = active_app().dump_image;
     }
   else
     {
@@ -2790,7 +2790,7 @@ static int dump_flag;
 int
 rdump_xyzzy ()
 {
-  FILE *fp = _fsopen (app.dump_image, "rb", _SH_DENYWR);
+  FILE *fp = _fsopen (active_app().dump_image, "rb", _SH_DENYWR);
   if (!fp)
     return 0;
 

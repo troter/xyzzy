@@ -65,7 +65,7 @@ buffer_bar::notify (NMHDR *nm, LRESULT &result)
 
     case TCN_SELCHANGE:
     case TCN_SELCHANGING:
-      if (!app.kbdq.idlep ()
+      if (!active_app().kbdq.idlep ()
           || selected_window ()->minibuffer_window_p ())
         {
           result = 1; // prevent the selection
@@ -128,7 +128,7 @@ buffer_bar::tab_color (const Buffer *bp, COLORREF &fg, COLORREF &bg)
   else
     {
 	  Window *wp;
-      for (wp = app.active_frame.windows; wp; wp = wp->w_next)
+      for (wp = active_app().active_frame.windows; wp; wp = wp->w_next)
         if (wp->w_bufp == bp)
           {
             fg = get_misc_color (MC_BUFTAB_DISP_FG);
@@ -199,7 +199,7 @@ buffer_bar::make_instance ()
   if (!b_bar)
     {
       b_bar = new buffer_bar (g_frame);
-      if (!b_bar->create (app.toplev))
+      if (!b_bar->create (active_app().toplev))
         return 0;
       b_bar->insert_buffers ();
       g_frame.add (b_bar);
@@ -404,7 +404,7 @@ buffer_bar::wndproc (UINT msg, WPARAM wparam, LPARAM lparam)
           KillTimer (b_hwnd, DROP_TIMER_ID);
           b_drop_index = -1;
           if (index >= 0
-              && (app.drag_window || app.kbdq.idlep ())
+              && (active_app().drag_window || active_app().kbdq.idlep ())
               && !selected_window ()->minibuffer_window_p ())
             {
               Buffer *bp = nth (index);

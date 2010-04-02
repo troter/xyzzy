@@ -318,6 +318,7 @@ public:
 
 class FKWin;
 
+
 struct Frame
 {
   Window *windows;
@@ -339,7 +340,9 @@ struct Frame
   COLORREF last_caret_color;
 
   FKWin *fnkey;
+  Frame *f_next;
 };
+
 
 struct ModelineParam
 {
@@ -358,6 +361,80 @@ struct Region
   point_t p1;
   point_t p2;
 };
+
+/*
+This class is Frame in emacs meaning.
+But Frame is already used in xyzzy and it does not contain status bar, menu, etc.
+In xyzzy, similar concept was Application, so I create ApplicationFrame and separate from Application.
+This name should be renamed.
+*/
+class ApplicationFrame
+{
+public:
+  ApplicationFrame ();
+  ~ApplicationFrame();
+
+  HINSTANCE hinst;
+  HWND toplev;
+  HWND hwnd_sw;
+
+  HWND hwnd_clipboard;
+
+  kbd_queue kbdq;
+  mouse_state mouse;
+  ime_comp_queue ime_compq;
+
+  Frame active_frame;
+
+  FontSet text_font;
+  ModelineParam modeline_param;
+  StatusWindow status_window;
+  key_sequence keyseq;
+  itimer as_itimer;
+
+  status_area stat_area;
+
+  int default_tab_columns;
+  int auto_save_count;
+
+  int toplevel_is_active;
+  int ime_composition;
+  int ime_open_mode;
+
+  int last_vkeycode;
+  int kbd_repeat_count;
+  int wait_cursor_depth;
+
+  u_int quit_thread_id;
+  int sleep_timer_exhausted;
+  int f_protect_quit;
+
+  int f_in_drop;
+  Window *drop_window;
+  Window *drag_window;
+  Buffer *drag_buffer;
+  Region drag_region;
+
+  DWORD last_cmd_tick;
+  int f_auto_save_pending;
+
+  UINT default_caret_blink_time;
+  int last_blink_caret;
+
+  char dump_image[PATH_MAX + 8];
+
+  lisp lquit_char;
+  int quit_vkey;
+  int quit_mod;
+
+  ATOM atom_toplev;
+  int minibuffer_prompt_column;
+
+  utimer user_timer;
+
+  ApplicationFrame *a_next;
+};
+
 
 class Application
 {
@@ -381,6 +458,7 @@ public:
   ime_comp_queue ime_compq;
 
   Frame active_frame;
+
   FontSet text_font;
   ModelineParam modeline_param;
   StatusWindow status_window;
@@ -429,11 +507,19 @@ public:
 
   utimer user_timer;
 
+  Application *a_next;
+
+  ApplicationFrame *app_frame;
+
+
   void *initial_stack;
   int in_gc;
+
 };
 
-extern Application app;
+extern Application& active_app();
+extern Application* retrieve_app(HWND hwnd);
+extern void insert_app(HWND hwnd, Application *app);
 
 class enable_quit
 {
@@ -445,7 +531,7 @@ public:
       if (!q_save)
         {
           q_enable = 1;
-          PostThreadMessage (app.quit_thread_id, WM_PRIVATE_REGISTER_HOTKEY, 0, 0);
+          PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_REGISTER_HOTKEY, 0, 0);
         }
     }
   ~enable_quit () {if (!q_save) disable ();}
@@ -453,7 +539,7 @@ public:
     {
       if (q_enable)
         {
-          PostThreadMessage (app.quit_thread_id, WM_PRIVATE_UNREGISTER_HOTKEY, 0, 0);
+          PostThreadMessage (active_app().quit_thread_id, WM_PRIVATE_UNREGISTER_HOTKEY, 0, 0);
           q_enable = 0;
         }
     }
@@ -468,7 +554,7 @@ public:
 inline Window *
 selected_window ()
 {
-  return app.active_frame.selected;
+  return active_app().active_frame.selected;
 }
 
 inline Buffer *
@@ -482,7 +568,7 @@ inline HWND
 get_active_window ()
 {
   HWND hwnd = GetActiveWindow ();
-  return hwnd ? hwnd : app.toplev;
+  return hwnd ? hwnd : active_app().toplev;
 }
 
 inline
@@ -558,13 +644,13 @@ class save_cursor_depth
 {
   int odepth;
 public:
-  save_cursor_depth () : odepth (app.wait_cursor_depth) {}
+  save_cursor_depth () : odepth (active_app().wait_cursor_depth) {}
   ~save_cursor_depth ()
     {
       if (!odepth)
         end_wait_cursor (1);
       else
-        app.wait_cursor_depth = odepth;
+        active_app().wait_cursor_depth = odepth;
     }
 };
 

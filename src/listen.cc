@@ -73,7 +73,7 @@ init_listen_server ()
 {
   hevent_listen = CreateEvent (0, 1, 0, 0);
   if (hevent_listen)
-    SetProp (app.toplev, xyzzysrv_name, hevent_listen);
+    SetProp (active_app().toplev, xyzzysrv_name, hevent_listen);
   wm_private_xyzzysrv = RegisterWindowMessage (xyzzysrv_name);
 }
 
@@ -92,7 +92,7 @@ end_listen_server ()
       SetEvent (hevent_listen);
       CloseHandle (hevent_listen);
       hevent_listen = 0;
-      RemoveProp (app.toplev, xyzzysrv_name);
+      RemoveProp (active_app().toplev, xyzzysrv_name);
     }
 }
 
@@ -151,7 +151,7 @@ read_listen_server (WPARAM wparam, LPARAM lparam)
                 {
                   param->pid = GetCurrentProcessId ();
                   param->hevent = xwait_object_hevent (obj);
-                  param->hwnd = app.toplev;
+                  param->hwnd = active_app().toplev;
                 }
               r = 1;
             }
