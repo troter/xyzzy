@@ -853,14 +853,6 @@ gc_mark_object ()
       gc_mark_object (lp->lex_frame);
     }
 
-  Window *wp;
-  for (wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
-    gc_mark_object (wp->lwp);
-  for (wp = active_app_frame().active_frame.reserved; wp; wp = wp->w_next)
-    gc_mark_object (wp->lwp);
-  for (wp = active_app_frame().active_frame.deleted; wp; wp = wp->w_next)
-    gc_mark_object (wp->lwp);
-
   Buffer *bp;
   for (bp = Buffer::b_blist; bp; bp = bp->b_next)
     {
@@ -872,7 +864,6 @@ gc_mark_object ()
 
   toplev_gc_mark (gc_mark_object);
   process_gc_mark (gc_mark_object);
-  g_frame.gc_mark (gc_mark_object);
   app_frame_gc_mark(gc_mark_object);
 
   gc_mark_in_stack ();
@@ -2692,7 +2683,7 @@ Fdump_xyzzy (lisp filename)
   if (!filename || filename == Qnil)
     {
       filename = xsymbol_value (Qdump_image_path);
-      path = active_app_frame().dump_image;
+	  path = g_app.dump_image;
     }
   else
     {
@@ -2809,7 +2800,7 @@ static int dump_flag;
 int
 rdump_xyzzy ()
 {
-  FILE *fp = _fsopen (active_app_frame().dump_image, "rb", _SH_DENYWR);
+  FILE *fp = _fsopen (g_app.dump_image, "rb", _SH_DENYWR);
   if (!fp)
     return 0;
 

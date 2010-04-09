@@ -835,6 +835,7 @@ static symbols sys[] =
   /* init.cc */
   SI_DEFVAR2 (*command-line-args*),
   SI_DEFUN3 (*startup, 0, 0, 0),
+  SI_DEFUN3 (*startup-frame, 0, 0, 0),
 
   /* toplev.cc */
   SI_DEFUN3 (*minibuffer-message, 1, 1, 0),

@@ -3639,7 +3639,7 @@ refresh_screen (int f)
   if (active_app_frame().active_frame.windows_moved)
     Window::move_all_windows ();
 
-  if (g_frame.modified ())
+  if (active_main_frame().modified ())
     recalc_toplevel ();
 
   lisp lmenu = (win32_menu_p (selected_buffer ()->lmenu)
@@ -3688,7 +3688,7 @@ refresh_screen (int f)
   if (f)
     {
       bp = selected_buffer ();
-      g_frame.update_ui ();
+      active_main_frame().update_ui ();
       bp->change_ime_mode ();
       bp->set_frame_title (update_title_bar);
       bp->dlist_add_head ();

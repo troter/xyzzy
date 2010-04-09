@@ -42,6 +42,6 @@ public:
   virtual void recalc_layout () {recalc_toplevel ();}
 };
 
-extern main_frame g_frame;
+extern main_frame &active_main_frame();
 
 #endif /* _mainframe_h_ */

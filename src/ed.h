@@ -302,6 +302,7 @@ make_win32_dde_handle ()
 
 struct Window;
 struct Buffer;
+class main_frame;
 
 # include "process.h"
 # include "dll.h"
@@ -402,7 +403,7 @@ class ApplicationFrame
 {
 public:
   ApplicationFrame ();
-  // ~ApplicationFrame();
+  ~ApplicationFrame();
 
   HINSTANCE hinst;
   HWND toplev;
@@ -451,8 +452,6 @@ public:
   UINT default_caret_blink_time;
   int last_blink_caret;
 
-  char dump_image[PATH_MAX + 8];
-
   lisp lquit_char;
   int quit_vkey;
   int quit_mod;
@@ -461,6 +460,7 @@ public:
   int minibuffer_prompt_column;
 
   utimer user_timer;
+  main_frame* mframe;
 
   ApplicationFrame *a_next;
   lisp lfp;
@@ -482,6 +482,7 @@ public:
 
   itimer gc_itimer;
 
+  char dump_image[PATH_MAX + 8];
   char *ini_file_path;
 
   void *initial_stack;

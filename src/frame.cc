@@ -1,4 +1,5 @@
 #include "ed.h"
+#include "mainframe.h"
 
 
 ApplicationFrame::ApplicationFrame ()
@@ -27,13 +28,19 @@ ApplicationFrame::ApplicationFrame ()
   quit_vkey = 'G';
   quit_mod = MOD_CONTROL;
   minibuffer_prompt_column = -1;
+  mframe = new main_frame();
 
   memset((void*)&active_frame, 0, sizeof(active_frame));
   a_next = 0;
 }
 
+ApplicationFrame::~ApplicationFrame ()
+{
+	mframe->cleanup();
+	delete mframe;
+}
 
-// ApplicationFrame g_appf;
+
 ApplicationFrame *root = NULL;
 
 static void inline ensure_root()
@@ -48,6 +55,12 @@ ApplicationFrame& active_app_frame()
 {
 	ensure_root();
 	return *root;
+}
+
+main_frame& active_main_frame()
+{
+	ensure_root();
+	return *root->mframe;
 }
 
 ApplicationFrame *default_app_frame() { ensure_root(); return root; }
@@ -65,6 +78,17 @@ void app_frame_gc_mark(void (*f)(lisp))
 {
   for(ApplicationFrame *app1 = root; app1; app1 = app1->a_next)
   {
+	  Window *wp;
+	  for (wp = app1->active_frame.windows; wp; wp = wp->w_next)
+		(*f) (wp->lwp);
+	  for (wp = app1->active_frame.reserved; wp; wp = wp->w_next)
+		(*f) (wp->lwp);
+	  for (wp = app1->active_frame.deleted; wp; wp = wp->w_next)
+		(*f) (wp->lwp);
+
+	  app1->mframe->gc_mark(f);
+
+
 	  (*f)(app1->lfp);
       app1->user_timer.gc_mark (f);
   }

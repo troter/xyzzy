@@ -636,6 +636,7 @@
 (si::defun-builtin buffer-size (&optional buffer))
 (si::defun-builtin buffer-lines (&optional buffer))
 (si::defun-builtin create-new-buffer (name))
+(si::defun-builtin make-frame (name))
 (si::defun-builtin selected-buffer ())
 (si::defun-builtin deleted-buffer-p (buffer))
 (si::defun-builtin get-next-buffer (&optional buffer reverse tab-order internal))

@@ -316,10 +316,10 @@ user_tool_bar::create (lisp bitmap, lisp items)
 lisp
 Fcreate_tool_bar (lisp name, lisp bitmap, lisp items)
 {
-  if (g_frame.find (name))
+  if (active_main_frame().find (name))
     FEsimple_error (Etoolbar_exist, name);
 
-  user_tool_bar *bar = new user_tool_bar (g_frame, name);
+  user_tool_bar *bar = new user_tool_bar (active_main_frame(), name);
 
   try
     {
@@ -331,7 +331,7 @@ Fcreate_tool_bar (lisp name, lisp bitmap, lisp items)
       throw;
     }
 
-  g_frame.add (bar);
+  active_main_frame().add (bar);
   return name;
 }
 
@@ -348,20 +348,20 @@ Fshow_tool_bar (lisp name, lisp ledge, lisp lx, lisp ly, lisp lw)
   else if (ledge == Kbottom)
     edge = dock_frame::EDGE_BOTTOM;
 
-  dock_bar *bar = g_frame.find (name);
+  dock_bar *bar = active_main_frame().find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
 
   int w = lw && lw != Qnil ? fixnum_value (lw) : -1;
 
   if (!lx || !ly || lx == Qnil || ly == Qnil)
-    g_frame.show (bar, edge, 0, w);
+    active_main_frame().show (bar, edge, 0, w);
   else
     {
       POINT p;
       p.x = fixnum_value (lx);
       p.y = fixnum_value (ly);
-      g_frame.show (bar, edge, &p, w);
+      active_main_frame().show (bar, edge, &p, w);
     }
 
   return Qt;
@@ -392,7 +392,7 @@ edge_sym (int edge)
 lisp
 Fhide_tool_bar (lisp name)
 {
-  dock_bar *bar = g_frame.find (name);
+  dock_bar *bar = active_main_frame().find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
 
@@ -400,7 +400,7 @@ Fhide_tool_bar (lisp name)
   int edge = bar->edge ();
   int w = bar->horz_width ();
 
-  g_frame.hide (bar);
+  active_main_frame().hide (bar);
 
   multiple_value::value (1) = make_fixnum (r.left);
   multiple_value::value (2) = make_fixnum (r.top);
@@ -412,23 +412,23 @@ Fhide_tool_bar (lisp name)
 lisp
 Fdelete_tool_bar (lisp name)
 {
-  dock_bar *bar = g_frame.find (name);
+  dock_bar *bar = active_main_frame().find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
-  g_frame.remove (bar);
+  active_main_frame().remove (bar);
   return Qt;
 }
 
 lisp
 Ftool_bar_exist_p (lisp name)
 {
-  return boole (g_frame.find (name));
+  return boole (active_main_frame().find (name));
 }
 
 lisp
 Ftool_bar_info (lisp name)
 {
-  dock_bar *bar = g_frame.find (name);
+  dock_bar *bar = active_main_frame().find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
 
@@ -444,18 +444,18 @@ Ftool_bar_info (lisp name)
 lisp
 Flist_tool_bars ()
 {
-  return g_frame.list_bars ();
+  return active_main_frame().list_bars ();
 }
 
 lisp
 Ffocus_tool_bar ()
 {
-  return boole (g_frame.focus_next (0));
+  return boole (active_main_frame().focus_next (0));
 }
 
 lisp
 Frefresh_tool_bars ()
 {
-  g_frame.refresh ();
+  active_main_frame().refresh ();
   return Qt;
 }

@@ -436,7 +436,7 @@ Process::terminated (int exit_code)
     if (wp->w_bufp == p_bufp)
       {
         refresh_screen (0);
-        g_frame.update_ui ();
+        active_main_frame().update_ui ();
         break;
       }
 }

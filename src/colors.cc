@@ -82,5 +82,5 @@ modify_misc_colors (const XCOLORREF *colors, int save)
     }
 
   Filer::modify_colors ();
-  g_frame.color_changed ();
+  active_main_frame().color_changed ();
 }

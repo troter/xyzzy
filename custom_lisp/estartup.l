@@ -164,3 +164,36 @@
 	    (funcall *initial-buffer-mode*)))))
     (trap-errors (process-command-line))
     (trap-errors (run-hooks '*post-startup-hook*))))
+
+
+(defun startup-frame ()
+;  (trap-errors (init-misc-objects))
+  (trap-errors (init-pseudo-frame))
+  (trap-errors (run-hooks '*pre-startup-hook*))
+  (let (no-init-file
+	(cl (car si:*command-line-args*)))
+;    (when (or (equal cl "-q")
+;	      (equal cl "-no-init-file"))
+;      (setq no-init-file t)
+;      (pop si:*command-line-args*))
+;    (when *convert-registry-to-file-p*
+;      (ignore-errors (load-history-file-compat)))
+;    (unless no-init-file
+;      (trap-errors
+;	(let ((*loading-user-initial-file* t))
+;	  (load (namestring (if (file-system-supports-long-file-name-p "~/")
+;				"~/.xyzzy" "~/_xyzzy"))
+;		:if-does-not-exist nil :verbose nil :print nil)))
+;      (unless *inhibit-history-load*
+;	(ignore-errors (load-history-file))))
+;    (ignore-errors (keep-compatibility))
+    (ignore-errors (init-app-menus))
+    (ignore-errors (init-misc-options))
+    (trap-errors
+      (let ((scratch (find-buffer "*scratch*")))
+	(when scratch
+	  (save-excursion
+	    (set-buffer scratch)
+	    (funcall *initial-buffer-mode*)))))
+    (trap-errors (process-command-line))
+    (trap-errors (run-hooks '*post-startup-hook*))))

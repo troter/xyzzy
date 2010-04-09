@@ -229,10 +229,10 @@ init_user_inifile_path (const char *ini_file)
 static void
 init_dump_path ()
 {
-  if (!*active_app_frame().dump_image)
+  if (!*g_app.dump_image)
     {
-      int l = GetModuleFileName (0, active_app_frame().dump_image, PATH_MAX);
-      char *e = active_app_frame().dump_image + l;
+      int l = GetModuleFileName (0, g_app.dump_image, PATH_MAX);
+      char *e = g_app.dump_image + l;
       if (l > 4 && !_stricmp (e - 4, ".exe"))
         e -= 3;
       else
@@ -245,7 +245,7 @@ static void
 init_env_symbols (const char *config_path, const char *ini_file)
 {
   xsymbol_value (Vfeatures) = xcons (Kxyzzy, xcons (Kieee_floating_point, Qnil));
-  xsymbol_value (Qdump_image_path) = make_path (active_app_frame().dump_image, 0);
+  xsymbol_value (Qdump_image_path) = make_path (g_app.dump_image, 0);
   init_module_dir ();
   init_current_dir ();
   init_environ ();
@@ -545,17 +545,17 @@ static int
 init_lisp_objects ()
 {
   const char *config_path = 0, *ini_file = 0;
-  *active_app_frame().dump_image = 0;
+  *g_app.dump_image = 0;
 
   int ac;
   for (ac = 1; ac < __argc - 1; ac += 2)
     if (!strcmp (__argv[ac], "-image"))
       {
         char *tem;
-        int l = WINFS::GetFullPathName (__argv[ac + 1], sizeof active_app_frame().dump_image,
-                                        active_app_frame().dump_image, &tem);
-        if (!l || l >= sizeof active_app_frame().dump_image)
-          *active_app_frame().dump_image = 0;
+        int l = WINFS::GetFullPathName (__argv[ac + 1], sizeof g_app.dump_image,
+                                        g_app.dump_image, &tem);
+        if (!l || l >= sizeof g_app.dump_image)
+          *g_app.dump_image = 0;
       }
     else if (!strcmp (__argv[ac], "-config"))
       config_path = __argv[ac + 1];
@@ -617,6 +617,12 @@ lisp
 Fsi_startup ()
 {
   return Fsi_load_library (make_string ("startup"), Qnil);
+}
+
+lisp
+Fsi_startup_frame()
+{
+	return Fsi_load_library (make_string("fstartup"), Qnil);
 }
 
 static int
@@ -936,6 +942,15 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1)
   if (!init_editor_objects (app1))
     return 0;
 
+  try
+  {
+	Ffuncall (Ssi_startup_frame, Qnil);
+  }
+  catch (nonlocal_jump &)
+  {
+	print_condition (nonlocal_jump::data());
+  }
+
   return 1;
 }
 
@@ -1031,7 +1046,7 @@ WinMain (HINSTANCE hinst, HINSTANCE, LPSTR, int cmdshow)
         delete wp;
       }
 
-    g_frame.cleanup ();
+    // active_main_frame().cleanup ();
 
     fflush (stdout);
     fflush (stderr);

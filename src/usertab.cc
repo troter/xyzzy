@@ -314,7 +314,7 @@ user_tab_bar::list_items ()
 user_tab_bar *
 user_tab_bar::check_bar (lisp name)
 {
-  dock_bar *bar = g_frame.find (name);
+  dock_bar *bar = active_main_frame().find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
   if (bar->ident () != (void *)&u_ident)
@@ -325,10 +325,10 @@ user_tab_bar::check_bar (lisp name)
 lisp
 Fcreate_tab_bar (lisp name, lisp callback)
 {
-  if (g_frame.find (name))
+  if (active_main_frame().find (name))
     FEsimple_error (Etoolbar_exist, name);
 
-  user_tab_bar *bar = new user_tab_bar (g_frame, name, callback);
+  user_tab_bar *bar = new user_tab_bar (active_main_frame(), name, callback);
 
   try
     {
@@ -340,7 +340,7 @@ Fcreate_tab_bar (lisp name, lisp callback)
       throw;
     }
 
-  g_frame.add (bar);
+  active_main_frame().add (bar);
   return name;
 }
 

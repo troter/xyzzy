@@ -198,11 +198,11 @@ buffer_bar::make_instance ()
 {
   if (!b_bar)
     {
-      b_bar = new buffer_bar (g_frame);
+      b_bar = new buffer_bar (active_main_frame());
       if (!b_bar->create (active_app_frame().toplev))
         return 0;
       b_bar->insert_buffers ();
-      g_frame.add (b_bar);
+      active_main_frame().add (b_bar);
     }
   return 1;
 }

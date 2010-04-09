@@ -507,20 +507,20 @@ pane::set_pos (int flags)
 XPIHANDLE WINAPI
 xpiCreatePane (HWND hwnd, int cx, int cy, DWORD flags)
 {
-  return (XPIHANDLE)g_frame.m_splitter.create_pane (hwnd, cx, cy, flags);
+  return (XPIHANDLE)active_main_frame().m_splitter.create_pane (hwnd, cx, cy, flags);
 }
 
 BOOL WINAPI
 xpiSetPaneSize (XPIHANDLE h, int size, int min, int max, int step)
 {
-  pane *p = g_frame.m_splitter.find_pane (h);
+  pane *p = active_main_frame().m_splitter.find_pane (h);
   return p ? p->set_size (size, min, max, step) : 0;
 }
 
 BOOL WINAPI
 xpiSetPanePos (XPIHANDLE h, DWORD flags)
 {
-  pane *p = g_frame.m_splitter.find_pane (h);
+  pane *p = active_main_frame().m_splitter.find_pane (h);
   return p ? p->set_pos (flags) : 0;
 }
 

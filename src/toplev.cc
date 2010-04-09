@@ -14,7 +14,6 @@
 text_drop_target tdropt;
 #endif
 
-main_frame g_frame;
 mouse_wheel g_wheel;
 
 static u_int __stdcall
@@ -242,7 +241,7 @@ resize_toplevel (int cx, int cy)
       ShowWindow (active_app_frame().active_frame.fnkey->hwnd (), SW_HIDE);
     }
 
-  g_frame.resize (r, hwnd_before);
+  active_main_frame().resize (r, hwnd_before);
 }
 
 void
@@ -613,7 +612,7 @@ toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
   if (!app1->active_frame.hwnd)
     return -1;
 
-  g_frame.init (hwnd, app1->active_frame.hwnd);
+  app1->mframe->init(hwnd, app1->active_frame.hwnd);
   app1->user_timer.init (hwnd);
 
   DragAcceptFiles (hwnd, 1);
@@ -692,18 +691,18 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       }
 
     case WM_LBUTTONDOWN:
-      g_frame.lbtn_down (lparam);
+		app1->mframe->lbtn_down(lparam);
       return 0;
 
     case WM_PARENTNOTIFY:
       if (LOWORD (wparam) == WM_DESTROY)
-        g_frame.child_destroy (HWND (lparam));
+        app1->mframe->child_destroy (HWND (lparam));
       break;
 
     case WM_NOTIFY:
       {
         LRESULT result = 0;
-        if (g_frame.notify ((NMHDR *)lparam, result))
+        if (app1->mframe->notify ((NMHDR *)lparam, result))
           return result;
         break;
       }
@@ -740,7 +739,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     /*case WM_SETTINGCHANGE:*/
       Ctl3d::ini_change ();
       sysdep.load_settings ();
-      g_frame.reload_settings ();
+      app1->mframe->reload_settings ();
       {
         RECT or, nr;
         GetClientRect (app1->hwnd_sw, &or);
@@ -1083,7 +1082,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           SetCursor (sysdep.hcur_wait);
           return 1;
         }
-      else if (g_frame.set_cursor (hwnd, wparam, lparam))
+      else if (app1->mframe->set_cursor (hwnd, wparam, lparam))
         return 1;
       break;
 
@@ -1111,7 +1110,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     case WM_DRAWITEM:
       if (app1->status_window.paint ((DRAWITEMSTRUCT *)lparam)
-          || g_frame.draw_item ((DRAWITEMSTRUCT *)lparam))
+          || app1->mframe->draw_item ((DRAWITEMSTRUCT *)lparam))
         return 1;
       break;
 
@@ -1523,7 +1522,7 @@ dispatch (lChar cc)
       if (c >= MENU_ID_RANGE_MIN && c < MENU_ID_RANGE_MAX)
         command = lookup_menu_command (c);
       else if (c >= TOOL_ID_RANGE_MIN && c < TOOL_ID_RANGE_MAX)
-        command = g_frame.lookup_command (c);
+        command = active_main_frame().lookup_command (c);
       else
         return Qt;
       if (command == Qnil)
