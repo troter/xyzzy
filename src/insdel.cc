@@ -367,6 +367,8 @@ Buffer::move_gap (Point &w_point, int requested)
   return allocate_new_chunks (w_point, requested);
 }
 
+extern ApplicationFrame *first_app_frame();
+
 void
 Buffer::adjust_insertion (const Point &point, int size)
 {
@@ -400,20 +402,21 @@ Buffer::adjust_insertion (const Point &point, int size)
       ADJINS (xmarker_point (x));
     }
 
-  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
-    if (wp->w_bufp == this)
-      {
-        ADJINS (wp->w_point.p_point);
-        if (&wp->w_point != &point)
-          set_point_no_restrictions (wp->w_point, wp->w_point.p_point);
-        ADJINS (wp->w_mark);
-        ADJINS (wp->w_selection_point);
-        ADJINS (wp->w_selection_marker);
-        ADJINS (wp->w_reverse_region.p1);
-        ADJINS (wp->w_reverse_region.p2);
-        ADJINS (wp->w_disp);
-        ADJINS (wp->w_last_disp);
-      }
+  for (ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
+	  for (Window *wp = app1->active_frame.windows; wp; wp = wp->w_next)
+		if (wp->w_bufp == this)
+		  {
+			ADJINS (wp->w_point.p_point);
+			if (&wp->w_point != &point)
+			  set_point_no_restrictions (wp->w_point, wp->w_point.p_point);
+			ADJINS (wp->w_mark);
+			ADJINS (wp->w_selection_point);
+			ADJINS (wp->w_selection_marker);
+			ADJINS (wp->w_reverse_region.p1);
+			ADJINS (wp->w_reverse_region.p2);
+			ADJINS (wp->w_disp);
+			ADJINS (wp->w_last_disp);
+		  }
 
   for (WindowConfiguration *wc = WindowConfiguration::wc_chain;
        wc; wc = wc->wc_prev)

@@ -63,7 +63,7 @@ main_frame& active_main_frame()
 	return *root->mframe;
 }
 
-ApplicationFrame *default_app_frame() { ensure_root(); return root; }
+ApplicationFrame *first_app_frame() { ensure_root(); return root; }
 
 
 ApplicationFrame* retrieve_app_frame(HWND hwnd)
@@ -93,6 +93,18 @@ void app_frame_gc_mark(void (*f)(lisp))
       app1->user_timer.gc_mark (f);
   }
 }
+
+// this needs all appframe, so implement in this file.
+void
+Window::modify_all_mode_line ()
+{
+  for(ApplicationFrame *app1 = root; app1; app1 = app1->a_next)
+  {
+	  for (Window *wp = app1->active_frame.windows; wp; wp = wp->w_next)
+		wp->w_disp_flags |= WDF_MODELINE;
+  }
+}
+
 
 
 void insert_app_frame(HWND hwnd, ApplicationFrame *app1)

@@ -599,7 +599,7 @@ init_editor_objects (ApplicationFrame* app1)
 {
   try
     {
-      Window::create_default_windows ();
+      Window::create_default_windows (app1);
       create_default_buffers ();
     }
   catch (nonlocal_jump &)
@@ -647,7 +647,7 @@ register_wndclasses (HINSTANCE hinst)
   wc.style = 0;
   wc.lpfnWndProc = frame_wndproc;
   wc.cbClsExtra = 0;
-  wc.cbWndExtra = 0;
+  wc.cbWndExtra = sizeof(ApplicationFrame*);
   wc.hInstance = hinst;
   wc.hIcon = 0;
   wc.hCursor = sysdep.hcur_arrow;

@@ -150,7 +150,7 @@ set_current_cursor ()
 {
   POINT p;
   GetCursorPos (&p);
-  set_current_cursor (Window::find_scr_point_window (p, 0, 0));
+  set_current_cursor (Window::find_scr_point_window (&active_app_frame(), p, 0, 0));
 }
 
 lisp
@@ -265,7 +265,7 @@ do_dnd (HDROP hdrop)
       else
         {
           ClientToScreen (active_app_frame().toplev, &pt);
-          wp = Window::find_scr_point_window (pt, 1, 0);
+          wp = Window::find_scr_point_window (&active_app_frame(), pt, 1, 0);
         }
 
       if (wp)
@@ -383,7 +383,7 @@ ime_open_status (HWND hwnd)
                            ? kbd_queue::IME_MODE_ON
                            : kbd_queue::IME_MODE_OFF);
       active_app_frame().kbdq.gime.ImmReleaseContext (hwnd, imc);
-      Window::update_last_caret ();
+      Window::update_last_caret (&active_app_frame());
       PostMessage (hwnd, WM_PRIVATE_IME_MODE, 0, 0);
     }
 }
@@ -584,8 +584,8 @@ toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
   if (!app1->hwnd_sw)
     return -1;
 
-  app1->stat_area.init (active_app_frame().hwnd_sw);
-  app1->status_window.set (active_app_frame().hwnd_sw);
+  app1->stat_area.init (app1->hwnd_sw);
+  app1->status_window.set (app1->hwnd_sw);
 
   try
     {
@@ -608,7 +608,7 @@ toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                                         (WS_VISIBLE | WS_CHILD
                                          | WS_CLIPCHILDREN | WS_CLIPSIBLINGS),
                                         0, 0, 0, 0,
-                                        hwnd, 0, app1->hinst, 0);
+                                        hwnd, 0, app1->hinst, app1);
   if (!app1->active_frame.hwnd)
     return -1;
 
@@ -624,7 +624,7 @@ toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
   return 0;
 }
 
-extern ApplicationFrame *default_app_frame();
+extern ApplicationFrame *first_app_frame();
 extern void notify_focus(ApplicationFrame *app1);
 extern bool is_last_app_frame();
 extern void delete_app_frame(ApplicationFrame *app1);
@@ -640,7 +640,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
   ApplicationFrame *app1 = retrieve_app_frame(hwnd);
   if(app1 == NULL)
-    app1 = default_app_frame();
+    app1 = first_app_frame();
   else if(app1 == (ApplicationFrame*)1)
 	return DefWindowProc (hwnd, msg, wparam, lparam);
   switch (msg)
@@ -726,7 +726,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       Ctl3d::color_change ();
       Window::init_colors ();
       reload_caret_colors ();
-      Window::update_last_caret ();
+      Window::update_last_caret (app1);
       SendMessage (app1->hwnd_sw, msg, wparam, lparam);
       break;
 
@@ -794,7 +794,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       app1->active_frame.has_focus = 1;
       app1->kbdq.toggle_ime (app1->ime_open_mode, 0);
       set_caret_blink_time ();
-      Window::update_last_caret ();
+      Window::update_last_caret (app1);
       app1->active_frame.fnkey->update_vkey (0);
       return 0;
 
@@ -1131,7 +1131,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       if (xsymbol_value (Vsupport_mouse_wheel) != Qnil
           && g_wheel.msg_handler (hwnd, msg, wparam, lparam, wi))
         {
-          Window *wp = Window::find_scr_point_window (wi.wi_pt, 0, 0);
+          Window *wp = Window::find_scr_point_window (app1, wi.wi_pt, 0, 0);
           if (wp)
             wp->wheel_scroll (wi);
           return 0;
@@ -1142,6 +1142,19 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
   return app1->kbdq.gime.DefWindowProc (hwnd, msg, wparam, lparam);
 }
 
+static inline void
+set_app_frame (HWND hwnd, ApplicationFrame *app1)
+{
+  SetWindowLong (hwnd, 0, LONG (app1));
+}
+
+static inline ApplicationFrame *
+get_app_frame (HWND hwnd)
+{
+  return (ApplicationFrame *)GetWindowLong (hwnd, 0);
+}
+
+
 LRESULT CALLBACK
 frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -1151,7 +1164,10 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_CREATE:
       {
         RECT r;
-        GetClientRect (active_app_frame().toplev, &r);
+        CREATESTRUCT *cs = (CREATESTRUCT *)lparam;
+		ApplicationFrame* app1 = (ApplicationFrame*)cs->lpCreateParams;
+		set_app_frame(hwnd, app1);
+        GetClientRect (app1->toplev, &r);
         frame_rect (r.right, r.bottom, r);
         MoveWindow (hwnd, r.left, r.top, r.right - r.left, r.bottom - r.top, 0);
         return 0;
@@ -1162,7 +1178,7 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint (hwnd, &ps);
         fill_rect (hdc, ps.rcPaint, sysdep.btn_face);
-        for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+        for (Window *wp = get_app_frame(hwnd)->active_frame.windows; wp; wp = wp->w_next)
           if (wp->flags () & Window::WF_RULER)
             wp->paint_ruler (hdc);
         EndPaint (hwnd, &ps);
@@ -1170,22 +1186,22 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       }
 
     case WM_LBUTTONDOWN:
-      return Window::frame_window_resize (hwnd, lparam);
+      return Window::frame_window_resize (get_app_frame(hwnd), hwnd, lparam);
 
     case WM_SIZE:
-      if (active_app_frame().active_frame.windows)
+      if (get_app_frame(hwnd)->active_frame.windows)
         {
-          SIZE osize = active_app_frame().active_frame.size;
-          active_app_frame().active_frame.size.cx = LOWORD (lparam);
-          active_app_frame().active_frame.size.cy = HIWORD (lparam);
-          Window::compute_geometry (osize);
-          Window::move_all_windows ();
-          Window::repaint_all_windows ();
+          SIZE osize = get_app_frame(hwnd)->active_frame.size;
+          get_app_frame(hwnd)->active_frame.size.cx = LOWORD (lparam);
+          get_app_frame(hwnd)->active_frame.size.cy = HIWORD (lparam);
+          Window::compute_geometry (get_app_frame(hwnd), osize);
+          Window::move_all_windows (get_app_frame(hwnd));
+          Window::repaint_all_windows (get_app_frame(hwnd));
         }
       return 0;
 
     case WM_SETCURSOR:
-      if (Window::frame_window_setcursor (hwnd, wparam, lparam))
+      if (Window::frame_window_setcursor (get_app_frame(hwnd), hwnd, wparam, lparam))
         return 1;
       break;
 
@@ -1208,6 +1224,9 @@ get_window (HWND hwnd)
   return (Window *)GetWindowLong (hwnd, 0);
 }
 
+
+
+
 static int
 on_vedge_p (HWND hwnd, POINT &p)
 {
@@ -1229,6 +1248,13 @@ on_vedge_p (HWND hwnd)
   return on_vedge_p (hwnd, p);
 }
 
+static inline ApplicationFrame*
+get_app_frame_from_window(HWND hwnd)
+{
+  return get_window(hwnd)->w_owner;
+}
+
+
 LRESULT CALLBACK
 client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -1246,31 +1272,31 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       }
 
     case WM_VSCROLL:
-      if (GetFocus () != active_app_frame().toplev)
-        SetFocus (active_app_frame().toplev);
+      if (GetFocus () != get_app_frame(hwnd)->toplev)
+        SetFocus (get_app_frame(hwnd)->toplev);
       get_window (hwnd)->process_vscroll (LOWORD (wparam));
       return 0;
 
     case WM_HSCROLL:
-      if (GetFocus () != active_app_frame().toplev)
-        SetFocus (active_app_frame().toplev);
+      if (GetFocus () != get_app_frame(hwnd)->toplev)
+        SetFocus (get_app_frame(hwnd)->toplev);
       get_window (hwnd)->process_hscroll (LOWORD (wparam));
       return 0;
 
     case WM_LBUTTONDOWN:
-      active_app_frame().mouse.down (get_window (hwnd), wparam, lparam, MK_LBUTTON);
+      get_app_frame_from_window(hwnd)->mouse.down (get_window (hwnd), wparam, lparam, MK_LBUTTON);
       return 0;
 
     case WM_MBUTTONDOWN:
-      active_app_frame().mouse.down (get_window (hwnd), wparam, lparam, MK_MBUTTON);
+      get_app_frame_from_window(hwnd)->mouse.down (get_window (hwnd), wparam, lparam, MK_MBUTTON);
       return 0;
 
     case WM_RBUTTONDOWN:
-      active_app_frame().mouse.down (get_window (hwnd), wparam, lparam, MK_RBUTTON);
+      get_app_frame_from_window(hwnd)->mouse.down (get_window (hwnd), wparam, lparam, MK_RBUTTON);
       return 0;
 
     case WM_XBUTTONDOWN:
-      active_app_frame().mouse.down (get_window (hwnd), LOWORD (wparam), lparam,
+      get_app_frame_from_window(hwnd)->mouse.down (get_window (hwnd), LOWORD (wparam), lparam,
                       (HIWORD (wparam) == XBUTTON1
                        ? MK_XBUTTON1 : MK_XBUTTON2));
       return 0;
@@ -1280,28 +1306,28 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       if (wparam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON
                     | MK_XBUTTON1 | MK_XBUTTON2))
         set_current_cursor (wp);
-      active_app_frame().mouse.move (wp, wparam, lparam);
+      get_app_frame_from_window(hwnd)->mouse.move (wp, wparam, lparam);
       return 0;
 
     case WM_LBUTTONUP:
-      active_app_frame().mouse.up (get_window (hwnd), wparam, lparam, MK_LBUTTON);
+      get_app_frame_from_window(hwnd)->mouse.up (get_window (hwnd), wparam, lparam, MK_LBUTTON);
       return 0;
 
     case WM_MBUTTONUP:
-      active_app_frame().mouse.up (get_window (hwnd), wparam, lparam, MK_MBUTTON);
+      get_app_frame_from_window(hwnd)->mouse.up (get_window (hwnd), wparam, lparam, MK_MBUTTON);
       return 0;
 
     case WM_RBUTTONUP:
-      active_app_frame().mouse.up (get_window (hwnd), wparam, lparam, MK_RBUTTON);
+      get_app_frame_from_window(hwnd)->mouse.up (get_window (hwnd), wparam, lparam, MK_RBUTTON);
       return 0;
 
     case WM_XBUTTONUP:
-      active_app_frame().mouse.up (get_window (hwnd), LOWORD (wparam), lparam,
+      get_app_frame_from_window(hwnd)->mouse.up (get_window (hwnd), LOWORD (wparam), lparam,
                     HIWORD (wparam) == XBUTTON1 ? MK_XBUTTON1 : MK_XBUTTON2);
       return 0;
 
     case WM_CANCELMODE:
-      active_app_frame().mouse.cancel ();
+      get_app_frame_from_window(hwnd)->mouse.cancel ();
       break;
 
     case WM_ERASEBKGND:
@@ -1340,8 +1366,8 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             {
               point.x = short (LOWORD (lparam));
               point.y = short (HIWORD (lparam));
-              ScreenToClient (active_app_frame().active_frame.hwnd, &point);
-              Window::frame_window_resize (active_app_frame().active_frame.hwnd,
+              ScreenToClient (get_app_frame_from_window(hwnd)->active_frame.hwnd, &point);
+              Window::frame_window_resize (get_app_frame_from_window(hwnd), get_app_frame_from_window(hwnd)->active_frame.hwnd,
                                            MAKELONG (x - 1, point.y),
                                            &point);
               return 0;
@@ -1363,7 +1389,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_PASTE:
-      active_app_frame().kbdq.paste ();
+      get_app_frame_from_window(hwnd)->kbdq.paste ();
       break;
 
     case WM_NCMOUSEMOVE:
@@ -1374,7 +1400,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       return process_mouse_activate (lparam);
 
     case WM_SETFOCUS:
-      SetFocus (active_app_frame().toplev);
+      SetFocus (get_app_frame_from_window(hwnd)->toplev);
       return 0;
     }
 
@@ -1404,8 +1430,8 @@ modeline_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         Window *wp = get_window (hwnd);
         if (!wp)
           return 0;
-        MapWindowPoints (hwnd, active_app_frame().active_frame.hwnd, &point, 1);
-        return wp->frame_window_resize (active_app_frame().active_frame.hwnd, point, 0);
+        MapWindowPoints (hwnd, get_app_frame_from_window(hwnd)->active_frame.hwnd, &point, 1);
+        return wp->frame_window_resize (get_app_frame_from_window(hwnd)->active_frame.hwnd, point, 0);
       }
 
     case WM_PAINT:

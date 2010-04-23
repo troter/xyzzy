@@ -526,9 +526,10 @@ public:
 # include "resource.h"
 
 inline Window *
-selected_window ()
+selected_window (ApplicationFrame *owner = &active_app_frame())
 {
-  return active_app_frame().active_frame.selected;
+//  ApplicationFrame *frame = owner != 0? owner : &active_app_frame();
+  return owner->active_frame.selected;
 }
 
 inline Buffer *

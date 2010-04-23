@@ -189,7 +189,7 @@ Window::caret_size (SIZE &size) const
                                  && w_point.p_point < w_selection_marker)
                               : (w_point.p_point >= w_selection_marker
                                  && w_point.p_point < w_selection_point))))
-                     || active_app_frame().f_in_drop));
+                     || w_owner->f_in_drop));
 }
 
 void
@@ -214,14 +214,14 @@ Window::delete_caret ()
 }
 
 void
-Window::update_last_caret ()
+Window::update_last_caret (ApplicationFrame *owner)
 {
-  if (active_app_frame().active_frame.windows)
+  if (owner->active_frame.windows)
     {
-      if (selected_window ())
-        selected_window ()->update_caret ();
-      Window *mini = Window::minibuffer_window ();
-      if (mini && mini != selected_window ())
+      if (selected_window (owner))
+        selected_window (owner)->update_caret ();
+      Window *mini = Window::minibuffer_window (owner);
+      if (mini && mini != selected_window (owner))
         mini->update_caret ();
     }
 }
@@ -276,28 +276,28 @@ Window::update_caret () const
 {
   int show, prompt = 0;
 
-  if (active_app_frame().f_in_drop)
-    show = w_bufp && active_app_frame().drop_window == this;
-  else if (!active_app_frame().active_frame.has_focus)
+  if (w_owner->f_in_drop)
+    show = w_bufp && w_owner->drop_window == this;
+  else if (!w_owner->active_frame.has_focus)
     show = 0;
   else if (stringp (xsymbol_value (Vminibuffer_message))
            && xsymbol_value (Vminibuffer_prompt) != Qnil
-           && active_app_frame().minibuffer_prompt_column >= 0)
+           && w_owner->minibuffer_prompt_column >= 0)
     {
       show = minibuffer_window_p ();
       prompt = 1;
     }
   else
-    show = w_bufp && selected_window () == this;
+    show = w_bufp && selected_window (w_owner) == this;
 
   if (!show)
     {
-      if (active_app_frame().active_frame.has_caret == w_hwnd)
+      if (w_owner->active_frame.has_caret == w_hwnd)
         delete_caret ();
     }
   else
     {
-      COLORREF cc = (active_app_frame().ime_open_mode == kbd_queue::IME_MODE_ON
+      COLORREF cc = (w_owner->ime_open_mode == kbd_queue::IME_MODE_ON
                      ? w_colors[WCOLOR_IMECARET]
                      : w_colors[WCOLOR_CARET]);
       COLORREF bg = w_colors[WCOLOR_BACK];
@@ -306,7 +306,7 @@ Window::update_caret () const
       if (prompt)
         {
           calc_caret_shape (sz, 0, 0, 0);
-          x = active_app_frame().minibuffer_prompt_column - 1;
+          x = w_owner->minibuffer_prompt_column - 1;
           y = 0;
         }
       else
@@ -3179,7 +3179,7 @@ Window::paint_minibuffer_message (lisp string)
         g = glyph_sbchar (g, cc, 0, 0);
     }
 
-  active_app_frame().minibuffer_prompt_column = g - (*gr)->gd_cc;
+  w_owner->minibuffer_prompt_column = g - (*gr)->gd_cc;
 
   for (; g > (*gr)->gd_cc && g[-1] == ' '; g--)
     ;
@@ -3632,12 +3632,13 @@ Window::pending_refresh ()
     w_goal_column = w_column;
 }
 
+// TODO: this function seems wrong, but need drastical change to fix.
 void
 refresh_screen (int f)
 {
   Window::destroy_windows ();
   if (active_app_frame().active_frame.windows_moved)
-    Window::move_all_windows ();
+    Window::move_all_windows (&active_app_frame());
 
   if (active_main_frame().modified ())
     recalc_toplevel ();
