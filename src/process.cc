@@ -334,7 +334,7 @@ public:
   virtual void signal () = 0;
   virtual void kill () = 0;
   virtual void send (const char *, int) const = 0;
-  void insert_process_output (void *);
+  void insert_process_output (ApplicationFrame *, void *);
   lisp process_buffer () const {return p_bufp->lbp;}
   void flush_input ();
   void store_output (const Char *, int);
@@ -442,7 +442,7 @@ Process::terminated (int exit_code)
 }
 
 void
-Process::insert_process_output (void *p)
+Process::insert_process_output (ApplicationFrame *app1, void *p)
 {
   lisp lstring = 0;
   try
@@ -495,7 +495,7 @@ Process::insert_process_output (void *p)
         }
       else
         {
-          Window *wp = selected_window ();
+          Window *wp = selected_window (app1);
           if (xmarker_point (p_marker) == NO_MARK_SET)
             xmarker_point (p_marker) = p_bufp->b_contents.p2;
           int goto_tail = (wp->w_bufp == p_bufp
@@ -508,7 +508,7 @@ Process::insert_process_output (void *p)
           if (goto_tail)
             p_bufp->goto_char (wp->w_point, xmarker_point (p_marker));
           int f = 0;
-          for (wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+          for (wp = app1->active_frame.windows; wp; wp = wp->w_next)
             if (wp->w_bufp == p_bufp)
               {
                 wp->w_disp_flags |= Window::WDF_REFRAME_SCROLL;
@@ -536,10 +536,10 @@ good_process_p (const Process *pr)
 }
 
 void
-read_process_output (WPARAM wparam, LPARAM lparam)
+read_process_output (ApplicationFrame *app1, WPARAM wparam, LPARAM lparam)
 {
   if (good_process_p ((Process *)lparam))
-    ((Process *)lparam)->insert_process_output ((void *)wparam);
+    ((Process *)lparam)->insert_process_output (app1, (void *)wparam);
 }
 
 void

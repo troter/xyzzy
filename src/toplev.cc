@@ -129,7 +129,8 @@ start_quit_thread ()
 static void
 set_current_cursor (const Window *wp)
 {
-  if (active_app_frame().wait_cursor_depth)
+  ApplicationFrame *app1 = wp != NULL ? wp->w_owner : first_app_frame();
+  if (app1->wait_cursor_depth)
     SetCursor (sysdep.hcur_wait);
   else if (!wp || !wp->w_bufp)
     SetCursor (sysdep.hcur_arrow);
@@ -138,19 +139,19 @@ set_current_cursor (const Window *wp)
       POINT p;
       GetCursorPos (&p);
       ScreenToClient (wp->w_hwnd, &p);
-      int l = active_app_frame().text_font.cell ().cx / 2;
+      int l = wp->w_owner->text_font.cell ().cx / 2;
       if (wp->w_last_flags & Window::WF_LINE_NUMBER)
-        l += (Window::LINENUM_COLUMNS + 1) * active_app_frame().text_font.cell ().cx;
+        l += (Window::LINENUM_COLUMNS + 1) * wp->w_owner->text_font.cell ().cx;
       SetCursor (p.x < l ? sysdep.hcur_revarrow : sysdep.hcur_current);
     }
 }
 
 static void
-set_current_cursor ()
+set_current_cursor (ApplicationFrame *app1)
 {
   POINT p;
   GetCursorPos (&p);
-  set_current_cursor (Window::find_scr_point_window (&active_app_frame(), p, 0, 0));
+  set_current_cursor (Window::find_scr_point_window (app1, p, 0, 0));
 }
 
 lisp
@@ -166,23 +167,24 @@ Fbegin_wait_cursor ()
 }
 
 int
-end_wait_cursor (int f)
+end_wait_cursor (int f, ApplicationFrame *app1)
 {
-  if (!active_app_frame().wait_cursor_depth)
+  app1 = app1 == NULL ? &active_app_frame() : app1;
+  if (!app1->wait_cursor_depth)
     return 1;
   if (f)
-    active_app_frame().wait_cursor_depth = 0;
+    app1->wait_cursor_depth = 0;
   else
     {
-      active_app_frame().wait_cursor_depth--;
-      if (active_app_frame().wait_cursor_depth)
+      app1->wait_cursor_depth--;
+      if (app1->wait_cursor_depth)
         return 0;
     }
-  if (active_app_frame().toplevel_is_active)
+  if (app1->toplevel_is_active)
     {
-      if (GetFocus () == active_app_frame().toplev)
+      if (GetFocus () == app1->toplev)
         mouse_state::hide_cursor ();
-      set_current_cursor ();
+      set_current_cursor (app1);
     }
   return 1;
 }
@@ -203,53 +205,53 @@ Fset_cursor (lisp cur)
   else
     return Qnil;
   if (active_app_frame().toplevel_is_active)
-    set_current_cursor ();
+    set_current_cursor (&active_app_frame());
   xsymbol_value (Vcursor_shape) = cur;
   return Qt;
 }
 
 static void
-frame_rect (int w, int h, RECT &r)
+frame_rect (ApplicationFrame *app1, int w, int h, RECT &r)
 {
-  GetClientRect (active_app_frame().hwnd_sw, &r);
+  GetClientRect (app1->hwnd_sw, &r);
   r.left = 0;
   r.top = 0;
   r.right = w;
   r.bottom = h - r.bottom;
   if (Window::w_default_flags & Window::WF_FUNCTION_BAR)
-    r.bottom -= active_app_frame().active_frame.fnkey->height ();
+    r.bottom -= app1->active_frame.fnkey->height ();
 }
 
 static void
-resize_toplevel (int cx, int cy)
+resize_toplevel (ApplicationFrame *app1, int cx, int cy)
 {
   RECT r;
-  frame_rect (cx, cy, r);
+  frame_rect (app1, cx, cy, r);
   HWND hwnd_before;
   if (Window::w_default_flags & Window::WF_FUNCTION_BAR)
     {
-      hwnd_before = active_app_frame().active_frame.fnkey->hwnd ();
-      SetWindowPos (active_app_frame().active_frame.fnkey->hwnd (),
-                    active_app_frame().hwnd_sw,
+      hwnd_before = app1->active_frame.fnkey->hwnd ();
+      SetWindowPos (app1->active_frame.fnkey->hwnd (),
+                    app1->hwnd_sw,
                     0, r.bottom,
-                    cx, active_app_frame().active_frame.fnkey->height (),
+                    cx, app1->active_frame.fnkey->height (),
                     SWP_DRAWFRAME | SWP_NOACTIVATE | SWP_SHOWWINDOW);
     }
   else
     {
-      hwnd_before = active_app_frame().hwnd_sw;
-      ShowWindow (active_app_frame().active_frame.fnkey->hwnd (), SW_HIDE);
+      hwnd_before = app1->hwnd_sw;
+      ShowWindow (app1->active_frame.fnkey->hwnd (), SW_HIDE);
     }
 
-  active_main_frame().resize (r, hwnd_before);
+  app1->mframe->resize (r, hwnd_before);
 }
 
 void
-recalc_toplevel ()
+recalc_toplevel (ApplicationFrame *app1)
 {
   RECT r;
-  GetClientRect (active_app_frame().toplev, &r);
-  resize_toplevel (r.right, r.bottom);
+  GetClientRect (app1->toplev, &r);
+  resize_toplevel (app1, r.right, r.bottom);
 }
 
 static void
@@ -310,48 +312,48 @@ do_dnd (HDROP hdrop)
 }
 
 void
-set_ime_caret ()
+set_ime_caret (ApplicationFrame *app1)
 {
-  if (active_app_frame().active_frame.has_caret && active_app_frame().ime_composition)
+  if (app1->active_frame.has_caret && app1->ime_composition)
     {
-      HIMC hIMC = active_app_frame().kbdq.gime.ImmGetContext (active_app_frame().toplev);
+      HIMC hIMC = app1->kbdq.gime.ImmGetContext (app1->toplev);
       if (!hIMC)
         return;
 
       if (xsymbol_value (Vno_input_language_change_notification) != Qnil)
-        active_app_frame().kbdq.init_kbd_encoding ();
+        app1->kbdq.init_kbd_encoding ();
 
       const FontObject &font = kbd_queue::kbd_encoding_font ();
 
-      POINT pt (active_app_frame().active_frame.caret_pos);
-      MapWindowPoints (active_app_frame().active_frame.has_caret, active_app_frame().toplev, &pt, 1);
+      POINT pt (app1->active_frame.caret_pos);
+      MapWindowPoints (app1->active_frame.has_caret, app1->toplev, &pt, 1);
       pt.x += font.offset ().x;
       pt.y += font.offset ().y;
 
       RECT r;
-      int need_rect = (/*!active_app_frame().kbdq.gime.enable_p () // ‚æ‚¤‚í‚©‚ç‚ñ‚¯‚Ç‚Æ‚è‚ ‚¦‚¸(^^;
-                       ||*/ PRIMARYLANGID (active_app_frame().kbdq.kbd_langid ()) != LANG_KOREAN);
+      int need_rect = (/*!app1->kbdq.gime.enable_p () // ‚æ‚¤‚í‚©‚ç‚ñ‚¯‚Ç‚Æ‚è‚ ‚¦‚¸(^^;
+                       ||*/ PRIMARYLANGID (app1->kbdq.kbd_langid ()) != LANG_KOREAN);
       if (need_rect)
         {
-          GetClientRect (active_app_frame().active_frame.has_caret, &r);
+          GetClientRect (app1->active_frame.has_caret, &r);
 
-		  Window *wp = active_app_frame().active_frame.windows;
+		  Window *wp = app1->active_frame.windows;
           for (; wp; wp = wp->w_next)
-            if (wp->w_hwnd == active_app_frame().active_frame.has_caret)
+            if (wp->w_hwnd == app1->active_frame.has_caret)
               break;
-          r.left += active_app_frame().text_font.cell ().cx / 2;
+          r.left += app1->text_font.cell ().cx / 2;
           if (wp && wp->w_bufp)
             {
               if (wp->w_last_flags & Window::WF_LINE_NUMBER)
-                r.left += (Window::LINENUM_COLUMNS + 1) * active_app_frame().text_font.cell ().cx;
+                r.left += (Window::LINENUM_COLUMNS + 1) * app1->text_font.cell ().cx;
               if (wp->w_bufp->b_fold_columns != Buffer::FOLD_NONE)
                 {
-                  LONG t = r.left + wp->w_bufp->b_fold_columns * active_app_frame().text_font.cell ().cx;
-                  if (t > active_app_frame().active_frame.caret_pos.x)
+                  LONG t = r.left + wp->w_bufp->b_fold_columns * app1->text_font.cell ().cx;
+                  if (t > app1->active_frame.caret_pos.x)
                     r.right = min (r.right, t);
                 }
             }
-          MapWindowPoints (active_app_frame().active_frame.has_caret, active_app_frame().toplev,
+          MapWindowPoints (app1->active_frame.has_caret, app1->toplev,
                            (POINT *)&r, 2);
           pt.y = max (pt.y, r.top);
         }
@@ -359,70 +361,70 @@ set_ime_caret ()
       COMPOSITIONFORM cf;
       cf.dwStyle = CFS_POINT;
       cf.ptCurrentPos = pt;
-      active_app_frame().kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
+      app1->kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
 
       if (need_rect)
         {
           cf.dwStyle = CFS_RECT;
           cf.rcArea = r;
-          active_app_frame().kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
+          app1->kbdq.gime.ImmSetCompositionWindow (hIMC, &cf);
         }
 
-      active_app_frame().kbdq.gime.ImmSetCompositionFont (hIMC, (LOGFONT *)&font.logfont ());
-      active_app_frame().kbdq.gime.ImmReleaseContext (active_app_frame().toplev, hIMC);
+      app1->kbdq.gime.ImmSetCompositionFont (hIMC, (LOGFONT *)&font.logfont ());
+      app1->kbdq.gime.ImmReleaseContext (app1->toplev, hIMC);
     }
 }
 
 static void
-ime_open_status (HWND hwnd)
+ime_open_status (ApplicationFrame* app1, HWND hwnd)
 {
-  HIMC imc = active_app_frame().kbdq.gime.ImmGetContext (hwnd);
+  HIMC imc = app1->kbdq.gime.ImmGetContext (hwnd);
   if (imc)
     {
-      active_app_frame().ime_open_mode = (active_app_frame().kbdq.gime.ImmGetOpenStatus (imc)
+      app1->ime_open_mode = (app1->kbdq.gime.ImmGetOpenStatus (imc)
                            ? kbd_queue::IME_MODE_ON
                            : kbd_queue::IME_MODE_OFF);
-      active_app_frame().kbdq.gime.ImmReleaseContext (hwnd, imc);
-      Window::update_last_caret (&active_app_frame());
+      app1->kbdq.gime.ImmReleaseContext (hwnd, imc);
+      Window::update_last_caret (app1);
       PostMessage (hwnd, WM_PRIVATE_IME_MODE, 0, 0);
     }
 }
 
 static LPARAM
-ime_composition (HWND hwnd, LPARAM lparam)
+ime_composition (ApplicationFrame *app1, HWND hwnd, LPARAM lparam)
 {
   if (lparam & GCS_RESULTSTR)
     {
-      HIMC hIMC = active_app_frame().kbdq.gime.ImmGetContext (hwnd);
+      HIMC hIMC = app1->kbdq.gime.ImmGetContext (hwnd);
       if (!hIMC)
         return lparam;
 
       if (xsymbol_value (Vno_input_language_change_notification) != Qnil)
-        active_app_frame().kbdq.init_kbd_encoding ();
+        app1->kbdq.init_kbd_encoding ();
 
       if (xsymbol_value (Vunicode_ime) == Qnil
-          ? !(active_app_frame().kbdq.ime_property () & IME_PROP_UNICODE)
+          ? !(app1->kbdq.ime_property () & IME_PROP_UNICODE)
           : xsymbol_value (Vunicode_ime) != Qt)
         {
-          int l = active_app_frame().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, 0, 0);
+          int l = app1->kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, 0, 0);
           if (l > 0)
             {
               char *s = (char *)alloca (l + 1);
-              if (active_app_frame().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, s, l) == l)
+              if (app1->kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTSTR, s, l) == l)
                 {
-                  active_app_frame().kbdq.puts (s, l);
+                  app1->kbdq.puts (s, l);
 
                   lparam &= ~GCS_RESULTSTR;
 
-                  int rl = active_app_frame().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR, 0, 0);
+                  int rl = app1->kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR, 0, 0);
                   if (rl > 0)
                     {
                       char *rs = (char *)alloca (rl + 1);
-                      if (active_app_frame().kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR,
+                      if (app1->kbdq.gime.ImmGetCompositionString (hIMC, GCS_RESULTREADSTR,
                                                                  rs, rl) == rl)
                         {
                           s[l] = rs[rl] = 0;
-                          active_app_frame().ime_compq.push (s, l, rs, rl);
+                          app1->ime_compq.push (s, l, rs, rl);
                         }
                     }
                 }
@@ -430,14 +432,14 @@ ime_composition (HWND hwnd, LPARAM lparam)
         }
       else
         {
-          int l = active_app_frame().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, 0, 0);
+          int l = app1->kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, 0, 0);
           if (l > 0)
             {
               ucs2_t *s = (ucs2_t *)alloca (l + sizeof (ucs2_t));
-              if (active_app_frame().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, s, l) == l)
+              if (app1->kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTSTR, s, l) == l)
                 {
                   const Char *tab = 0;
-                  switch (PRIMARYLANGID (active_app_frame().kbdq.kbd_langid ()))
+                  switch (PRIMARYLANGID (app1->kbdq.kbd_langid ()))
                     {
                     case LANG_JAPANESE:
                       tab = wc2cp932_table;
@@ -449,7 +451,7 @@ ime_composition (HWND hwnd, LPARAM lparam)
                       break;
 
                     case LANG_CHINESE:
-                      switch (SUBLANGID (active_app_frame().kbdq.kbd_langid ()))
+                      switch (SUBLANGID (app1->kbdq.kbd_langid ()))
                         {
                         case SUBLANG_CHINESE_TRADITIONAL:
                         case SUBLANG_CHINESE_HONGKONG:
@@ -473,82 +475,82 @@ ime_composition (HWND hwnd, LPARAM lparam)
                       if ((!tab || (cc = tab[*sp]) == Char (-1))
                           && (cc = w2i (*sp)) == Char (-1))
                         {
-                          active_app_frame().kbdq.putc (utf16_ucs2_to_undef_pair_high (*sp));
+                          app1->kbdq.putc (utf16_ucs2_to_undef_pair_high (*sp));
                           cc = utf16_ucs2_to_undef_pair_low (*sp);
                         }
-                      active_app_frame().kbdq.putc (cc);
+                      app1->kbdq.putc (cc);
                     }
                   lparam &= ~GCS_RESULTSTR;
 
-                  int rl = active_app_frame().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR, 0, 0);
+                  int rl = app1->kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR, 0, 0);
                   if (rl > 0)
                     {
                       ucs2_t *rs = (ucs2_t *)alloca (rl + sizeof (ucs2_t));
-                      if (active_app_frame().kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR,
+                      if (app1->kbdq.gime.ImmGetCompositionStringW (hIMC, GCS_RESULTREADSTR,
                                                                   rs, rl) == rl)
                         {
                           rl /= sizeof (ucs2_t);
                           s[l] = rs[rl] = 0;
-                          active_app_frame().ime_compq.push (s, l, rs, rl, tab);
+                          app1->ime_compq.push (s, l, rs, rl, tab);
                         }
                     }
                 }
             }
         }
-      active_app_frame().kbdq.gime.ImmReleaseContext (hwnd, hIMC);
+      app1->kbdq.gime.ImmReleaseContext (hwnd, hIMC);
     }
   return lparam;
 }
 
 void
-set_caret_blink_time ()
+set_caret_blink_time (ApplicationFrame* app1)
 {
   if (xsymbol_value (Vblink_caret) == Qnil)
     {
-      if (!active_app_frame().default_caret_blink_time)
-        active_app_frame().default_caret_blink_time = GetCaretBlinkTime ();
-      if (active_app_frame().default_caret_blink_time)
+      if (!app1->default_caret_blink_time)
+        app1->default_caret_blink_time = GetCaretBlinkTime ();
+      if (app1->default_caret_blink_time)
         SetCaretBlinkTime (10000);
     }
 }
 
 void
-restore_caret_blink_time ()
+restore_caret_blink_time (ApplicationFrame *app1)
 {
-  if (active_app_frame().default_caret_blink_time)
+  if (app1->default_caret_blink_time)
     {
-      SetCaretBlinkTime (active_app_frame().default_caret_blink_time);
-      active_app_frame().default_caret_blink_time = 0;
+      SetCaretBlinkTime (app1->default_caret_blink_time);
+      app1->default_caret_blink_time = 0;
     }
 }
 
 static void
-refresh_blink_interval ()
+refresh_blink_interval (ApplicationFrame *app1)
 {
-  if (active_app_frame().ime_composition || GetFocus () != active_app_frame().toplev)
+  if (app1->ime_composition || GetFocus () != app1->toplev)
     return;
   if (xsymbol_value (Vblink_caret) == Qnil)
     {
-      set_caret_blink_time ();
-      if (active_app_frame().active_frame.has_caret)
+      set_caret_blink_time (app1);
+      if (app1->active_frame.has_caret)
         {
-          Window *wp = selected_window ();
+          Window *wp = selected_window (app1);
           if (wp)
             {
-              wp->delete_caret ();
+              wp->delete_caret (app1);
               wp->update_caret ();
             }
         }
     }
   else
-    restore_caret_blink_time ();
+    restore_caret_blink_time (app1);
 }
 
 static int
-process_mouse_activate (LPARAM lparam)
+process_mouse_activate (ApplicationFrame *app1, LPARAM lparam)
 {
   int r;
-  if (active_app_frame().toplevel_is_active
+  if (app1->toplevel_is_active
       || xsymbol_value (Veat_mouse_activate) == Qnil)
     r = MA_ACTIVATE;
   else
@@ -565,8 +567,8 @@ process_mouse_activate (LPARAM lparam)
         break;
       }
 
-  if (GetFocus () != active_app_frame().toplev)
-    SetFocus (active_app_frame().toplev);
+  if (GetFocus () != app1->toplev)
+    SetFocus (app1->toplev);
 
   return r;
 }
@@ -732,7 +734,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     case WM_INPUTLANGCHANGE:
       app1->kbdq.init_kbd_encoding (LANGID (lparam));
-      ime_open_status (hwnd);
+      ime_open_status (app1, hwnd);
       return 1;
 
     case WM_WININICHANGE:
@@ -771,7 +773,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       if (!sysdep.Win4p ())
         {
           app1->kbdq.init_kbd_encoding ();
-          ime_open_status (hwnd);
+          ime_open_status (app1, hwnd);
         }
       return 0;
 
@@ -782,26 +784,26 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       SendMessage (app1->hwnd_sw, msg, wparam, lparam);
       app1->stat_area.resize ();
       if (wparam != SIZE_MINIMIZED)
-        resize_toplevel (LOWORD (lparam), HIWORD (lparam));
+        resize_toplevel (app1, LOWORD (lparam), HIWORD (lparam));
       return 0;
 
     case WM_MOVE:
-      set_ime_caret ();
+      set_ime_caret (app1);
       break;
 
     case WM_SETFOCUS:
 	  notify_focus(app1);
       app1->active_frame.has_focus = 1;
       app1->kbdq.toggle_ime (app1->ime_open_mode, 0);
-      set_caret_blink_time ();
+      set_caret_blink_time (app1);
       Window::update_last_caret (app1);
       app1->active_frame.fnkey->update_vkey (0);
       return 0;
 
     case WM_KILLFOCUS:
       app1->active_frame.has_focus = 0;
-      restore_caret_blink_time ();
-      Window::delete_caret ();
+      restore_caret_blink_time (app1);
+      Window::delete_caret (app1);
       app1->active_frame.fnkey->update_vkey (1);
       break;
 
@@ -891,17 +893,17 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     case WM_IME_STARTCOMPOSITION:
       app1->ime_composition = 1;
-      set_ime_caret ();
+      set_ime_caret (app1);
       break;
 
     case WM_IME_NOTIFY:
       if (wparam == IMN_SETOPENSTATUS)
-        ime_open_status (hwnd);
+        ime_open_status (app1, hwnd);
       break;
 
     case WM_PRIVATE_IME_MODE:
       {
-        selected_buffer ()->safe_run_hook (Vime_mode_hook, 0);
+        selected_buffer (app1)->safe_run_hook (Vime_mode_hook, 0);
         for (Window *wp = app1->active_frame.windows; wp; wp = wp->w_next)
           if (wp->w_ime_mode_line)
             {
@@ -918,7 +920,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       return 0;
 
     case WM_IME_COMPOSITION:
-      lparam = ime_composition (hwnd, lparam);
+      lparam = ime_composition (app1, hwnd, lparam);
       break;
 
     case WM_PRIVATE_QUIT:
@@ -932,7 +934,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       }
 
     case WM_MOUSEACTIVATE:
-      return process_mouse_activate (lparam);
+      return process_mouse_activate (app1, lparam);
 
     case WM_PRIVATE_DELAYED_ACTIVATE:
       {
@@ -972,7 +974,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       return 0;
 
     case WM_PRIVATE_PROCESS_OUTPUT:
-      read_process_output (wparam, lparam);
+      read_process_output (app1, wparam, lparam);
       return 0;
 
     case WM_PRIVATE_PROCESS_TERMINATE:
@@ -994,7 +996,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           app1->stat_area.timer ();
           g_app.gc_itimer.inc ();
           app1->as_itimer.inc ();
-          refresh_blink_interval ();
+          refresh_blink_interval (app1);
           if (app1->kbdq.idlep ())
             {
               if (g_app.gc_itimer.expired (30))
@@ -1027,7 +1029,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                       app1->auto_save_count = 0;
                       app1->f_auto_save_pending = 0;
                     }
-                  end_wait_cursor (1);
+                  end_wait_cursor (1, app1);
                 }
             }
           break;
@@ -1168,7 +1170,7 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		ApplicationFrame* app1 = (ApplicationFrame*)cs->lpCreateParams;
 		set_app_frame(hwnd, app1);
         GetClientRect (app1->toplev, &r);
-        frame_rect (r.right, r.bottom, r);
+        frame_rect (app1, r.right, r.bottom, r);
         MoveWindow (hwnd, r.left, r.top, r.right - r.left, r.bottom - r.top, 0);
         return 0;
       }
@@ -1206,7 +1208,7 @@ frame_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_MOUSEACTIVATE:
-      return process_mouse_activate (lparam);
+      return process_mouse_activate (get_app_frame(hwnd), lparam);
     }
 
   return DefWindowProc (hwnd, msg, wparam, lparam);
@@ -1228,7 +1230,7 @@ get_window (HWND hwnd)
 
 
 static int
-on_vedge_p (HWND hwnd, POINT &p)
+on_vedge_p (ApplicationFrame *app1, HWND hwnd, POINT &p)
 {
   ScreenToClient (hwnd, &p);
   if (p.x >= 0)
@@ -1236,16 +1238,16 @@ on_vedge_p (HWND hwnd, POINT &p)
 
   RECT r;
   GetWindowRect (hwnd, &r);
-  MapWindowPoints (HWND_DESKTOP, active_app_frame().active_frame.hwnd, (POINT *)&r, 2);
+  MapWindowPoints (HWND_DESKTOP, app1->active_frame.hwnd, (POINT *)&r, 2);
   return r.left;
 }
 
 static int
-on_vedge_p (HWND hwnd)
+on_vedge_p (ApplicationFrame *app1, HWND hwnd)
 {
   POINT p;
   GetCursorPos (&p);
-  return on_vedge_p (hwnd, p);
+  return on_vedge_p (app1, hwnd, p);
 }
 
 static inline ApplicationFrame*
@@ -1346,7 +1348,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           return 1;
 
         case HTBORDER:
-          if (on_vedge_p (hwnd) > 0)
+          if (on_vedge_p (get_app_frame_from_window(hwnd), hwnd) > 0)
             {
               SetCursor (sysdep.hcur_sizewe);
               return 1;
@@ -1361,7 +1363,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           POINT point;
           point.x = short (LOWORD (lparam));
           point.y = short (HIWORD (lparam));
-          int x = on_vedge_p (hwnd, point);
+          int x = on_vedge_p (get_app_frame_from_window(hwnd), hwnd, point);
           if (x > 0)
             {
               point.x = short (LOWORD (lparam));
@@ -1397,7 +1399,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_MOUSEACTIVATE:
-      return process_mouse_activate (lparam);
+      return process_mouse_activate (get_app_frame_from_window(hwnd), lparam);
 
     case WM_SETFOCUS:
       SetFocus (get_app_frame_from_window(hwnd)->toplev);
@@ -1534,14 +1536,14 @@ toplev_accept_mouse_move_p ()
 }
 
 static lisp
-dispatch (lChar cc)
+dispatch (lChar cc, ApplicationFrame *app1)
 {
   lisp command;
   Char c = Char (cc);
 
   g_app.gc_itimer.reset ();
-  active_app_frame().as_itimer.reset ();
-  active_app_frame().last_cmd_tick = GetTickCount ();
+  app1->as_itimer.reset ();
+  app1->last_cmd_tick = GetTickCount ();
 
   if (cc & LCHAR_MENU)
     {
@@ -1580,9 +1582,9 @@ dispatch (lChar cc)
       command = g_map.lookup (c);
       if (!command)
         {
-          active_app_frame().keyseq.push (c, !active_app_frame().kbdq.macro_is_running ());
+          app1->keyseq.push (c, !app1->kbdq.macro_is_running ());
           Fcontinue_pre_selection ();
-          active_app_frame().kbdq.close_ime ();
+          app1->kbdq.close_ime ();
           return Qt;
         }
     }
@@ -1601,9 +1603,9 @@ run_command:
             {
               xsymbol_value (Vthis_command) = xsymbol_value (Vlast_command);
               g_map.translate (command, new_command);
-              active_app_frame().keyseq.push (c, !active_app_frame().kbdq.macro_is_running ());
+              app1->keyseq.push (c, !app1->kbdq.macro_is_running ());
               Fcontinue_pre_selection ();
-              active_app_frame().kbdq.close_ime ();
+              app1->kbdq.close_ime ();
               return Qt;
             }
           command = new_command;
@@ -1612,24 +1614,24 @@ run_command:
 
   g_map.finish ();
 
-  if (!active_app_frame().kbdq.macro_is_running ())
-    active_app_frame().status_window.clear ();
-  active_app_frame().keyseq.done (c, !active_app_frame().kbdq.macro_is_running ());
-  active_app_frame().kbdq.restore_ime ();
-  active_app_frame().kbdq.set_next_command_key ();
+  if (!app1->kbdq.macro_is_running ())
+    app1->status_window.clear ();
+  app1->keyseq.done (c, !app1->kbdq.macro_is_running ());
+  app1->kbdq.restore_ime ();
+  app1->kbdq.set_next_command_key ();
 
-  selected_buffer ()->b_ime_mode = active_app_frame().ime_open_mode;
+  selected_buffer ()->b_ime_mode = app1->ime_open_mode;
 
   if (command == Qnil)
     {
       if (!char_mouse_move_p (CCF_MOUSEMOVE))
         {
-          active_app_frame().status_window.puts (Ekey_not_bound, 1);
+          app1->status_window.puts (Ekey_not_bound, 1);
           if (xsymbol_value (Vbeep_on_warn) != Qnil)
             Fding ();
         }
-      active_app_frame().kbdq.clear ();
-      active_app_frame().kbdq.end_last_command_key ();
+      app1->kbdq.clear ();
+      app1->kbdq.end_last_command_key ();
       return Qnil;
     }
 
@@ -1645,11 +1647,11 @@ run_command:
       if (nld->type == Qexit_this_level)
         throw;
       print_condition (nonlocal_jump::data ());
-      active_app_frame().kbdq.clear ();
+      app1->kbdq.clear ();
     }
   protect_gc gcpro (result);
   selected_buffer ()->safe_run_hook (Vpost_command_hook, 1);
-  active_app_frame().kbdq.end_last_command_key ();
+  app1->kbdq.end_last_command_key ();
   erase_popup (0, 0);
   end_wait_cursor (1);
   WINFS::clear_share_cache ();
@@ -1706,7 +1708,7 @@ main_loop ()
 
       while (1)
         {
-          dispatch (c);
+          dispatch (c, &active_app_frame());
           c = active_app_frame().kbdq.peek (toplev_accept_mouse_move_p ());
           if (c == lChar_EOF)
             break;
@@ -1750,7 +1752,7 @@ execute_string (lisp string)
             lChar c = active_app_frame().kbdq.fetch (0, 0);
             if (c == lChar_EOF)
               return result;
-            result = dispatch (c);
+            result = dispatch (c, &active_app_frame());
             if (result == Qnil)
               return result;
             pending_refresh_screen ();

@@ -39,7 +39,7 @@ public:
       if (p)
         m_splitter.remove_pane (p);
     }
-  virtual void recalc_layout () {recalc_toplevel ();}
+  virtual void recalc_layout () {recalc_toplevel (&active_app_frame());}
 };
 
 extern main_frame &active_main_frame();

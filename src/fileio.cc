@@ -1359,7 +1359,8 @@ do_auto_save (int not_all, int unnamed)
       }
   if (f)
     format_message (Mauto_saving_done);
-  active_app_frame().auto_save_count = 0;
+  for(ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
+	  app1->auto_save_count = 0;
 }
 
 lisp

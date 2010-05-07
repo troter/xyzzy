@@ -491,6 +491,7 @@ public:
 };
 
 extern ApplicationFrame& active_app_frame();
+extern ApplicationFrame* first_app_frame();
 extern ApplicationFrame* retrieve_app_frame(HWND hwnd);
 extern void insert_app_frame(HWND hwnd, ApplicationFrame *app);
 extern Application g_app;
@@ -533,10 +534,10 @@ selected_window (ApplicationFrame *owner = &active_app_frame())
 }
 
 inline Buffer *
-selected_buffer ()
+selected_buffer (ApplicationFrame *app1 = &active_app_frame())
 {
-  assert (selected_window ());
-  return selected_window ()->w_bufp;
+  assert (selected_window (app1));
+  return selected_window (app1)->w_bufp;
 }
 
 inline HWND

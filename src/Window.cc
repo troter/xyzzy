@@ -2541,10 +2541,13 @@ Fset_window_flags (lisp flags)
 		}
   Window::w_default_flags = f;
   set_bgmode ();
-  if ((f ^ dflags) & Window::WF_FUNCTION_BAR)
-    recalc_toplevel ();
-  else if (recompute)
-    Window::compute_geometry (&active_app_frame());
+  for(ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
+  {
+	  if ((f ^ dflags) & Window::WF_FUNCTION_BAR)
+		recalc_toplevel (app1);
+	  else if (recompute)
+		Window::compute_geometry (app1);
+  }
   return Qt;
 }
 

@@ -487,8 +487,8 @@ struct Window
   void hide_caret () const;
   void update_caret () const;
   static void update_last_caret (ApplicationFrame* owner);
-  static void update_caret (HWND, int, int, int, int, COLORREF);
-  static void delete_caret ();
+  static void update_caret (ApplicationFrame *, HWND, int, int, int, int, COLORREF);
+  static void delete_caret (ApplicationFrame *owner);
   static void compute_geometry (ApplicationFrame* owner, const SIZE & = active_app_frame().active_frame.size,
                                 int = active_app_frame().text_font.cell ().cy);
   static void move_all_windows (ApplicationFrame* owner, int = 1);

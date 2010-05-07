@@ -203,13 +203,13 @@ Window::hide_caret () const
 }
 
 void
-Window::delete_caret ()
+Window::delete_caret (ApplicationFrame *app1)
 {
-  if (active_app_frame().active_frame.has_caret)
+  if (app1->active_frame.has_caret)
     {
       xcaret.destroy ();
-      active_app_frame().active_frame.caret_on = 0;
-      active_app_frame().active_frame.has_caret = 0;
+      app1->active_frame.caret_on = 0;
+      app1->active_frame.has_caret = 0;
     }
 }
 
@@ -227,48 +227,48 @@ Window::update_last_caret (ApplicationFrame *owner)
 }
 
 void
-Window::update_caret (HWND hwnd, int x, int y, int w, int h, COLORREF cc)
+Window::update_caret (ApplicationFrame *app1, HWND hwnd, int x, int y, int w, int h, COLORREF cc)
 {
-  int gray_caret = active_app_frame().f_in_drop;
-  if (!active_app_frame().ime_composition
-      && active_app_frame().last_blink_caret != (xsymbol_value (Vblink_caret) != Qnil))
+  int gray_caret = app1->f_in_drop;
+  if (!app1->ime_composition
+      && app1->last_blink_caret != (xsymbol_value (Vblink_caret) != Qnil))
     {
-      active_app_frame().last_blink_caret = xsymbol_value (Vblink_caret) != Qnil;
-      if (active_app_frame().last_blink_caret)
-        restore_caret_blink_time ();
+      app1->last_blink_caret = xsymbol_value (Vblink_caret) != Qnil;
+      if (app1->last_blink_caret)
+        restore_caret_blink_time (app1);
       else
-        set_caret_blink_time ();
+        set_caret_blink_time (app1);
     }
-  if (!active_app_frame().active_frame.has_caret)
+  if (!app1->active_frame.has_caret)
     {
-      active_app_frame().active_frame.has_caret = hwnd;
+      app1->active_frame.has_caret = hwnd;
       xcaret.create (hwnd, gray_caret ? HBITMAP (1) : 0, w, h, cc);
       ShowCaret (hwnd);
     }
-  else if (active_app_frame().active_frame.has_caret != hwnd
-           || w != active_app_frame().active_frame.caret_size.cx
-           || h != active_app_frame().active_frame.caret_size.cy
-           || cc != active_app_frame().active_frame.last_caret_color
-           || active_app_frame().active_frame.gray_caret != gray_caret)
+  else if (app1->active_frame.has_caret != hwnd
+           || w != app1->active_frame.caret_size.cx
+           || h != app1->active_frame.caret_size.cy
+           || cc != app1->active_frame.last_caret_color
+           || app1->active_frame.gray_caret != gray_caret)
     {
-      active_app_frame().active_frame.has_caret = hwnd;
+      app1->active_frame.has_caret = hwnd;
       xcaret.destroy ();
       xcaret.create (hwnd, gray_caret ? HBITMAP (1) : 0, w, h, cc);
       ShowCaret (hwnd);
     }
-  else if (!active_app_frame().active_frame.caret_on)
+  else if (!app1->active_frame.caret_on)
     ShowCaret (hwnd);
-  active_app_frame().active_frame.has_caret_last = hwnd;
-  active_app_frame().active_frame.last_caret_color = cc;
-  active_app_frame().active_frame.caret_on = 1;
-  active_app_frame().active_frame.caret_size.cx = w;
-  active_app_frame().active_frame.caret_size.cy = h;
-  active_app_frame().active_frame.caret_pos.x = x;
-  active_app_frame().active_frame.caret_pos.y = y;
-  active_app_frame().active_frame.gray_caret = gray_caret;
-  SetCaretPos (active_app_frame().active_frame.caret_pos.x,
-               active_app_frame().active_frame.caret_pos.y + active_app_frame().text_font.size ().cy - h);
-  set_ime_caret ();
+  app1->active_frame.has_caret_last = hwnd;
+  app1->active_frame.last_caret_color = cc;
+  app1->active_frame.caret_on = 1;
+  app1->active_frame.caret_size.cx = w;
+  app1->active_frame.caret_size.cy = h;
+  app1->active_frame.caret_pos.x = x;
+  app1->active_frame.caret_pos.y = y;
+  app1->active_frame.gray_caret = gray_caret;
+  SetCaretPos (app1->active_frame.caret_pos.x,
+               app1->active_frame.caret_pos.y + app1->text_font.size ().cy - h);
+  set_ime_caret (app1);
 }
 
 void
@@ -293,7 +293,7 @@ Window::update_caret () const
   if (!show)
     {
       if (w_owner->active_frame.has_caret == w_hwnd)
-        delete_caret ();
+        delete_caret (w_owner);
     }
   else
     {
@@ -340,7 +340,7 @@ Window::update_caret () const
       cc = GetNearestColor (hdc, cc);
       ReleaseDC (w_hwnd, hdc);
 
-      update_caret (w_hwnd, caret_xpixel (x), caret_ypixel (y),
+      update_caret (w_owner, w_hwnd, caret_xpixel (x), caret_ypixel (y),
                     sz.cx, sz.cy, cc);
     }
 }
@@ -3452,7 +3452,7 @@ Window::redraw_mode_line ()
           w_inverse_mode_line = 0;
         }
     }
-  else if (w_inverse_mode_line != (selected_window () == this))
+  else if (w_inverse_mode_line != (selected_window (w_owner) == this))
     {
       w_disp_flags |= WDF_MODELINE;
       w_inverse_mode_line ^= 1;
@@ -3641,7 +3641,7 @@ refresh_screen (int f)
     Window::move_all_windows (&active_app_frame());
 
   if (active_main_frame().modified ())
-    recalc_toplevel ();
+    recalc_toplevel (&active_app_frame());
 
   lisp lmenu = (win32_menu_p (selected_buffer ()->lmenu)
                 ? selected_buffer ()->lmenu
