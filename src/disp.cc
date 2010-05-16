@@ -3637,64 +3637,68 @@ void
 refresh_screen (int f)
 {
   Window::destroy_windows ();
-  if (active_app_frame().active_frame.windows_moved)
-    Window::move_all_windows (&active_app_frame());
+  for(ApplicationFrame *app1 = first_app_frame(); app1; app1= app1->a_next)
+  {
+	  if (app1->active_frame.windows_moved)
+		Window::move_all_windows (app1);
 
-  if (active_main_frame().modified ())
-    recalc_toplevel (&active_app_frame());
+	  if (app1->mframe->modified ())
+		recalc_toplevel (app1);
 
-  lisp lmenu = (win32_menu_p (selected_buffer ()->lmenu)
-                ? selected_buffer ()->lmenu
-                : (win32_menu_p (xsymbol_value (Vdefault_menu))
-                   ? xsymbol_value (Vdefault_menu)
-                   : Qnil));
-  if (lmenu != xsymbol_value (Vlast_active_menu))
-    {
-      if (SetMenu (active_app_frame().toplev, lmenu == Qnil ? 0 : xwin32_menu_handle (lmenu)))
-        {
-          DrawMenuBar (active_app_frame().toplev);
+	  lisp lmenu = (win32_menu_p (selected_buffer (app1)->lmenu)
+					? selected_buffer (app1)->lmenu
+					: (win32_menu_p (xsymbol_value (Vdefault_menu))
+					   ? xsymbol_value (Vdefault_menu)
+					   : Qnil));
+	  if (lmenu != xsymbol_value (Vlast_active_menu))
+		{
+		  if (SetMenu (app1->toplev, lmenu == Qnil ? 0 : xwin32_menu_handle (lmenu)))
+			{
+			  DrawMenuBar (app1->toplev);
 #ifndef WINDOWBLINDS_FIXED // WindowBlinds‘Îô
           if (lmenu == Qnil || xsymbol_value (Vlast_active_menu) == Qnil)
             {
               RECT r;
-              GetWindowRect (active_app_frame().toplev, &r);
+              GetWindowRect (app1->toplev, &r);
               int w = r.right - r.left;
               int h = r.bottom - r.top;
-              MoveWindow (active_app_frame().toplev, r.left, r.top, w - 1, h - 1, 1);
-              MoveWindow (active_app_frame().toplev, r.left, r.top, w, h, 1);
+              MoveWindow (app1->toplev, r.left, r.top, w - 1, h - 1, 1);
+              MoveWindow (app1->toplev, r.left, r.top, w, h, 1);
             }
 #endif /* WINDOWBLINDS_FIXED */
           xsymbol_value (Vlast_active_menu) = lmenu;
         }
     }
 
-  Window *wp;
-  for (wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
-    UpdateWindow (wp->w_hwnd);
+	  Window *wp;
+	  for (wp = app1->active_frame.windows; wp; wp = wp->w_next)
+		UpdateWindow (wp->w_hwnd);
 
-  int update_title_bar = 0;
-  for (wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
-    if (wp->refresh (f) && wp == selected_window ())
-      update_title_bar = 1;
+	  int update_title_bar = 0;
+	  for (wp = app1->active_frame.windows; wp; wp = wp->w_next)
+		if (wp->refresh (f) && wp == selected_window (app1))
+		  update_title_bar = 1;
 
-  active_app_frame().stat_area.update ();
+	  app1->stat_area.update ();
 
-  Buffer *bp;
-  for (bp = Buffer::b_blist; bp; bp = bp->b_next)
-    {
-      bp->b_modified_region.p1 = -1;
-      bp->b_last_narrow_depth = bp->b_narrow_depth;
-    }
+	  // TODO: this section should run only once, but I just call as many times as AppFrame num
+	  Buffer *bp;
+	  for (bp = Buffer::b_blist; bp; bp = bp->b_next)
+		{
+		  bp->b_modified_region.p1 = -1;
+		  bp->b_last_narrow_depth = bp->b_narrow_depth;
+		}
 
-  if (f)
-    {
-      bp = selected_buffer ();
-      active_main_frame().update_ui ();
-      bp->change_ime_mode ();
-      bp->set_frame_title (update_title_bar);
-      bp->dlist_add_head ();
-      Fundo_boundary ();
-    }
+	  if (f)
+		{
+		  bp = selected_buffer (app1);
+		  app1->mframe->update_ui ();
+		  bp->change_ime_mode ();
+		  bp->set_frame_title (update_title_bar);
+		  bp->dlist_add_head ();
+		  Fundo_boundary ();
+		}
+  }
 }
 
 void

@@ -1088,12 +1088,15 @@ void
 Window::destroy_windows ()
 {
   Window *wp, *next;
-  for (wp = active_app_frame().active_frame.deleted; wp; wp = next)
-    {
-      next = wp->w_next;
-      delete wp;
-    }
-  active_app_frame().active_frame.deleted = 0;
+  for (ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
+  {
+	  for (wp = app1->active_frame.deleted; wp; wp = next)
+		{
+		  next = wp->w_next;
+		  delete wp;
+		}
+	  app1->active_frame.deleted = 0;
+  }
 }
 
 void
