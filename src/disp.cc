@@ -3632,7 +3632,6 @@ Window::pending_refresh ()
     w_goal_column = w_column;
 }
 
-// TODO: this function seems wrong, but need drastical change to fix.
 void
 refresh_screen (int f)
 {
@@ -3695,7 +3694,8 @@ refresh_screen (int f)
 		  app1->mframe->update_ui ();
 		  bp->change_ime_mode ();
 		  bp->set_frame_title (update_title_bar);
-		  bp->dlist_add_head ();
+		  if(app1 == &active_app_frame())
+			  bp->dlist_add_head ();
 		  Fundo_boundary ();
 		}
   }
