@@ -914,13 +914,14 @@ Fdelete_buffer (lisp buffer)
       return Qnil;
     }
 
-  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
-    if (wp->w_bufp == bp)
-      {
-        wp->w_last_bufp = 0;
-        wp->w_bufp = 0;
-        wp->set_buffer (newbp);
-      }
+  for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+	  for (Window *wp = app->active_frame.windows; wp; wp = wp->w_next)
+		if (wp->w_bufp == bp)
+		  {
+			wp->w_last_bufp = 0;
+			wp->w_bufp = 0;
+			wp->set_buffer (newbp);
+		  }
 
   delete bp;
   return Qt;
