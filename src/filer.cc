@@ -2945,7 +2945,7 @@ vw_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 }
 
 ViewerWindow::ViewerWindow ()
-     : Window (0, 1)
+: Window (&active_app_frame(),  0, 1)
 {
   w_hwnd = 0;
   w_hwnd_ml = 0;

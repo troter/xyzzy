@@ -1709,7 +1709,15 @@ main_loop ()
       while (1)
         {
           dispatch (c, &active_app_frame());
-          c = active_app_frame().kbdq.peek (toplev_accept_mouse_move_p ());
+		  try
+		  {
+	          c = active_app_frame().kbdq.peek (toplev_accept_mouse_move_p ());
+		  }
+		  catch(std::exception)
+		  {
+			  delete_floating_app_frame();
+			  continue;
+		  }
           if (c == lChar_EOF)
             break;
           pending_refresh_screen ();
