@@ -1714,7 +1714,7 @@ static symbols ed[] =
   DEFUN3 (post-buffer-modified-hook-enabled-p, 0, 1, 0),
 
   /* frame.cc */
-  DEFUN3 (make-frame, 1, 0, 0),
+  DEFCMD3 (make-frame, 0, 1, 0, ""),
 
   /* insdel.cc */
   DEFUN3 (insert-file-contents, 1, 3, 0),
