@@ -546,6 +546,8 @@ refresh_blink_interval (ApplicationFrame *app1)
     restore_caret_blink_time (app1);
 }
 
+extern void notify_focus(ApplicationFrame *app1);
+
 static int
 process_mouse_activate (ApplicationFrame *app1, LPARAM lparam)
 {
@@ -569,6 +571,9 @@ process_mouse_activate (ApplicationFrame *app1, LPARAM lparam)
 #if 0
   if (GetFocus () != app1->toplev)
     SetFocus (app1->toplev);
+#else
+  notify_focus(app1);
+  app1->active_frame.has_focus = 1;
 #endif
 
   return r;
@@ -628,7 +633,6 @@ toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 }
 
 extern ApplicationFrame *first_app_frame();
-extern void notify_focus(ApplicationFrame *app1);
 extern bool is_last_app_frame();
 extern void delete_app_frame(ApplicationFrame *app1);
 
