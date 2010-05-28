@@ -568,13 +568,8 @@ process_mouse_activate (ApplicationFrame *app1, LPARAM lparam)
         r = MA_ACTIVATE;
         break;
       }
-#if 0
   if (GetFocus () != app1->toplev)
     SetFocus (app1->toplev);
-#else
-  notify_focus(app1);
-  app1->active_frame.has_focus = 1;
-#endif
 
   return r;
 }
