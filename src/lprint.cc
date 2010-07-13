@@ -2866,7 +2866,7 @@ Format::tabulate (wStream &stream)
         {
           if (!colinc)
             return;
-          colnum += (col - colnum + colinc - 1) / colinc * colinc;
+          colnum += (col - colnum + colinc) / colinc * colinc;
         }
       stream.fill (' ', colnum - col);
     }
