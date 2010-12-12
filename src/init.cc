@@ -770,6 +770,7 @@ static int
 init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 {
   SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+  SetDllDirectory("");
   g_app.in_gc = 0; // whatever.
   active_app_frame().toplev = 0;
 
