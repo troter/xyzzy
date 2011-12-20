@@ -3692,8 +3692,8 @@ refresh_screen (int f)
 		{
 		  bp = selected_buffer (app1);
 		  app1->mframe->update_ui ();
-		  bp->change_ime_mode ();
-		  bp->set_frame_title (update_title_bar);
+		  bp->change_ime_mode (app1);
+		  bp->set_frame_title (app1, update_title_bar);
 		  if(app1 == &active_app_frame())
 			  bp->dlist_add_head ();
 		  Fundo_boundary ();

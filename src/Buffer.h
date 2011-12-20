@@ -758,8 +758,8 @@ struct Buffer
   int unlock_file ();
   int file_locked_p () const;
 
-  void refresh_title_bar () const;
-  void set_frame_title (int);
+  void refresh_title_bar (ApplicationFrame*) const;
+  void set_frame_title (ApplicationFrame*, int);
   char *store_title (lisp, char *, char *) const;
 
   void change_colors (const XCOLORREF *);
@@ -788,7 +788,7 @@ struct Buffer
 
   void check_range (Point &) const;
 
-  void change_ime_mode ();
+  void change_ime_mode (ApplicationFrame* app);
   void upcase_region_internal (Point &, point_t);
   void downcase_region_internal (Point &, point_t);
   void capitalize_region_internal (Point &, point_t);

@@ -1289,7 +1289,7 @@ Buffer::store_title (lisp x, char *b, char *be) const
 }
 
 void
-Buffer::refresh_title_bar () const
+Buffer::refresh_title_bar (ApplicationFrame *app) const
 {
   lisp fmt = symbol_value (Vtitle_bar_format, this);
   if (stringp (fmt))
@@ -1297,7 +1297,7 @@ Buffer::refresh_title_bar () const
       char buf[512 + 10];
       buffer_info binfo (0, this, 0, 0);
       *binfo.format (fmt, buf, buf + 512) = 0;
-      SetWindowText (active_app_frame().toplev, buf);
+      SetWindowText (app->toplev, buf);
     }
   else
     {
@@ -1316,13 +1316,13 @@ Buffer::refresh_title_bar () const
       else
         store_title (x, stpcpy (stpcpy (b, TitleBarString), " - "), b + l);
 
-      SetWindowText (active_app_frame().toplev, b);
+      SetWindowText (app->toplev, b);
     }
   b_last_title_bar_buffer = 0; // 次回タイトルバーを強制的に再描画させる
 }
 
 void
-Buffer::set_frame_title (int update)
+Buffer::set_frame_title (ApplicationFrame* app, int update)
 {
   int order = xsymbol_value (Vtitle_bar_text_order) != Qnil;
   if (!internal_buffer_p ()
@@ -1331,7 +1331,7 @@ Buffer::set_frame_title (int update)
           || b_last_title_bar_buffer != this
           || b_title_bar_text_order != order))
     {
-      refresh_title_bar ();
+      refresh_title_bar (app);
       b_buffer_name_modified = 0;
       b_last_title_bar_buffer = this;
       b_title_bar_text_order = order;
@@ -1343,7 +1343,7 @@ Frefresh_title_bar ()
 {
   Buffer *bp = selected_buffer ();
   if (!bp->internal_buffer_p ())
-    bp->refresh_title_bar ();
+	  bp->refresh_title_bar (&active_app_frame());
   return Qt;
 }
 
@@ -1892,13 +1892,13 @@ Fset_kinsoku_shorten_limit (lisp lchars, lisp lbuffer)
 }
 
 void
-Buffer::change_ime_mode ()
+Buffer::change_ime_mode (ApplicationFrame* app)
 {
   if (b_last_selected_buffer != this)
     {
       b_last_selected_buffer = this;
       if (xsymbol_value (Vsave_buffer_ime_mode) != Qnil)
-        active_app_frame().kbdq.toggle_ime (b_ime_mode);
+        app->kbdq.toggle_ime (b_ime_mode);
     }
 }
 
