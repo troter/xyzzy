@@ -2486,6 +2486,9 @@ int
 Regexp::search (const Char *string, int size, int offset)
 {
   Chunk chunk;
+
+  if(size >= 0x8000)
+	  size = 0x7FFF; // c_used is short. what should I do?
   chunk.c_used = size;
   chunk.c_text = (Char *)string;
   chunk.c_prev = 0;
