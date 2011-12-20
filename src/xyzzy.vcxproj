@@ -1,0 +1,358 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{8E447303-073A-4162-A6BE-844804A90DD1}</ProjectGuid>
+    <RootNamespace>xyzzy</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>../privctrl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;STRICT;WIN32;_WIN32;_MT;__XYZZY__;PRIVCTRL_NODLL;HAVE_DIMM_H;DEBUG_GC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CallingConvention>StdCall</CallingConvention>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(ProjectDir)/zlib/zlib.lib;$(ProjectDir)/d/privctrl.obj;$(ProjectDir)/d/listviewex.obj;$(ProjectDir)/d/url.obj;comctl32.lib;imm32.lib;mpr.lib;oleaut32.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <StackReserveSize>33554432</StackReserveSize>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>../privctrl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>STRICT;WIN32;_WIN32;_MT;__XYZZY__;PRIVCTRL_NODLL;HAVE_DIMM_H;DEBUG_GC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>zlib/zlib.lib%3b;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="alloc.cc" />
+    <ClCompile Include="arc-if.cc" />
+    <ClCompile Include="archiver.cc" />
+    <ClCompile Include="array.cc" />
+    <ClCompile Include="assert.cc" />
+    <ClCompile Include="backq.cc" />
+    <ClCompile Include="bignum.cc" />
+    <ClCompile Include="binfo.cc" />
+    <ClCompile Include="buffer-bar.cc" />
+    <ClCompile Include="Buffer.cc" />
+    <ClCompile Include="byte-stream.cc" />
+    <ClCompile Include="bytecode.cc" />
+    <ClCompile Include="ces.cc" />
+    <ClCompile Include="char.cc" />
+    <ClCompile Include="chname.cc" />
+    <ClCompile Include="ChooseFont.cc" />
+    <ClCompile Include="chtab.cc" />
+    <ClCompile Include="chunk.cc" />
+    <ClCompile Include="ColorDialog.cc" />
+    <ClCompile Include="colors.cc" />
+    <ClCompile Include="com.cc" />
+    <ClCompile Include="conf.cc" />
+    <ClCompile Include="ctl3d.cc" />
+    <ClCompile Include="data.cc" />
+    <ClCompile Include="dde.cc" />
+    <ClCompile Include="dialogs.cc" />
+    <ClCompile Include="disp.cc" />
+    <ClCompile Include="dll.cc" />
+    <ClCompile Include="DnD.cc" />
+    <ClCompile Include="doc.cc" />
+    <ClCompile Include="dockbar.cc" />
+    <ClCompile Include="dumpver.cc" />
+    <ClCompile Include="edict.cc" />
+    <ClCompile Include="encdec.cc" />
+    <ClCompile Include="encoding.cc" />
+    <ClCompile Include="environ.cc" />
+    <ClCompile Include="eval.cc" />
+    <ClCompile Include="except.cc" />
+    <ClCompile Include="fileio.cc" />
+    <ClCompile Include="filer.cc" />
+    <ClCompile Include="fnkey.cc" />
+    <ClCompile Include="font.cc" />
+    <ClCompile Include="frame.cc" />
+    <ClCompile Include="gime.cc" />
+    <ClCompile Include="glob.cc" />
+    <ClCompile Include="guid.cc" />
+    <ClCompile Include="gzip.cc" />
+    <ClCompile Include="hash.cc" />
+    <ClCompile Include="hashpjw.cc" />
+    <ClCompile Include="init.cc" />
+    <ClCompile Include="insdel.cc" />
+    <ClCompile Include="ipc.cc" />
+    <ClCompile Include="kanji.cc" />
+    <ClCompile Include="kbd.cc" />
+    <ClCompile Include="keymap.cc" />
+    <ClCompile Include="largeint.cc" />
+    <ClCompile Include="ldialog.cc" />
+    <ClCompile Include="lex.cc" />
+    <ClCompile Include="list.cc" />
+    <ClCompile Include="listen.cc" />
+    <ClCompile Include="lprint.cc" />
+    <ClCompile Include="lread.cc" />
+    <ClCompile Include="md5c.cc" />
+    <ClCompile Include="menu.cc" />
+    <ClCompile Include="minibuf.cc" />
+    <ClCompile Include="mman.cc" />
+    <ClCompile Include="mouse.cc" />
+    <ClCompile Include="move.cc" />
+    <ClCompile Include="msgbox.cc" />
+    <ClCompile Include="msgdef.cc" />
+    <ClCompile Include="number.cc" />
+    <ClCompile Include="oledata.cc" />
+    <ClCompile Include="package.cc" />
+    <ClCompile Include="pane.cc" />
+    <ClCompile Include="pathname.cc" />
+    <ClCompile Include="popup.cc" />
+    <ClCompile Include="popupl.cc" />
+    <ClCompile Include="pred.cc" />
+    <ClCompile Include="preview.cc" />
+    <ClCompile Include="print.cc" />
+    <ClCompile Include="printdlg.cc" />
+    <ClCompile Include="process.cc" />
+    <ClCompile Include="random.cc" />
+    <ClCompile Include="regex.cc" />
+    <ClCompile Include="resolver.cc" />
+    <ClCompile Include="search.cc" />
+    <ClCompile Include="sequence.cc" />
+    <ClCompile Include="sha1.cc" />
+    <ClCompile Include="signal.cc" />
+    <ClCompile Include="sock.cc" />
+    <ClCompile Include="sockinet.cc" />
+    <ClCompile Include="statarea.cc" />
+    <ClCompile Include="stdctl.cc" />
+    <ClCompile Include="StrBuf.cc" />
+    <ClCompile Include="stream.cc" />
+    <ClCompile Include="string.cc" />
+    <ClCompile Include="structure.cc" />
+    <ClCompile Include="symbol.cc" />
+    <ClCompile Include="symtable.cc" />
+    <ClCompile Include="syntax.cc" />
+    <ClCompile Include="sysdep.cc" />
+    <ClCompile Include="thread.cc" />
+    <ClCompile Include="toplev.cc" />
+    <ClCompile Include="ucs2.cc" />
+    <ClCompile Include="undo.cc" />
+    <ClCompile Include="usertab.cc" />
+    <ClCompile Include="usertool.cc" />
+    <ClCompile Include="utils.cc" />
+    <ClCompile Include="utimer.cc" />
+    <ClCompile Include="vector.cc" />
+    <ClCompile Include="version.cc" />
+    <ClCompile Include="vfs.cc" />
+    <ClCompile Include="wheel.cc" />
+    <ClCompile Include="Window.cc" />
+    <ClCompile Include="winhelp.cc" />
+    <ClCompile Include="wstream.cc" />
+    <ClCompile Include="xdde.cc" />
+    <ClCompile Include="xlist.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="r\xyzzy.res" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="alloc.h" />
+    <ClInclude Include="arc-if.h" />
+    <ClInclude Include="archiver.h" />
+    <ClInclude Include="array.h" />
+    <ClInclude Include="bignum.h" />
+    <ClInclude Include="binfo.h" />
+    <ClInclude Include="buffer-bar.h" />
+    <ClInclude Include="Buffer.h" />
+    <ClInclude Include="byte-stream.h" />
+    <ClInclude Include="cdecl.h" />
+    <ClInclude Include="ces.h" />
+    <ClInclude Include="char-width.h" />
+    <ClInclude Include="char.h" />
+    <ClInclude Include="charset.h" />
+    <ClInclude Include="ChooseFont.h" />
+    <ClInclude Include="chtype.h" />
+    <ClInclude Include="chunk.h" />
+    <ClInclude Include="clock.h" />
+    <ClInclude Include="closure.h" />
+    <ClInclude Include="ColorDialog.h" />
+    <ClInclude Include="colors.h" />
+    <ClInclude Include="com.h" />
+    <ClInclude Include="comm-arc.h" />
+    <ClInclude Include="conf.h" />
+    <ClInclude Include="cons.h" />
+    <ClInclude Include="ctl3d.h" />
+    <ClInclude Include="ctxmenu.h" />
+    <ClInclude Include="data.h" />
+    <ClInclude Include="dataP.h" />
+    <ClInclude Include="dialogs.h" />
+    <ClInclude Include="dll.h" />
+    <ClInclude Include="DnD.h" />
+    <ClInclude Include="dockbar.h" />
+    <ClInclude Include="dyn-handle.h" />
+    <ClInclude Include="ed.h" />
+    <ClInclude Include="encoding.h" />
+    <ClInclude Include="environ.h" />
+    <ClInclude Include="error.h" />
+    <ClInclude Include="except.h" />
+    <ClInclude Include="filer.h" />
+    <ClInclude Include="fnkey.h" />
+    <ClInclude Include="fns-decl.h" />
+    <ClInclude Include="fns.h" />
+    <ClInclude Include="font.h" />
+    <ClInclude Include="fontrange.h" />
+    <ClInclude Include="function.h" />
+    <ClInclude Include="gime.h" />
+    <ClInclude Include="glob.h" />
+    <ClInclude Include="hash.h" />
+    <ClInclude Include="ibmext.h" />
+    <ClInclude Include="ipc.h" />
+    <ClInclude Include="iso2022state.h" />
+    <ClInclude Include="jisx0212-hash.h" />
+    <ClInclude Include="jisx0212-width.h" />
+    <ClInclude Include="kanji.h" />
+    <ClInclude Include="kanjitab.h" />
+    <ClInclude Include="kbd.h" />
+    <ClInclude Include="largeint.h" />
+    <ClInclude Include="ldialog.h" />
+    <ClInclude Include="lex.h" />
+    <ClInclude Include="lisp.h" />
+    <ClInclude Include="list.h" />
+    <ClInclude Include="listen.h" />
+    <ClInclude Include="lucida-width.h" />
+    <ClInclude Include="mainframe.h" />
+    <ClInclude Include="md5.h" />
+    <ClInclude Include="message.h" />
+    <ClInclude Include="mman.h" />
+    <ClInclude Include="mouse.h" />
+    <ClInclude Include="mousemsg.h" />
+    <ClInclude Include="msgbox.h" />
+    <ClInclude Include="msgcode.h" />
+    <ClInclude Include="msgdef.h" />
+    <ClInclude Include="num-arith.h" />
+    <ClInclude Include="number.h" />
+    <ClInclude Include="ofn.h" />
+    <ClInclude Include="oleconv.h" />
+    <ClInclude Include="oledata.h" />
+    <ClInclude Include="package.h" />
+    <ClInclude Include="pane.h" />
+    <ClInclude Include="pathname.h" />
+    <ClInclude Include="preview.h" />
+    <ClInclude Include="print.h" />
+    <ClInclude Include="printdlg.h" />
+    <ClInclude Include="process.h" />
+    <ClInclude Include="random.h" />
+    <ClInclude Include="readtab.h" />
+    <ClInclude Include="reconv.h" />
+    <ClInclude Include="regex.h" />
+    <ClInclude Include="resolver.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="safe_ptr.h" />
+    <ClInclude Include="sequence.h" />
+    <ClInclude Include="sha1.h" />
+    <ClInclude Include="signal.h" />
+    <ClInclude Include="sock.h" />
+    <ClInclude Include="sockimpl.h" />
+    <ClInclude Include="sockinet.h" />
+    <ClInclude Include="statarea.h" />
+    <ClInclude Include="StrBuf.h" />
+    <ClInclude Include="stream.h" />
+    <ClInclude Include="string.h" />
+    <ClInclude Include="structure.h" />
+    <ClInclude Include="symbol.h" />
+    <ClInclude Include="symtable.h" />
+    <ClInclude Include="syntax.h" />
+    <ClInclude Include="syntaxinfo.h" />
+    <ClInclude Include="sysdep.h" />
+    <ClInclude Include="thread.h" />
+    <ClInclude Include="timer.h" />
+    <ClInclude Include="trace.h" />
+    <ClInclude Include="ucs2tab.h" />
+    <ClInclude Include="utf2sjis.h" />
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="utimer.h" />
+    <ClInclude Include="vars-decl.h" />
+    <ClInclude Include="vector.h" />
+    <ClInclude Include="verinfo.h" />
+    <ClInclude Include="version.h" />
+    <ClInclude Include="vfs.h" />
+    <ClInclude Include="vwin32.h" />
+    <ClInclude Include="waitobj.h" />
+    <ClInclude Include="wheel.h" />
+    <ClInclude Include="Window.h" />
+    <ClInclude Include="wm.h" />
+    <ClInclude Include="wstream.h" />
+    <ClInclude Include="xcolor.h" />
+    <ClInclude Include="xdde.h" />
+    <ClInclude Include="xlist.h" />
+    <ClInclude Include="xpi.h" />
+    <ClInclude Include="xstrlist.h" />
+    <ClInclude Include="xyzzycli.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

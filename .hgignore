@@ -1,0 +1,9 @@
+syntax: glob
+_UpgradeReport_Files/
+Debug/
+UpgradeLog.XML
+ipch/
+src/Release/
+src/d/
+src/gen-*
+src/r/
