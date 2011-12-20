@@ -2924,9 +2924,9 @@ static void
 wc_restore (ApplicationFrame* owner, winconf *conf, int nwindows, const SIZE &size,
             lisp lselected_window, int curw)
 {
-  Buffer *const bp = selected_buffer ();
+  Buffer *const bp = selected_buffer (owner);
   Window *cur_wp = 0;
-  Window *odeleted = active_app_frame().active_frame.deleted;
+  Window *odeleted = owner->active_frame.deleted;
   int i;
   for (i = 0; i < nwindows; i++)
     {
