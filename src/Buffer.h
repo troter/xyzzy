@@ -52,6 +52,7 @@ struct Chunk
 {
   enum {TEXT_SIZE = 4096};
   enum {BREAKS_SIZE = (TEXT_SIZE + 7) / 8};
+  enum {SPECIAL = 0x7FFF };
   static fixed_heap c_heap;
   static fixed_heap c_breaks_heap;
   static const u_char c_breaks_mask[];
@@ -192,7 +193,7 @@ inline Char
 Point::ch () const
 {
   assert (p_chunk);
-  assert (p_offset >= 0 && p_offset < p_chunk->c_used);
+  assert (p_offset >= 0 && (p_chunk->c_used == Chunk::SPECIAL || p_offset < p_chunk->c_used));
   return p_chunk->c_text[p_offset];
 }
 
@@ -200,7 +201,7 @@ inline Char &
 Point::ch ()
 {
   assert (p_chunk);
-  assert (p_offset >= 0 && p_offset < p_chunk->c_used);
+  assert (p_offset >= 0 && (p_chunk->c_used == Chunk::SPECIAL || p_offset < p_chunk->c_used));
   return p_chunk->c_text[p_offset];
 }
 
