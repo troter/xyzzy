@@ -144,6 +144,7 @@ class print_engine
   Buffer *pe_bp;
   const printer_device &pe_dev;
   print_settings &pe_settings;
+  int b_fold_columns;
 
   Point pe_point;
   long pe_linenum;

@@ -973,8 +973,8 @@ goto_pt (const POINTL &pt)
               }
             else
               {
-                wp->w_bufp->folded_linenum_point (wp->w_point, max (1, y));
-                wp->w_bufp->folded_goto_column (wp->w_point, x, 0);
+                wp->folded_linenum_point (wp->w_point, max (1, y));
+                wp->folded_goto_column (wp->w_point, x, 0);
               }
             wp->w_bufp->check_range (wp->w_point);
             active_app_frame().drop_window = wp;

@@ -1964,7 +1964,7 @@ Window::redraw_line (glyph_data *gd, Point &point, long vlinenum, long plinenum,
   if (get_fold_columns() != Buffer::FOLD_NONE)
     {
       fold_eol = point;
-      w_bufp->folded_go_eol (fold_eol);
+      folded_go_eol (fold_eol);
       limit = min (w_bufp->b_nchars, point_t (fold_eol.p_point + 1));
     }
   else
@@ -2705,9 +2705,9 @@ Window::redraw_window (Point &p, long vlinenum, int all, int hide) const
             w_bufp->go_eol (p);
           else
 #if 0
-            w_bufp->folded_forward_column (p, get_fold_columns(), 0, 0, 0);
+            folded_forward_column (p, get_fold_columns(), 0, 0, 0);
 #else
-            w_bufp->folded_go_eol (p);
+            folded_go_eol (p);
 #endif
           if (!w_bufp->next_char (p))
             {
@@ -2855,9 +2855,22 @@ Window::folded_bol_point (point_t goal) const
 {
   Point p (w_point);
   w_bufp->goto_char (p, goal);
-  w_bufp->folded_goto_bol (p);
+  folded_goto_bol (p);
   return p.p_point;
 }
+
+long
+Window::folded_point_linenum (point_t point) const
+{
+	return w_bufp->folded_point_linenum(point, get_fold_columns());
+}
+
+long
+Window::folded_point_column (const Point &point) const
+{
+	return w_bufp->folded_point_column(point, get_fold_columns());
+}
+
 
 void
 Window::reframe ()
@@ -2865,7 +2878,7 @@ Window::reframe ()
   assert (w_bufp);
 
   if (get_fold_columns() != Buffer::FOLD_NONE)
-    w_bufp->folded_count_lines ();
+    w_bufp->folded_count_lines (get_fold_columns());
 
   Region modr = w_bufp->b_modified_region;
   if ((w_selection_type & (Buffer::CONTINUE_PRE_SELECTION
@@ -2944,7 +2957,7 @@ Window::reframe ()
                         && w_mark != NO_MARK_SET)
                        ? (get_fold_columns() == Buffer::FOLD_NONE
                           ? w_bufp->point_linenum (w_mark)
-                          : w_bufp->folded_point_linenum (w_mark))
+                          : folded_point_linenum (w_mark))
                        : -1);
   if (mark_linenum != w_last_mark_linenum)
     {
@@ -2962,8 +2975,8 @@ Window::reframe ()
         }
       else
         {
-          assert (w_linenum == w_bufp->folded_point_linenum (w_point));
-          assert (w_column == w_bufp->folded_point_column (w_point));
+          assert (w_linenum == folded_point_linenum (w_point));
+          assert (w_column == folded_point_column (w_point));
         }
 #endif
       if (w_disp_flags & WDF_GOAL_COLUMN)
@@ -2983,7 +2996,7 @@ Window::reframe ()
     }
   else
     {
-      linenum = w_bufp->folded_point_linenum_column (w_point, &column);
+      linenum = w_bufp->folded_point_linenum_column (w_point, get_fold_columns(), &column);
       w_plinenum = (w_bufp->linenum_mode () == Buffer::LNMODE_LF
                     ? w_bufp->point_linenum (w_point)
                     : linenum);
@@ -3037,10 +3050,10 @@ Window::reframe ()
     }
   else
     {
-      last_linenum = w_bufp->folded_point_linenum (w_last_disp);
+      last_linenum = folded_point_linenum (w_last_disp);
       disp_linenum = (w_disp == w_last_disp
                       ? last_linenum
-                      : w_bufp->folded_point_linenum (w_disp));
+                      : folded_point_linenum (w_disp));
     }
 
   if (flags () & WF_SCROLLING)
@@ -3093,7 +3106,7 @@ Window::reframe ()
   Point df;
   disp_linenum = (get_fold_columns() == Buffer::FOLD_NONE
                   ? w_bufp->linenum_point (df, disp_linenum)
-                  : w_bufp->folded_linenum_point (df, disp_linenum));
+                  : folded_linenum_point (df, disp_linenum));
 
   if (!need_repaint && df.p_point == w_last_disp)
     {
@@ -3613,8 +3626,8 @@ Window::pending_refresh ()
         }
       else
         {
-          assert (w_linenum == w_bufp->folded_point_linenum (w_point));
-          assert (w_column == w_bufp->folded_point_column (w_point));
+          assert (w_linenum == folded_point_linenum (w_point));
+          assert (w_column == folded_point_column (w_point));
         }
 #endif
     }
@@ -3627,7 +3640,7 @@ Window::pending_refresh ()
           w_column = w_bufp->point_column (w_point);
         }
       else
-        w_linenum = w_bufp->folded_point_linenum_column (w_point, &w_column);
+        w_linenum = w_bufp->folded_point_linenum_column (w_point, get_fold_columns(), &w_column);
     }
 
   if (w_linenum < w_last_top_linenum)

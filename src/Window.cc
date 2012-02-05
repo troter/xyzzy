@@ -1113,7 +1113,7 @@ Window::update_vscroll_bar ()
       int nlines = (w_bufp
                     ? (get_fold_columns() == Buffer::FOLD_NONE
                        ? w_bufp->count_lines ()
-                       : w_bufp->folded_count_lines ())
+                       : w_bufp->folded_count_lines (get_fold_columns()))
                     : 1);
       if (!(flags () & WF_ALT_VSCROLL_BAR))
         nlines += w_ech.cy - 1;
@@ -1911,8 +1911,8 @@ Fget_window_line (lisp window)
   return make_fixnum (wp->get_fold_columns() == Buffer::FOLD_NONE
                       ? (wp->w_bufp->point_linenum (wp->w_point)
                          - wp->w_bufp->point_linenum (wp->w_disp))
-                      : (wp->w_bufp->folded_point_linenum (wp->w_point)
-                         - wp->w_bufp->folded_point_linenum (wp->w_disp)));
+                      : (wp->folded_point_linenum (wp->w_point)
+                         - wp->folded_point_linenum (wp->w_disp)));
 }
 
 lisp
@@ -1923,7 +1923,7 @@ Fget_window_start_line (lisp window)
     return Qnil;
   return make_fixnum (wp->get_fold_columns() == Buffer::FOLD_NONE
                       ? wp->w_bufp->point_linenum (wp->w_disp)
-                      : wp->w_bufp->folded_point_linenum (wp->w_disp));
+                      : wp->folded_point_linenum (wp->w_disp));
 }
 
 lisp
@@ -2486,8 +2486,8 @@ Fpos_not_visible_in_window_p (lisp point, lisp window)
     }
   else
     {
-      linenum = bp->folded_point_linenum (cur);
-      top = bp->folded_point_linenum (wp->w_disp);
+      linenum = wp->folded_point_linenum (cur);
+      top = wp->folded_point_linenum (wp->w_disp);
     }
   return (linenum < top
           ? make_fixnum (-1)
@@ -2529,7 +2529,7 @@ Fset_window_flags (lisp flags)
   int f = fixnum_value (flags);
   int recompute = 0;
   int dflags = Window::w_default_flags;
-  for (ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
+  for (ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next) {
 	  for (Window *w = active_app_frame().active_frame.windows; w; w = w->w_next)
 		{
 		  Window::w_default_flags = dflags;
@@ -2542,6 +2542,7 @@ Fset_window_flags (lisp flags)
 		  if (df & (Window::WF_BGCOLOR_MODE | Window::WF_LINE_NUMBER))
 			w->invalidate_glyphs ();
 		}
+  }
   Window::w_default_flags = f;
   set_bgmode ();
   for(ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
@@ -3270,7 +3271,7 @@ Fbegin_auto_scroll ()
   if (!bp
       || (wp->get_fold_columns() == Buffer::FOLD_NONE
           ? bp->count_lines ()
-          : bp->folded_count_lines ()) <= 1
+          : bp->folded_count_lines (wp->get_fold_columns())) <= 1
       || !begin_auto_scroll (wp->w_hwnd, p, auto_scroll, wp))
     return Qnil;
   return Qt;
@@ -3474,7 +3475,7 @@ Window::point2window_pos (point_t point, POINT &p) const
       column = w_bufp->point_column (p);
     }
   else
-    linenum = w_bufp->folded_point_linenum_column (point, &column);
+    linenum = w_bufp->folded_point_linenum_column (point, get_fold_columns(), &column);
 
   p.x = column - w_last_top_column + w_bufp->b_prompt_columns;
   if (w_last_flags & Window::WF_LINE_NUMBER)

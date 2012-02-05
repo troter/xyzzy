@@ -434,6 +434,25 @@ struct Window
   void set_buffer (Buffer *);
   void calc_client_size (int, int);
   void reframe ();
+  long folded_point_linenum (point_t) const;
+  long folded_point_linenum (const Point &point) const
+    {return folded_point_linenum (point.p_point);}
+  long folded_point_column (const Point &) const;
+  void folded_go_bol (Point &point) const { w_bufp->folded_go_bol(point, get_fold_columns()); }
+  void folded_go_eol (Point &point) const { w_bufp->folded_go_eol(point, get_fold_columns()); }
+  void folded_goto_bol(Point &point) const { w_bufp->folded_goto_bol(point, get_fold_columns()); }
+  void folded_goto_eol(Point &point) const { w_bufp->folded_goto_eol(point, get_fold_columns()); }
+  long folded_forward_column (Point &point, long ncolumns, long curcol, int can_exceed, int restrict) const {
+      return w_bufp->folded_forward_column(point, get_fold_columns(), ncolumns, curcol, can_exceed, restrict); 
+  }
+  long folded_goto_column (Point &point, long column, int exceed) const {
+	  return w_bufp->folded_goto_column(point, get_fold_columns(), column, exceed);
+  }
+  long folded_linenum_point (Point &pbuf, long goal) {
+	  return w_bufp->folded_linenum_point(pbuf, get_fold_columns(), goal);
+  }
+
+
   void paint_glyphs (HDC, HDC, const glyph_t *, const glyph_t *, const glyph_t *,
                      char *, const INT *, int, int, int) const;
   void paint_line (HDC, HDC, glyph_data *, const glyph_data *,

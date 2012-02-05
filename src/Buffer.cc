@@ -405,6 +405,13 @@ Buffer::~Buffer ()
 int Buffer::get_fold_columns(const Window* win) const 
 {
   std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
+
+  if(tmp->find(win) == tmp->end())
+  {
+	  OutputDebugString("here");
+	  return Buffer::FOLD_NONE;
+  }
+
   return (*tmp)[win];
 }
 
@@ -943,6 +950,7 @@ Fdelete_buffer (lisp buffer)
     }
 
   for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+  {
 	  for (Window *wp = app->active_frame.windows; wp; wp = wp->w_next)
 		if (wp->w_bufp == bp)
 		  {
@@ -950,6 +958,7 @@ Fdelete_buffer (lisp buffer)
 			wp->w_bufp = 0;
 			wp->set_buffer (newbp);
 		  }
+  }
 
   delete bp;
   return Qt;
@@ -1495,7 +1504,9 @@ set_fold_window(Buffer* buf)
 {
   bool modified = false;
   for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+  {
 	for (Window *wp = app->active_frame.windows; wp; wp = wp->w_next)
+	{
 	  if (wp->w_bufp == buf)
 	  {
 		int cx = wp->w_ech.cx;
@@ -1512,6 +1523,8 @@ set_fold_window(Buffer* buf)
 		modified |= mod;
 
 	  }
+	}
+  }
 
   if(modified)
   {
@@ -1525,13 +1538,17 @@ set_fold_width(Buffer *buf, int w)
 {
   bool modified;
   for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+  {
 	for (Window *wp = app->active_frame.windows; wp; wp = wp->w_next)
+	{
 	  if (wp->w_bufp == buf)
 	  {
 		bool mod = buf->init_fold_width_with_window(wp, w);
 		modified |= mod;
 
 	  }
+	}
+  }
 
   if(modified)
   {

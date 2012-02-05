@@ -476,7 +476,6 @@ struct Buffer
   int b_hjump_columns;
 
   static int b_default_fold_mode;
-  int b_fold_columns;  // ê‹ÇËï‘ÇµÉJÉâÉÄ(-1: ÇµÇ»Ç¢)
   enum {FOLD_DEFAULT = -2, FOLD_NONE = -1, FOLD_WINDOW = 0};
   int b_fold_mode;
 
@@ -776,22 +775,22 @@ struct Buffer
 
   long char_columns (Char, long) const;
 
-  long folded_point_linenum (point_t) const;
-  long folded_point_linenum (const Point &point) const
-    {return folded_point_linenum (point.p_point);}
-  long folded_linenum_point (Point &, long);
-  long folded_count_lines ();
-  long folded_point_column (const Point &) const;
-  long folded_point_linenum_column (point_t, long *) const;
-  long folded_point_linenum_column (const Point &point, long *columnp) const
-    {return folded_point_linenum_column (point.p_point, columnp);}
-  void folded_go_bol (Point &) const;
-  void folded_go_eol (Point &) const;
-  long folded_forward_column (Point &, long, long, int, int) const;
-  void folded_goto_bol (Point &) const;
-  void folded_goto_eol (Point &) const;
-  int folded_forward_line (Point &, long);
-  long folded_goto_column (Point &, long, int) const;
+  long folded_point_linenum (point_t, int fold_columns) const;
+  long folded_point_linenum (const Point &point, int fold_columns) const
+    {return folded_point_linenum (point.p_point, fold_columns);}
+  long folded_linenum_point (Point &, int fold_columns, long);
+  long folded_count_lines (int fold_columns);
+  long folded_point_column (const Point &, int fold_columns) const;
+  long folded_point_linenum_column (point_t, int fold_columns, long *) const;
+  long folded_point_linenum_column (const Point &point, int fold_columns, long *columnp) const
+    {return folded_point_linenum_column (point.p_point, fold_columns, columnp);}
+  void folded_go_bol (Point &, int fold_columns) const;
+  void folded_go_eol (Point &, int fold_columns) const;
+  long folded_forward_column (Point &, int fold_columns, long, long, int, int) const;
+  void folded_goto_bol (Point &, int fold_columns) const;
+  void folded_goto_eol (Point &, int fold_columns) const;
+  int folded_forward_line (Point &, int fold_columns, long);
+  long folded_goto_column (Point &, int fold_columns, long, int) const;
 
   void init_fold_width (int);
   bool init_fold_width_with_window (Window*, int);
@@ -809,9 +808,7 @@ struct Buffer
   void fold_width_modified ();
 
   int parse_fold_line (Point &, long, const fold_parameter &) const;
-  int parse_fold_line (Point &point, const fold_parameter &param) const
-    {return parse_fold_line (point, b_fold_columns, param);}
-  void parse_fold_chunk (Chunk *) const;
+  void parse_fold_chunk (Chunk *, int fold_columns) const;
   int parse_fold_line (Point &, long, const glyph_width &,
                        const fold_parameter &) const;
 
@@ -821,7 +818,7 @@ struct Buffer
       Chunk *cp;
       long linenum;
     };
-  void update_fold_chunk (point_t, update_fold_info &) const;
+  void update_fold_chunk (point_t, int fold_columns, update_fold_info &) const;
   void folded_go_bol_1 (Point &) const;
   long folded_point_column_1 (point_t, const update_fold_info &) const;
   long folded_point_column_1 (point_t, Point &) const;

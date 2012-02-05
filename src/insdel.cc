@@ -402,7 +402,7 @@ Buffer::adjust_insertion (const Point &point, int size)
       ADJINS (xmarker_point (x));
     }
 
-  for (ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
+  for (ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next) {
 	  for (Window *wp = app1->active_frame.windows; wp; wp = wp->w_next)
 		if (wp->w_bufp == this)
 		  {
@@ -417,6 +417,7 @@ Buffer::adjust_insertion (const Point &point, int size)
 			ADJINS (wp->w_disp);
 			ADJINS (wp->w_last_disp);
 		  }
+  }
 
   for (WindowConfiguration *wc = WindowConfiguration::wc_chain;
        wc; wc = wc->wc_prev)

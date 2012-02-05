@@ -484,6 +484,8 @@ print_engine::print_engine (Buffer *bp, const printer_device &dev,
 {
   for (int i = 0; i < FONT_MAX; i++)
     pe_hfonts[i] = 0;
+
+  b_fold_columns = pe_bp->get_first_fold_columns(); // What should I do?
 }
 
 void
@@ -1703,8 +1705,8 @@ print_engine::set_print_range () const
         }
       else
         {
-          pe_bp->folded_linenum_point (point, start);
-          pe_bp->folded_goto_bol (point);
+          pe_bp->folded_linenum_point (point, b_fold_columns, start);
+          pe_bp->folded_goto_bol (point, b_fold_columns);
         }
       r.p1 = point.p_point;
       if (pe_bp->get_first_fold_columns() == Buffer::FOLD_NONE)
@@ -1714,8 +1716,8 @@ print_engine::set_print_range () const
         }
       else
         {
-          pe_bp->folded_linenum_point (point, end);
-          pe_bp->folded_goto_eol (point);
+          pe_bp->folded_linenum_point (point, b_fold_columns, end);
+          pe_bp->folded_goto_eol (point, b_fold_columns);
         }
       r.p2 = point.p_point;
     }
