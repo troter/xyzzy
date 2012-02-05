@@ -408,6 +408,9 @@ struct Window
                            const XCOLORREF * = 0, const XCOLORREF * = 0);
   void change_color ();
 
+  // just for utility
+  int get_fold_columns() const;
+
   int flags () const;
   void set_flags (int);
   void clr_flags (int);

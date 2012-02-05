@@ -346,9 +346,9 @@ set_ime_caret (ApplicationFrame *app1)
             {
               if (wp->w_last_flags & Window::WF_LINE_NUMBER)
                 r.left += (Window::LINENUM_COLUMNS + 1) * app1->text_font.cell ().cx;
-              if (wp->w_bufp->b_fold_columns != Buffer::FOLD_NONE)
+              if (wp->get_fold_columns() != Buffer::FOLD_NONE)
                 {
-                  LONG t = r.left + wp->w_bufp->b_fold_columns * app1->text_font.cell ().cx;
+                  LONG t = r.left + wp->get_fold_columns() * app1->text_font.cell ().cx;
                   if (t > app1->active_frame.caret_pos.x)
                     r.right = min (r.right, t);
                 }

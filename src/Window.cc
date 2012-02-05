@@ -1111,7 +1111,7 @@ Window::update_vscroll_bar ()
           ShowScrollBar (w_hwnd, SB_VERT, 1);
         }
       int nlines = (w_bufp
-                    ? (w_bufp->b_fold_columns == Buffer::FOLD_NONE
+                    ? (get_fold_columns() == Buffer::FOLD_NONE
                        ? w_bufp->count_lines ()
                        : w_bufp->folded_count_lines ())
                     : 1);
@@ -1242,7 +1242,7 @@ Window::update_hscroll_bar ()
         }
       int pos;
       int w;
-      if (!w_bufp || w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+      if (!w_bufp || get_fold_columns() == Buffer::FOLD_NONE)
         {
 #define PAGES_PER_WIDTH 20
           w = w_ech.cx * PAGES_PER_WIDTH;
@@ -1251,7 +1251,7 @@ Window::update_hscroll_bar ()
         }
       else
         {
-          w = w_bufp->b_fold_columns;
+          w = get_fold_columns();
           if (flags () & WF_LINE_NUMBER)
             w += LINENUM_COLUMNS;
           pos = min (w_last_top_column, long (w - w_ech.cx));
@@ -1908,7 +1908,7 @@ Fget_window_line (lisp window)
   Window *wp = Window::coerce_to_window (window);
   if (!wp->w_bufp)
     return Qnil;
-  return make_fixnum (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE
+  return make_fixnum (wp->get_fold_columns() == Buffer::FOLD_NONE
                       ? (wp->w_bufp->point_linenum (wp->w_point)
                          - wp->w_bufp->point_linenum (wp->w_disp))
                       : (wp->w_bufp->folded_point_linenum (wp->w_point)
@@ -1921,7 +1921,7 @@ Fget_window_start_line (lisp window)
   Window *wp = Window::coerce_to_window (window);
   if (!wp->w_bufp)
     return Qnil;
-  return make_fixnum (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE
+  return make_fixnum (wp->get_fold_columns() == Buffer::FOLD_NONE
                       ? wp->w_bufp->point_linenum (wp->w_disp)
                       : wp->w_bufp->folded_point_linenum (wp->w_disp));
 }
@@ -2479,7 +2479,7 @@ Fpos_not_visible_in_window_p (lisp point, lisp window)
   Point cur (wp->w_point);
   bp->goto_char (cur, bp->coerce_to_point (point));
   long top, linenum;
-  if (bp->b_fold_columns == Buffer::FOLD_NONE)
+  if (wp->get_fold_columns() == Buffer::FOLD_NONE)
     {
       linenum = bp->point_linenum (cur);
       top = bp->point_linenum (wp->w_disp);
@@ -3268,7 +3268,7 @@ Fbegin_auto_scroll ()
     return Qnil;
   Buffer *bp = wp->w_bufp;
   if (!bp
-      || (bp->b_fold_columns == Buffer::FOLD_NONE
+      || (wp->get_fold_columns() == Buffer::FOLD_NONE
           ? bp->count_lines ()
           : bp->folded_count_lines ()) <= 1
       || !begin_auto_scroll (wp->w_hwnd, p, auto_scroll, wp))
@@ -3437,11 +3437,11 @@ Window::update_ruler ()
 {
   if (w_disp_flags & WDF_WINDOW
       || w_ruler_top_column != w_top_column
-      || w_ruler_fold_column != w_bufp->b_fold_columns)
+      || w_ruler_fold_column != get_fold_columns())
     {
       w_ruler_top_column = w_top_column;
       w_ruler_column = w_column;
-      w_ruler_fold_column = w_bufp->b_fold_columns;
+      w_ruler_fold_column = get_fold_columns();
       HDC hdc = GetDC (active_app_frame().active_frame.hwnd);
       paint_ruler (hdc);
       ReleaseDC (active_app_frame().active_frame.hwnd, hdc);
@@ -3466,7 +3466,7 @@ Window::point2window_pos (point_t point, POINT &p) const
 
   point = max (min (point, w_bufp->b_contents.p2),
                w_bufp->b_contents.p1);
-  if (w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+  if (get_fold_columns() == Buffer::FOLD_NONE)
     {
       Point p;
       w_bufp->set_point (p, point);

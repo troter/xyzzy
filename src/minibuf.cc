@@ -134,7 +134,7 @@ read_minibuffer (const Char *prompt, long prompt_length, lisp def,
   bp->b_prompt_columns += strlen (bp->b_prompt_arg);
 
   bp->b_minibufferp = 1;
-  bp->b_fold_mode = bp->b_fold_columns = Buffer::FOLD_NONE;
+  bp->b_fold_mode = Buffer::FOLD_NONE;
   bp->fold_width_modified ();
   bp->lcomplete_type = type;
   bp->lcomplete_list = compl;
@@ -142,6 +142,8 @@ read_minibuffer (const Char *prompt, long prompt_length, lisp def,
   last_ime_mode = kbd_queue::IME_MODE_OFF;
 
   Window *mini = Window::minibuffer_window ();
+  bp->set_fold_columns(mini, Buffer::FOLD_NONE);
+
   mini->set_buffer_params (bp);
 
   mini->set_window ();

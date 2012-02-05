@@ -3,6 +3,7 @@
 #include "filer.h"
 #include "binfo.h"
 #include "buffer-bar.h"
+#include <map>
 
 fixed_heap Chunk::c_heap (sizeof (Char) * TEXT_SIZE);
 fixed_heap Chunk::c_breaks_heap (BREAKS_SIZE);
@@ -119,6 +120,8 @@ Buffer::Buffer (lisp name, lisp filename, lisp dirname, int temporary)
 
   lbp = temporary ? Qnil : make_buffer ();
 
+  fold_map = (void*)new std::map<const Window*, int>();
+
   b_chunkb = alloc_chunk ();
   if (!b_chunkb)
     FEstorage_error ();
@@ -220,7 +223,6 @@ Buffer::Buffer (lisp name, lisp filename, lisp dirname, int temporary)
   b_colors_enable = 0;
 
   b_fold_mode = FOLD_DEFAULT;
-  b_fold_columns = Buffer::FOLD_NONE;
   init_fold_width (b_default_fold_mode);
 
   b_hjump_columns = -1;
@@ -394,6 +396,32 @@ Buffer::~Buffer ()
   delete_contents ();
   if (bufferp (lbp))
     xbuffer_bp (lbp) = 0;
+
+  std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
+  delete tmp;
+  fold_map = 0;
+}
+
+int Buffer::get_fold_columns(const Window* win) const 
+{
+  std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
+  return (*tmp)[win];
+}
+
+int Buffer::get_first_fold_columns() const 
+{
+  std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
+  std::map<const Window*, int>::iterator itr = tmp->begin();
+  if(itr != tmp->end())
+	  return itr->second;
+
+  return Buffer::FOLD_NONE;
+}
+
+void Buffer::set_fold_columns(Window* win, int column) 
+{
+  std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
+  (*tmp)[win] = column;
 }
 
 void
@@ -1450,36 +1478,82 @@ Buffer::fold_width_modified ()
     cp->c_nbreaks = -1;
 }
 
+
+bool
+Buffer::init_fold_width_with_window(Window *win, int w)
+{
+  if (get_fold_columns(win) != w)
+  {
+	  set_fold_columns(win, w);
+	  return true;
+  }
+  return false;
+}
+
+static void
+set_fold_window(Buffer* buf)
+{
+  bool modified = false;
+  for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+	for (Window *wp = app->active_frame.windows; wp; wp = wp->w_next)
+	  if (wp->w_bufp == buf)
+	  {
+		int cx = wp->w_ech.cx;
+		if (wp->flags () & Window::WF_LINE_NUMBER)
+			cx -= Window::LINENUM_COLUMNS + 1;
+		if (wp->flags () & Window::WF_FOLD_MARK)
+			cx--;
+
+		if (cx < MIN_FOLD_WIDTH)
+          cx = MIN_FOLD_WIDTH;
+		else if (cx > MAX_FOLD_WIDTH)
+          cx = MAX_FOLD_WIDTH;
+		bool mod = buf->init_fold_width_with_window(wp, cx);
+		modified |= mod;
+
+	  }
+
+  if(modified)
+  {
+    buf->fold_width_modified ();
+    buf->refresh_buffer ();
+  }
+}
+
+static void
+set_fold_width(Buffer *buf, int w)
+{
+  bool modified;
+  for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+	for (Window *wp = app->active_frame.windows; wp; wp = wp->w_next)
+	  if (wp->w_bufp == buf)
+	  {
+		bool mod = buf->init_fold_width_with_window(wp, w);
+		modified |= mod;
+
+	  }
+
+  if(modified)
+  {
+    buf->fold_width_modified ();
+    buf->refresh_buffer ();
+  }
+}
+
 void
 Buffer::init_fold_width (int w)
 {
+  bool modified = false;
   if (w == FOLD_WINDOW)
-    {
-      w = -1;
-      for (const Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
-        if (wp->w_bufp == this)
-          {
-            int cx = wp->w_ech.cx;
-            if (wp->flags () & Window::WF_LINE_NUMBER)
-              cx -= Window::LINENUM_COLUMNS + 1;
-            if (wp->flags () & Window::WF_FOLD_MARK)
-              cx--;
-            w = max (w, cx);
-          }
-      if (w == -1)
-        return;
-      if (w < MIN_FOLD_WIDTH)
-        w = MIN_FOLD_WIDTH;
-      else if (w > MAX_FOLD_WIDTH)
-        w = MAX_FOLD_WIDTH;
-    }
-  if (b_fold_columns != w)
-    {
-      b_fold_columns = w;
-      fold_width_modified ();
-      refresh_buffer ();
-    }
+  {
+	 set_fold_window(this);
+  }
+  else
+  {
+	 set_fold_width(this, w);
+  }
 }
+
 
 static int
 fold_width (lisp width)
@@ -1553,12 +1627,14 @@ Fbuffer_fold_width (lisp buffer)
                       : bp->b_fold_mode);
 }
 
+// TODO: should be updated
 lisp
 Fbuffer_fold_column (lisp buffer)
 {
   Buffer *bp = Buffer::coerce_to_buffer (buffer);
-  return (bp->b_fold_columns == Buffer::FOLD_NONE
-          ? Qnil : make_fixnum (bp->b_fold_columns));
+  int fold_column = bp->get_first_fold_columns();
+  return (fold_column == Buffer::FOLD_NONE
+          ? Qnil : make_fixnum (fold_column));
 }
 
 lisp

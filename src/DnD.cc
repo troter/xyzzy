@@ -966,7 +966,7 @@ goto_pt (const POINTL &pt)
             if (y >= r.bottom - active_app_frame().text_font.cell ().cy / 2)
               y += active_app_frame().text_font.cell ().cy / 2;
             rowcol_from_point (wp, &x, &y);
-            if (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+            if (wp->get_fold_columns() == Buffer::FOLD_NONE)
               {
                 wp->w_bufp->linenum_point (wp->w_point, max (1, y));
                 wp->w_bufp->goto_column (wp->w_point, x, 0);

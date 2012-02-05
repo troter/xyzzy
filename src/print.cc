@@ -967,7 +967,7 @@ print_engine::paint_line (HDC hdc, int x, int y, Point &cur_point, long &linenum
   ctx.column = 0;
 
   if (pe_bp->bolp (point)
-      || (pe_bp->b_fold_columns != Buffer::FOLD_NONE
+      || (pe_bp->get_first_fold_columns() != Buffer::FOLD_NONE
           && pe_bp->linenum_mode () != Buffer::LNMODE_LF))
     {
       if (hdc && pe_settings.ps_print_linenum)
@@ -1696,7 +1696,7 @@ print_engine::set_print_range () const
       if (start > end)
         swap (start, end);
       pe_bp->set_point (point, 0);
-      if (pe_bp->b_fold_columns == Buffer::FOLD_NONE)
+      if (pe_bp->get_first_fold_columns() == Buffer::FOLD_NONE)
         {
           pe_bp->linenum_point (point, start);
           pe_bp->goto_bol (point);
@@ -1707,7 +1707,7 @@ print_engine::set_print_range () const
           pe_bp->folded_goto_bol (point);
         }
       r.p1 = point.p_point;
-      if (pe_bp->b_fold_columns == Buffer::FOLD_NONE)
+      if (pe_bp->get_first_fold_columns() == Buffer::FOLD_NONE)
         {
           pe_bp->linenum_point (point, end);
           pe_bp->goto_eol (point);

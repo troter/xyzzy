@@ -565,7 +565,7 @@ Buffer::goto_column (Point &point, long column, int exceed) const
 int
 Window::scroll_window (long nlines, int abs)
 {
-  if (w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+  if (get_fold_columns() == Buffer::FOLD_NONE)
     {
       long ol = w_bufp->point_linenum (w_disp);
       long goal = max (1L, abs ? nlines : ol + nlines);
@@ -615,20 +615,20 @@ Window::scroll_window_horizontally (long ncolumns, int abs)
   if (goal == oc)
     return 0;
   long curcol;
-  if (w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+  if (get_fold_columns() == Buffer::FOLD_NONE)
     {
       w_top_column = goal;
       curcol = w_bufp->point_column (w_point);
     }
   else
     {
-      w_top_column = min (int (goal), w_bufp->b_fold_columns - 1);
+      w_top_column = min (int (goal), get_fold_columns() - 1);
       curcol = w_bufp->folded_point_column (w_point);
     }
 
   if (curcol < w_top_column)
     {
-      if (w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+      if (get_fold_columns() == Buffer::FOLD_NONE)
         curcol = w_bufp->forward_column (w_point, w_top_column,
                                          curcol, 1, 1);
       else
@@ -663,7 +663,7 @@ Window::scroll_window_horizontally (long ncolumns, int abs)
       int w = w_top_column + cx;
       if (curcol >= w)
         {
-          if (w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+          if (get_fold_columns() == Buffer::FOLD_NONE)
             {
               w_bufp->go_bol (w_point);
               w_bufp->forward_column (w_point, w - 1, 0, 0, 1);
@@ -1700,7 +1700,7 @@ lisp
 Fforward_virtual_line (lisp n)
 {
   Window *wp = selected_window ();
-  long l = (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE
+  long l = (wp->get_fold_columns() == Buffer::FOLD_NONE
             ? wp->w_bufp->forward_line (wp->w_point,
                                         (!n || n == Qnil) ? 1 : fixnum_value (n))
             : wp->w_bufp->folded_forward_line (wp->w_point,
@@ -1742,7 +1742,7 @@ lisp
 Fgoto_virtual_bol ()
 {
   Window *wp = selected_window ();
-  if (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+  if (wp->get_fold_columns() == Buffer::FOLD_NONE)
     wp->w_bufp->goto_bol (wp->w_point);
   else
     wp->w_bufp->folded_goto_bol (wp->w_point);
@@ -1754,7 +1754,7 @@ lisp
 Fgoto_virtual_eol ()
 {
   Window *wp = selected_window ();
-  if (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+  if (wp->get_fold_columns() == Buffer::FOLD_NONE)
     wp->w_bufp->goto_eol (wp->w_point);
   else
     wp->w_bufp->folded_goto_eol (wp->w_point);
@@ -1847,7 +1847,7 @@ Fgoto_virtual_column (lisp n, lisp exceed)
 {
   Window *wp = selected_window ();
   wp->w_disp_flags |= Window::WDF_GOAL_COLUMN;
-  return make_fixnum (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE
+  return make_fixnum (wp->get_fold_columns() == Buffer::FOLD_NONE
                       ? wp->w_bufp->goto_column (wp->w_point,
                                                  fixnum_value (n),
                                                  exceed && exceed != Qnil)
@@ -1985,7 +1985,7 @@ Fstart_selection (lisp type, lisp temp, lisp point)
   wp->w_selection_point = NO_MARK_SET;
   if (Fset_selection_type (type, temp) == Qnil)
     return Qnil;
-  wp->w_selection_column = (bp->b_fold_columns == Buffer::FOLD_NONE
+  wp->w_selection_column = (wp->get_fold_columns() == Buffer::FOLD_NONE
                             ? bp->point_column (wp->w_point)
                             : bp->folded_point_column (wp->w_point));
   if (wp->w_selection_region.p1 != -1)
@@ -2207,7 +2207,7 @@ Fvirtual_bolp ()
   Window *wp = selected_window ();
   if (wp->w_bufp->bolp (wp->w_point))
     return Qt;
-  if (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+  if (wp->get_fold_columns() == Buffer::FOLD_NONE)
     return Qnil;
   Point point (wp->w_point);
   wp->w_bufp->folded_goto_bol (point);
@@ -2220,7 +2220,7 @@ Fvirtual_eolp ()
   Window *wp = selected_window ();
   if (wp->w_bufp->eolp (wp->w_point))
     return Qt;
-  if (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+  if (wp->get_fold_columns() == Buffer::FOLD_NONE)
     return Qnil;
   Point point (wp->w_point);
   wp->w_bufp->folded_goto_eol (point);
@@ -2294,7 +2294,7 @@ lisp
 Fcurrent_virtual_column ()
 {
   Window *wp = selected_window ();
-  return make_fixnum (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE
+  return make_fixnum (wp->get_fold_columns() == Buffer::FOLD_NONE
                       ? wp->w_bufp->point_column (wp->w_point)
                       : wp->w_bufp->folded_point_column (wp->w_point));
 }
@@ -2305,7 +2305,7 @@ Fgoal_column ()
   Window *wp = selected_window ();
   if (wp->w_disp_flags & Window::WDF_GOAL_COLUMN)
     {
-      wp->w_goal_column = (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE
+      wp->w_goal_column = (wp->get_fold_columns() == Buffer::FOLD_NONE
                            ? wp->w_bufp->point_column (wp->w_point)
                            : wp->w_bufp->folded_point_column (wp->w_point));
       wp->w_disp_flags &= ~Window::WDF_GOAL_COLUMN;
@@ -2358,7 +2358,7 @@ Fgoto_virtual_line (lisp goal)
 {
   Window *wp = selected_window ();
   Buffer *bp = wp->w_bufp;
-  if (bp->b_fold_columns == Buffer::FOLD_NONE)
+  if (wp->get_fold_columns() == Buffer::FOLD_NONE)
     bp->linenum_point (wp->w_point, max (1L, fixnum_value (goal)));
   else
     bp->folded_linenum_point (wp->w_point, max (1L, fixnum_value (goal)));
@@ -2367,7 +2367,7 @@ Fgoto_virtual_line (lisp goal)
   else if (wp->w_point.p_point > bp->b_contents.p2)
     {
       bp->goto_char (wp->w_point, bp->b_contents.p2);
-      if (bp->b_fold_columns == Buffer::FOLD_NONE)
+	  if (wp->get_fold_columns() == Buffer::FOLD_NONE)
         bp->goto_bol (wp->w_point);
       else
         bp->folded_goto_bol (wp->w_point);
@@ -2380,7 +2380,7 @@ lisp
 Fcurrent_virtual_line_number ()
 {
   Window *wp = selected_window ();
-  return make_fixnum (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE
+  return make_fixnum (wp->get_fold_columns() == Buffer::FOLD_NONE
                       ? wp->w_bufp->point_linenum (wp->w_point)
                       : wp->w_bufp->folded_point_linenum (wp->w_point));
 }
@@ -2488,7 +2488,7 @@ Fcurrent_line_columns ()
   Window *wp = selected_window ();
   Buffer *bp = wp->w_bufp;
   Point beg (wp->w_point), end (wp->w_point);
-  if (wp->w_bufp->b_fold_columns == Buffer::FOLD_NONE)
+  if (wp->get_fold_columns() == Buffer::FOLD_NONE)
     {
       bp->go_bol (beg);
       bp->go_eol (end);

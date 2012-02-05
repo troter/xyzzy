@@ -2983,6 +2983,7 @@ int
 ViewerWindow::init (HWND parent, ViewerBuffer *bp)
 {
   w_bufp = bp;
+  bp->set_fold_columns(this, 80);
   w_point.p_point = 0;
   w_point.p_chunk = bp->b_chunkb;
   w_point.p_offset = 0;
@@ -3005,7 +3006,8 @@ ViewerWindow::resize (int x, int y, int w, int h)
 ViewerBuffer::ViewerBuffer ()
      : Buffer (Qnil, Qnil, Qnil, 1)
 {
-  b_fold_columns = 80;
+  // set at init now.
+  // b_fold_columns = 80;
   b_nfolded = -1;
 }
 

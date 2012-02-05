@@ -480,6 +480,14 @@ struct Buffer
   enum {FOLD_DEFAULT = -2, FOLD_NONE = -1, FOLD_WINDOW = 0};
   int b_fold_mode;
 
+  // don't want to include STL inside header.
+  void *fold_map;
+
+  // ê‹ÇËï‘ÇµÉJÉâÉÄ(-1: ÇµÇ»Ç¢)
+  int get_fold_columns(const Window* win) const ;
+  int get_first_fold_columns() const ;
+  void set_fold_columns(Window* win, int column);
+
   enum {LNMODE_DEFAULT, LNMODE_DISP, LNMODE_LF};
   static int b_default_linenum_mode;
   int b_linenum_mode;
@@ -522,6 +530,7 @@ struct Buffer
   int kinsoku_shorten_limit () const {return (b_kinsoku_shorten_limit < 0
                                               ? b_default_kinsoku_shorten_limit
                                               : b_kinsoku_shorten_limit);}
+
 
   int b_tab_columns;
   int b_local_tab_columns;
@@ -785,6 +794,7 @@ struct Buffer
   long folded_goto_column (Point &, long, int) const;
 
   void init_fold_width (int);
+  bool init_fold_width_with_window (Window*, int);
   void window_size_changed ();
 
   void check_range (Point &) const;
