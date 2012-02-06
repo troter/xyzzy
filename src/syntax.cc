@@ -2011,7 +2011,7 @@ Fset_tab_columns (lisp column, lisp lbuffer)
           active_app_frame().default_tab_columns = n;
           for (Buffer *bp = Buffer::b_blist; bp; bp = bp->b_next)
             {
-              bp->b_nfolded = -1;
+			  bp->set_nfolded_all(-1);
               if (!bp->b_local_tab_columns)
                 {
                   bp->b_tab_columns = n;

@@ -151,7 +151,7 @@ static fixup_nl_code (ReadFileContext &rfc)
                 nlines++;
               }
           cp->c_nlines = nlines;
-          cp->c_nbreaks = -1;
+		  cp->invalidate_fold_info();
           rfc.r_nlines += nlines;
         }
     }

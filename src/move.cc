@@ -1225,48 +1225,48 @@ Buffer::parse_fold_line (Point &point, long max_width, const glyph_width &gw,
 }
 
 static int
-trail_chunk_modified_p (const Chunk *cp)
+trail_chunk_modified_p (const Chunk *cp, int fold_columns)
 {
   while ((cp = cp->c_next))
-    if (cp->c_nbreaks)
-      return cp->c_nbreaks < 0;
+    if (cp->get_nbreaks(fold_columns))
+      return cp->get_nbreaks(fold_columns) < 0;
   return 0;
 }
 
 static void
-add_break (Chunk *cp, u_int n)
+add_break (Chunk *cp, int fold_columns, u_int n)
 {
-  if (cp->c_first_eol < 0)
-    cp->c_first_eol = n;
-  cp->c_last_eol = n;
-  cp->break_on (n);
+  if (cp->get_first_eol(fold_columns) < 0)
+    cp->set_first_eol(fold_columns, n);
+  cp->set_last_eol(fold_columns, n);
+  cp->break_on (fold_columns, n);
 }
 
 void
 Buffer::parse_fold_chunk (Chunk *cp, int fold_columns) const
 {
-  if (b_nfolded >= 0)
+  if (get_nfolded(fold_columns) >= 0)
     return;
 
   Point point;
-  if (cp->c_nbreaks < 0)
+  if (cp->get_nbreaks(fold_columns) < 0)
     {
-      cp->clear_breaks ();
+      cp->clear_breaks (fold_columns);
       if (cp->c_prev)
         {
-          add_break (cp, cp->c_first_eol);
-          point.p_offset = cp->c_first_eol + 1;
+          add_break (cp, fold_columns, cp->get_first_eol(fold_columns));
+          point.p_offset = cp->get_first_eol(fold_columns) + 1;
         }
       else
         {
-          cp->c_first_eol = -1;
+          cp->set_first_eol(fold_columns, -1);
           point.p_offset = 0;
         }
     }
-  else if (trail_chunk_modified_p (cp))
+  else if (trail_chunk_modified_p (cp, fold_columns))
     {
-      if (cp->c_nbreaks)
-        point.p_offset = cp->c_last_eol + 1;
+      if (cp->get_nbreaks(fold_columns))
+        point.p_offset = cp->get_last_eol(fold_columns) + 1;
       else if (!cp->c_prev)
         point.p_offset = 0;
       else
@@ -1286,38 +1286,38 @@ Buffer::parse_fold_chunk (Chunk *cp, int fold_columns) const
       parse_fold_line (point, fold_columns, param);
       if (point.p_chunk != cp)
         break;
-      add_break (cp, point.p_offset);
+      add_break (cp, fold_columns, point.p_offset);
       point.p_offset++;
     }
 
   for (cp = cp->c_next; cp != point.p_chunk; cp = cp->c_next)
     {
-      cp->clear_breaks ();
-      cp->c_first_eol = -1;
-      cp->c_last_eol = -1;
+      cp->clear_breaks (fold_columns);
+      cp->set_first_eol(fold_columns, -1);
+      cp->set_last_eol(fold_columns, -1);
     }
 
-  if (cp && cp->c_first_eol != point.p_offset)
+  if (cp && cp->get_first_eol(fold_columns) != point.p_offset)
     {
-      cp->c_nbreaks = -1;
-      cp->c_first_eol = point.p_offset;
+	  cp->set_nbreaks(fold_columns, -1);
+      cp->set_first_eol(fold_columns, point.p_offset);
     }
 }
 
 long
 Buffer::folded_count_lines (int fold_columns)
 {
-  if (b_nfolded == -1)
+  if (get_nfolded(fold_columns) == -1)
     {
       long nlines = 1;
       for (Chunk *cp = b_chunkb; cp; cp = cp->c_next)
         {
           parse_fold_chunk (cp, fold_columns);
-          nlines += cp->c_nbreaks;
+          nlines += cp->get_nbreaks(fold_columns);
         }
-      b_nfolded = nlines;
+      set_nfolded(fold_columns, nlines);
     }
-  return b_nfolded;
+  return get_nfolded(fold_columns);
 }
 
 static void
@@ -1339,7 +1339,7 @@ Buffer::update_fold_chunk (point_t goal, int fold_columns, update_fold_info &inf
   for (; info.point + cp->c_used < goal; cp = cp->c_next)
     {
       parse_fold_chunk (cp, fold_columns);
-      info.linenum += cp->c_nbreaks;
+      info.linenum += cp->get_nbreaks(fold_columns);
       info.point += cp->c_used;
     }
   parse_fold_chunk (cp, fold_columns);
@@ -1351,14 +1351,14 @@ Buffer::folded_point_linenum_column (point_t goal, int fold_columns, long *colum
 {
   update_fold_info info;
   update_fold_chunk (goal, fold_columns, info);
-  if (info.cp->c_nbreaks)
+  if (info.cp->get_nbreaks(fold_columns))
     {
       for (int i = 0, e = goal - info.point; i < e; i++)
-        if (info.cp->break_p (i))
+        if (info.cp->break_p (fold_columns, i))
           info.linenum++;
     }
   if (columnp)
-    *columnp = folded_point_column_1 (goal, info);
+    *columnp = folded_point_column_1 (goal, fold_columns, info);
 
   return info.linenum;
 }
@@ -1386,14 +1386,14 @@ Buffer::folded_point_column_1 (point_t goal, Point &point) const
 }
 
 long
-Buffer::folded_point_column_1 (point_t goal, const update_fold_info &info) const
+Buffer::folded_point_column_1 (point_t goal, int fold_columns, const update_fold_info &info) const
 {
   Point point;
   point.p_chunk = info.cp;
   point.p_offset = goal - info.point;
   point.p_point = goal;
   adjust_offset (point);
-  folded_go_bol_1 (point);
+  folded_go_bol_1 (point, fold_columns);
   return folded_point_column_1 (goal, point);
 }
 
@@ -1408,7 +1408,7 @@ Buffer::folded_point_column (const Point &point, int fold_columns) const
 {
   update_fold_info info;
   update_fold_chunk (point.p_point, fold_columns, info);
-  return folded_point_column_1 (point.p_point, info);
+  return folded_point_column_1 (point.p_point, fold_columns, info);
 }
 
 long
@@ -1430,24 +1430,24 @@ Buffer::folded_linenum_point (Point &pbuf, int fold_columns, long goal)
   while (1)
     {
       parse_fold_chunk (cp, fold_columns);
-      long l = linenum + cp->c_nbreaks;
+      long l = linenum + cp->get_nbreaks(fold_columns);
       if (l >= goal)
         {
           if (goal - linenum == 1)
             {
-              pbuf.p_offset = cp->c_first_eol + 1;
+              pbuf.p_offset = cp->get_first_eol(fold_columns) + 1;
               linenum++;
             }
           else if (l == goal)
             {
-              pbuf.p_offset = cp->c_last_eol + 1;
+              pbuf.p_offset = cp->get_last_eol(fold_columns) + 1;
               linenum = goal;
             }
           else
             {
-			  int o = cp->c_first_eol;
+			  int o = cp->get_first_eol(fold_columns);
               for (;; o++)
-                if (cp->break_p (o) && ++linenum == goal)
+                if (cp->break_p (fold_columns, o) && ++linenum == goal)
                   break;
               pbuf.p_offset = o + 1;
             }
@@ -1463,7 +1463,7 @@ Buffer::folded_linenum_point (Point &pbuf, int fold_columns, long goal)
           pbuf.p_chunk = cp;
           pbuf.p_point = point;
           pbuf.p_offset = cp->c_used;
-          folded_go_bol_1 (pbuf);
+          folded_go_bol_1 (pbuf, fold_columns);
           break;
         }
       cp = cp->c_next;
@@ -1511,16 +1511,16 @@ Buffer::folded_forward_column (Point &point, int fold_columns, long ncolumns, lo
 }
 
 void
-Buffer::folded_go_bol_1 (Point &point) const
+Buffer::folded_go_bol_1 (Point &point, int fold_columns) const
 {
   Chunk *cp = point.p_chunk;
   point.p_point -= point.p_offset;
-  if (cp->c_nbreaks && point.p_offset && cp->c_first_eol < point.p_offset)
+  if (cp->get_nbreaks(fold_columns) && point.p_offset && cp->get_first_eol(fold_columns) < point.p_offset)
     {
-      assert (cp->c_first_eol >= 0);
-      assert (cp->break_p (cp->c_first_eol));
+      assert (cp->get_first_eol(fold_columns) >= 0);
+      assert (cp->break_p (fold_columns, cp->get_first_eol(fold_columns)));
 	  int o = point.p_offset - 1;
-      for (; !cp->break_p (o); o--)
+      for (; !cp->break_p (fold_columns, o); o--)
         ;
       point.p_chunk = cp;
       point.p_offset = o + 1;
@@ -1540,11 +1540,11 @@ Buffer::folded_go_bol_1 (Point &point) const
               break;
             }
           point.p_point -= cp->c_used;
-          if (cp->c_nbreaks)
+          if (cp->get_nbreaks(fold_columns))
             {
-              assert (cp->c_last_eol >= 0);
+              assert (cp->get_last_eol(fold_columns) >= 0);
               point.p_chunk = cp;
-              point.p_offset = cp->c_last_eol + 1;
+              point.p_offset = cp->get_last_eol(fold_columns) + 1;
               point.p_point += point.p_offset;
               adjust_offset (point);
               break;
@@ -1556,7 +1556,7 @@ Buffer::folded_go_bol_1 (Point &point) const
 void
 Buffer::folded_go_bol (Point &point, int fold_columns) const
 {
-  if (b_nfolded < 0)
+  if (get_nfolded(fold_columns) < 0)
     for (Chunk *cp = b_chunkb;; cp = cp->c_next)
       {
         parse_fold_chunk (cp, fold_columns);
@@ -1564,14 +1564,14 @@ Buffer::folded_go_bol (Point &point, int fold_columns) const
           break;
       }
 
-  folded_go_bol_1 (point);
+  folded_go_bol_1 (point, fold_columns);
 }
 
 void
 Buffer::folded_go_eol (Point &point, int fold_columns) const
 {
   Chunk *cp;
-  if (b_nfolded >= 0)
+  if (get_nfolded(fold_columns) >= 0)
     cp = point.p_chunk;
   else
     for (cp = b_chunkb;; cp = cp->c_next)
@@ -1582,12 +1582,12 @@ Buffer::folded_go_eol (Point &point, int fold_columns) const
       }
 
   point.p_point -= point.p_offset;
-  if (cp->c_nbreaks && cp->c_last_eol >= point.p_offset)
+  if (cp->get_nbreaks(fold_columns) && cp->get_last_eol(fold_columns) >= point.p_offset)
     {
-      assert (cp->c_last_eol >= 0);
-      assert (cp->break_p (cp->c_last_eol));
+      assert (cp->get_last_eol(fold_columns) >= 0);
+      assert (cp->break_p (fold_columns, cp->get_last_eol(fold_columns)));
 	  int o = point.p_offset;
-      for (; !cp->break_p (o); o++)
+      for (; !cp->break_p (fold_columns, o); o++)
         ;
       point.p_chunk = cp;
       point.p_offset = o;
@@ -1606,11 +1606,11 @@ Buffer::folded_go_eol (Point &point, int fold_columns) const
             }
           point.p_point += cp->c_used;
           cp = cp->c_next;
-          if (cp->c_nbreaks)
+          if (cp->get_nbreaks(fold_columns))
             {
-              assert (cp->c_first_eol >= 0);
+              assert (cp->get_first_eol(fold_columns) >= 0);
               point.p_chunk = cp;
-              point.p_offset = cp->c_first_eol;
+              point.p_offset = cp->get_first_eol(fold_columns);
               point.p_point += point.p_offset;
               break;
             }

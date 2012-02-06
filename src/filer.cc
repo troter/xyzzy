@@ -3008,7 +3008,7 @@ ViewerBuffer::ViewerBuffer ()
 {
   // set at init now.
   // b_fold_columns = 80;
-  b_nfolded = -1;
+  set_nfolded_all(-1);
 }
 
 void

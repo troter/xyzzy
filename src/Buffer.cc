@@ -24,6 +24,7 @@ u_char Buffer::b_buffer_bar_modified_any;
 fixed_heap ChunkHeap::a_heap (8192);
 fixed_heap textprop_heap::a_heap (4096);
 const u_char Chunk::c_breaks_mask[] = {1, 2, 4, 8, 16, 32, 64, 128};
+const u_char ChunkFoldInfo::c_breaks_mask[] = {1, 2, 4, 8, 16, 32, 64, 128};
 
 class enum_buffer
 {
@@ -50,16 +51,53 @@ public:
 
 enum_buffer *enum_buffer::eb_root;
 
+bool Chunk::fold_info_exist(int fold_columns) const
+{
+	if(!c_fold_map)
+		return false;
+    std::map<int, ChunkFoldInfo> *tmp = (std::map<int, ChunkFoldInfo> *)c_fold_map;
+	return (tmp->find(fold_columns) != tmp->end());
+}
+void Chunk::ensure_fold_info(int fold_columns)
+{
+	if(!fold_info_exist(fold_columns))
+	{
+		if(!c_fold_map)
+		{
+			c_fold_map = (void*) new std::map<int, ChunkFoldInfo>();
+		}
+		ChunkFoldInfo info;
+        std::map<int, ChunkFoldInfo> *tmp = (std::map<int, ChunkFoldInfo> *)c_fold_map;
+		(*tmp)[fold_columns] = info;
+	}
+}
+ChunkFoldInfo& Chunk::find_fold_info(int fold_columns) const {    
+	std::map<int, ChunkFoldInfo> *tmp = (std::map<int, ChunkFoldInfo> *)c_fold_map;
+	return (*tmp)[fold_columns];
+}
+
+void
+Chunk::invalidate_fold_info() {
+  if(c_fold_map)
+  {
+    std::map<int, ChunkFoldInfo> *tmp = (std::map<int, ChunkFoldInfo> *)c_fold_map;
+    delete tmp;
+    c_fold_map = 0;
+  }
+  c_default_nbreaks = -1;
+}
+
+
 void
 Chunk::clear ()
 {
   c_used = 0;
   c_nlines = 0;
-  c_nbreaks = 0;
-  bzero (c_breaks, BREAKS_SIZE);
-  c_first_eol = -1;
-  c_last_eol = -1;
+
   c_bstate = syntax_state::SS_INVALID;
+
+  invalidate_fold_info();
+  c_default_nbreaks = 0;
 }
 
 Chunk *
@@ -71,18 +109,16 @@ Buffer::alloc_chunk ()
   cp->c_prev = 0;
   cp->c_next = 0;
   cp->c_used = 0;
+  cp->c_fold_map = 0;
   cp->c_nlines = -1;
-  cp->c_nbreaks = -1;
-  cp->c_first_eol = -1;
-  cp->c_last_eol = -1;
+  cp->c_default_nbreaks = -1;
   cp->c_bstate = syntax_state::SS_INVALID;
   cp->c_text = (Char *)Chunk::c_heap.alloc ();
   if (cp->c_text)
     {
-      cp->c_breaks = (u_char *)Chunk::c_breaks_heap.alloc ();
-      if (cp->c_breaks)
-        return cp;
-      Chunk::c_heap.free (cp->c_text);
+	  // we lazily allocate fold related information.
+	  // it might cause memory shortage crash, but these days it's quite rare anymore.
+      return cp;
     }
   b_chunk_heap.free (cp);
   return 0;
@@ -94,8 +130,8 @@ Buffer::free_chunk (Chunk *cp)
   assert (cp);
   if (cp->c_text)
     Chunk::c_heap.free (cp->c_text);
-  if (cp->c_breaks)
-    Chunk::c_breaks_heap.free (cp->c_breaks);
+  cp->invalidate_fold_info();
+
   b_chunk_heap.free (cp);
 }
 
@@ -121,6 +157,7 @@ Buffer::Buffer (lisp name, lisp filename, lisp dirname, int temporary)
   lbp = temporary ? Qnil : make_buffer ();
 
   fold_map = (void*)new std::map<const Window*, int>();
+  nfolded_map = (void*)new std::map<int, long>();
 
   b_chunkb = alloc_chunk ();
   if (!b_chunkb)
@@ -128,7 +165,7 @@ Buffer::Buffer (lisp name, lisp filename, lisp dirname, int temporary)
   b_chunke = b_chunkb;
   b_nchars = 0;
   b_nlines = 1;
-  b_nfolded = 1;
+  b_default_nfolded = 1;
 
   b_textprop = 0;
   b_textprop_cache = 0;
@@ -277,7 +314,7 @@ Buffer::erase ()
 
   b_nchars = 0;
   b_nlines = 1;
-  b_nfolded = 1;
+  set_nfolded_all(1);
 
   b_contents.p1 = 0;
   b_contents.p2 = 0;
@@ -400,20 +437,35 @@ Buffer::~Buffer ()
   std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
   delete tmp;
   fold_map = 0;
+  
+  std::map<int, long> *tmp2 = (std::map<int, long> *)nfolded_map;
+  delete tmp2;
+  nfolded_map = 0;
 }
 
 int Buffer::get_fold_columns(const Window* win) const 
 {
-  std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
-
-  if(tmp->find(win) == tmp->end())
+  if(!fold_columns_exist(win))
   {
-	  OutputDebugString("here");
-	  return Buffer::FOLD_NONE;
+    return Buffer::FOLD_NONE;
   }
 
+  std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
   return (*tmp)[win];
 }
+
+bool Buffer::fold_columns_exist(const Window* win) const 
+{
+  std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
+  return tmp->find(win) != tmp->end();
+}
+
+bool Buffer::nfolded_exist(int fold_columns) const 
+{
+  std::map<int, long> *tmp = (std::map<int, long> *)nfolded_map;
+  return tmp->find(fold_columns) != tmp->end();
+}
+
 
 int Buffer::get_first_fold_columns() const 
 {
@@ -429,6 +481,30 @@ void Buffer::set_fold_columns(Window* win, int column)
 {
   std::map<const Window*, int> *tmp = (std::map<const Window*, int> *)fold_map;
   (*tmp)[win] = column;
+}
+
+long Buffer::get_nfolded(int fold_columns) const
+{
+  std::map<int, long> *tmp = (std::map<int, long> *)nfolded_map;
+  if(!nfolded_exist(fold_columns))
+  {
+	  return b_default_nfolded;
+  }
+  return (*tmp)[fold_columns];
+}
+
+
+void Buffer::set_nfolded(int fold_columns, long nfolded)
+{
+  std::map<int, long> *tmp = (std::map<int, long> *)nfolded_map;
+  (*tmp)[fold_columns] = nfolded;
+}
+
+void Buffer::set_nfolded_all(long nfolded)
+{
+  std::map<int, long> *tmp = (std::map<int, long> *)nfolded_map;
+  tmp->clear();
+  b_default_nfolded = nfolded;
 }
 
 void
@@ -1482,9 +1558,9 @@ Buffer::window_size_changed ()
 void
 Buffer::fold_width_modified ()
 {
-  b_nfolded = -1;
+  set_nfolded_all(-1);
   for (Chunk *cp = b_chunkb; cp; cp = cp->c_next)
-    cp->c_nbreaks = -1;
+	cp->invalidate_fold_info();
 }
 
 

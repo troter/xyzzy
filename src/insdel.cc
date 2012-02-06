@@ -65,7 +65,7 @@ Buffer::modify ()
   b_modified_count++;
   b_nlines = -1;
   b_need_auto_save = 1;
-  b_nfolded = -1;
+  set_nfolded_all(-1);
   b_stream_cache.p_chunk = 0;
 }
 
@@ -89,7 +89,7 @@ void
 Buffer::modify_chunk (Chunk *cp) const
 {
   cp->c_nlines = -1;
-  cp->c_nbreaks = -1;
+  cp->invalidate_fold_info();
   cp->c_bstate = syntax_state::SS_INVALID;
 }
 
