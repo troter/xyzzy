@@ -1550,7 +1550,7 @@ dispatch (lChar cc, ApplicationFrame *app1)
       if (c >= MENU_ID_RANGE_MIN && c < MENU_ID_RANGE_MAX)
         command = lookup_menu_command (c);
       else if (c >= TOOL_ID_RANGE_MIN && c < TOOL_ID_RANGE_MAX)
-        command = active_main_frame().lookup_command (c);
+        command = app1->mframe->lookup_command (c);
       else
         return Qt;
       if (command == Qnil)
@@ -1569,7 +1569,7 @@ dispatch (lChar cc, ApplicationFrame *app1)
               && !function_char_p (c)
               && (DBCP (c) || (SBCP (c) && !ascii_char_p (c))))
             {
-              command = symbol_value (Vdefault_input_function, selected_buffer ());
+              command = symbol_value (Vdefault_input_function, selected_buffer (app1));
               if (command == Qnil || command == Qunbound)
                 return Qt;
               goto run_command;
@@ -1595,7 +1595,7 @@ run_command:
   xsymbol_value (Vlast_command_char) = make_char (Char (c));
   if (command != Qnil)
     {
-      selected_buffer ()->safe_run_hook (Vpre_command_hook, 1);
+      selected_buffer (app1)->safe_run_hook (Vpre_command_hook, 1);
       if (xsymbol_value (Vthis_command) != command)
         {
           lisp new_command = xsymbol_value (Vthis_command);
@@ -1620,7 +1620,7 @@ run_command:
   app1->kbdq.restore_ime ();
   app1->kbdq.set_next_command_key ();
 
-  selected_buffer ()->b_ime_mode = app1->ime_open_mode;
+  selected_buffer (app1)->b_ime_mode = app1->ime_open_mode;
 
   if (command == Qnil)
     {
@@ -1650,7 +1650,7 @@ run_command:
       app1->kbdq.clear ();
     }
   protect_gc gcpro (result);
-  selected_buffer ()->safe_run_hook (Vpost_command_hook, 1);
+  selected_buffer (app1)->safe_run_hook (Vpost_command_hook, 1);
   app1->kbdq.end_last_command_key ();
   erase_popup (0, 0);
   end_wait_cursor (1);
@@ -1708,19 +1708,22 @@ main_loop ()
 
       while (1)
         {
-          dispatch (c, &active_app_frame());
+		  ApplicationFrame *app1 = &active_app_frame();
+          dispatch (c, app1);
 		  try
 		  {
-	          c = active_app_frame().kbdq.peek (toplev_accept_mouse_move_p ());
+	          c = app1->kbdq.peek (toplev_accept_mouse_move_p ());
 		  }
 		  catch(std::exception)
 		  {
 			  delete_floating_app_frame();
+	          c = active_app_frame().kbdq.peek (toplev_accept_mouse_move_p ());
 			  continue;
 		  }
           if (c == lChar_EOF)
             break;
           pending_refresh_screen ();
+		  // I think this line should be active_app_frame() instead of app1.
           if (!active_app_frame().kbdq.macro_is_running ())
             Fundo_boundary ();
         }
