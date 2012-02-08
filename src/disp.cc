@@ -3656,6 +3656,7 @@ void
 refresh_screen (int f)
 {
   Window::destroy_windows ();
+  int update_title_bar = 0;
   for(ApplicationFrame *app1 = first_app_frame(); app1; app1= app1->a_next)
   {
 	  if (app1->active_frame.windows_moved)
@@ -3686,28 +3687,29 @@ refresh_screen (int f)
             }
 #endif /* WINDOWBLINDS_FIXED */
           xsymbol_value (Vlast_active_menu) = lmenu;
-        }
-    }
+           }
+	    }
 
 	  Window *wp;
 	  for (wp = app1->active_frame.windows; wp; wp = wp->w_next)
 		UpdateWindow (wp->w_hwnd);
 
-	  int update_title_bar = 0;
 	  for (wp = app1->active_frame.windows; wp; wp = wp->w_next)
 		if (wp->refresh (f) && wp == selected_window (app1))
 		  update_title_bar = 1;
 
 	  app1->stat_area.update ();
+  }
 
-	  // TODO: this section should run only once, but I just call as many times as AppFrame num
-	  Buffer *bp;
-	  for (bp = Buffer::b_blist; bp; bp = bp->b_next)
-		{
-		  bp->b_modified_region.p1 = -1;
-		  bp->b_last_narrow_depth = bp->b_narrow_depth;
-		}
+  Buffer *bp;
+  for (bp = Buffer::b_blist; bp; bp = bp->b_next)
+	{
+	  bp->b_modified_region.p1 = -1;
+	  bp->b_last_narrow_depth = bp->b_narrow_depth;
+	}
 
+  for(ApplicationFrame *app1 = first_app_frame(); app1; app1= app1->a_next)
+  {
 	  if (f)
 		{
 		  bp = selected_buffer (app1);
@@ -3716,9 +3718,10 @@ refresh_screen (int f)
 		  bp->set_frame_title (app1, update_title_bar);
 		  if(app1 == &active_app_frame())
 			  bp->dlist_add_head ();
-		  Fundo_boundary ();
 		}
   }
+  if (f)
+    Fundo_boundary ();
 }
 
 void
