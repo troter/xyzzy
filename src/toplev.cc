@@ -19,7 +19,8 @@ mouse_wheel g_wheel;
 static u_int __stdcall
 quit_thread_entry (void *p)
 {
-  DWORD parent = (DWORD)p;
+  ApplicationFrame *app1 = (ApplicationFrame*)p;
+  DWORD parent = app1->parent_thread_id;
 
 #define HK_BREAK 1
 #define HK_QUIT 2
@@ -58,7 +59,7 @@ quit_thread_entry (void *p)
                   }
                 if (!quit_on && quit_ok)
                   {
-                    RegisterHotKey (0, HK_QUIT, active_app_frame().quit_mod, active_app_frame().quit_vkey);
+                    RegisterHotKey (0, HK_QUIT, app1->quit_mod, app1->quit_vkey);
                     quit_on = 1;
                   }
               }
@@ -81,7 +82,7 @@ quit_thread_entry (void *p)
             quit_ok = 1;
             if (fg && !quit_on)
               {
-                RegisterHotKey (0, HK_QUIT, active_app_frame().quit_mod, active_app_frame().quit_vkey);
+                RegisterHotKey (0, HK_QUIT, app1->quit_mod, app1->quit_vkey);
                 quit_on = 1;
               }
             break;
@@ -99,14 +100,14 @@ quit_thread_entry (void *p)
             if (quit_on)
               {
                 UnregisterHotKey (0, HK_QUIT);
-                RegisterHotKey (0, HK_QUIT, active_app_frame().quit_mod, active_app_frame().quit_vkey);
+                RegisterHotKey (0, HK_QUIT, app1->quit_mod, app1->quit_vkey);
               }
             break;
 
           case WM_HOTKEY:
-            if (!active_app_frame().f_protect_quit)
+            if (!app1->f_protect_quit)
               {
-                PostMessage (active_app_frame().toplev, WM_PRIVATE_QUIT, 0, 0);
+                PostMessage (app1->toplev, WM_PRIVATE_QUIT, 0, 0);
                 xsymbol_value (Vquit_flag) = Qt;
               }
             break;
@@ -116,10 +117,11 @@ quit_thread_entry (void *p)
 }
 
 int
-start_quit_thread ()
+start_quit_thread (ApplicationFrame* app1)
 {
-  u_long h = _beginthreadex (0, 0, quit_thread_entry, (void *)GetCurrentThreadId (),
-                             0, &active_app_frame().quit_thread_id);
+  app1->parent_thread_id = GetCurrentThreadId();
+  u_long h = _beginthreadex (0, 0, quit_thread_entry, (void *)app1,
+                             0, &app1->quit_thread_id);
   if (h == -1)
     return 0;
   CloseHandle (HANDLE (h));

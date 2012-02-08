@@ -410,6 +410,7 @@ public:
   HWND hwnd_sw;
 
   HWND hwnd_clipboard;
+  DWORD parent_thread_id;
 
   kbd_queue kbdq;
   mouse_state mouse;

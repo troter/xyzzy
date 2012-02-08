@@ -887,7 +887,7 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
     }
 #endif /* WINDOWBLINDS_FIXED */
 
-  if (!start_quit_thread ())
+  if (!start_quit_thread (&active_app_frame()))
     return 0;
 
   Fbegin_wait_cursor ();
@@ -927,7 +927,7 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1)
   xappframe_fp (app1->lfp) = app1;
 
 
-  if (!start_quit_thread())
+  if (!start_quit_thread(app1))
 	return 0;
 
   Fbegin_wait_cursor ();
