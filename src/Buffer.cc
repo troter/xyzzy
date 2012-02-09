@@ -373,13 +373,16 @@ Buffer::erase ()
     if (xmarker_point (xcar (x)) != NO_MARK_SET)
       xmarker_point (xcar (x)) = 0;
 
-  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
-    if (wp->w_bufp == this)
-      {
-        wp->w_last_bufp = 0;
-        wp->w_bufp = 0;
-        wp->set_buffer (this);
-      }
+  for (ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
+  {
+	  for (Window *wp = app1->active_frame.windows; wp; wp = wp->w_next)
+		if (wp->w_bufp == this)
+		  {
+			wp->w_last_bufp = 0;
+			wp->w_bufp = 0;
+			wp->set_buffer (this);
+		  }
+  }
 
   for (WindowConfiguration *wc = WindowConfiguration::wc_chain; wc; wc = wc->wc_prev)
     for (int i = 0; i < wc->wc_nwindows; i++)
