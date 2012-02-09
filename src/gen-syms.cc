@@ -835,7 +835,6 @@ static symbols sys[] =
   /* init.cc */
   SI_DEFVAR2 (*command-line-args*),
   SI_DEFUN3 (*startup, 0, 0, 0),
-  SI_DEFUN3 (*startup-frame, 0, 0, 0),
 
   /* toplev.cc */
   SI_DEFUN3 (*minibuffer-message, 1, 1, 0),
@@ -1714,7 +1713,10 @@ static symbols ed[] =
   DEFUN3 (post-buffer-modified-hook-enabled-p, 0, 1, 0),
 
   /* frame.cc */
+  MAKE_SYMBOL2 (startup-frame),
   DEFCMD3 (make-frame, 0, 1, 0, ""),
+  DEFUN3 (selected-frame, 0, 0, 0),
+  DEFUN3 (next-frame, 1, 1, 0),
 
   /* insdel.cc */
   DEFUN3 (insert-file-contents, 1, 3, 0),

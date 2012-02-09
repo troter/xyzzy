@@ -166,7 +166,7 @@
     (trap-errors (run-hooks '*post-startup-hook*))))
 
 
-(defun startup-frame ()
+(defun startup-frame (frame)
 ;  (trap-errors (init-misc-objects))
   (trap-errors (init-pseudo-frame))
   (trap-errors (run-hooks '*pre-startup-hook*))

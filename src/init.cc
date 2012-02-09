@@ -619,12 +619,6 @@ Fsi_startup ()
   return Fsi_load_library (make_string ("startup"), Qnil);
 }
 
-lisp
-Fsi_startup_frame()
-{
-	return Fsi_load_library (make_string("fstartup"), Qnil);
-}
-
 static int
 register_wndclasses (HINSTANCE hinst)
 {
@@ -906,6 +900,24 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
   return 1;
 }
 
+static void
+call_startup(ApplicationFrame *app1)
+{
+	if (xsymbol_function (Vstartup_frame) == Qunbound
+		|| xsymbol_function (Vstartup_frame) == Qnil)
+    return;
+
+  suppress_gc sgc;
+  try
+    {
+		funcall_1 (Vstartup_frame, app1->lfp);
+    }
+  catch (nonlocal_jump &)
+    {
+    	print_condition (nonlocal_jump::data());
+    }
+}
+
 int
 init_app(HINSTANCE hinst, ApplicationFrame* app1)
 {
@@ -942,14 +954,7 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1)
   if (!init_editor_objects (app1))
     return 0;
 
-  try
-  {
-	Ffuncall (Ssi_startup_frame, Qnil);
-  }
-  catch (nonlocal_jump &)
-  {
-	print_condition (nonlocal_jump::data());
-  }
+  call_startup(app1);
 
   return 1;
 }

@@ -180,7 +180,18 @@ void delete_floating_app_frame()
 
 extern int init_app(HINSTANCE hinst, ApplicationFrame* app1);
 
+static ApplicationFrame * coerce_to_frame (lisp object)
+{
+  if (!object || object == Qnil)
+    return &active_app_frame ();
+  check_appframe (object);
+  if (!xappframe_fp (object))
+    FEprogram_error (Edeleted_window);
+  return xappframe_fp (object);
+}
 
+
+// --- below here is lisp functions.
 lisp
 Fmake_frame (lisp opt)
 {
@@ -193,3 +204,22 @@ Fmake_frame (lisp opt)
 	init_app(hinst, new_app);
 	return new_app->lfp;
 }
+lisp
+Fselected_frame ()
+{
+  assert (xappframe_fp (active_app_frame ().lfp));
+  assert (xappframe_fp (active_app_frame ().lfp) == &active_app_frame ());
+  return active_app_frame ().lfp;
+}
+
+// ignore minibufp now.
+lisp
+Fnext_frame (lisp frame, lisp minibufp)
+{
+  ApplicationFrame *app = coerce_to_frame(frame);
+  ApplicationFrame *next = app->a_next;
+  if (!next)
+    next = first_app_frame();
+  return next->lfp;
+}
+
