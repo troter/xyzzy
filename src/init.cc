@@ -500,6 +500,7 @@ init_symbol_value ()
   xsymbol_value (Vsi_find_motion) = Qt;
   xsymbol_value (Vdefault_menu) = Qnil;
   xsymbol_value (Vlast_active_menu) = Qnil;
+  xsymbol_value (Vtracking_menu) = Qnil;
 
   xsymbol_value (Vreader_in_backquote) = Qnil;
   xsymbol_value (Vreader_preserve_white) = Qnil;
