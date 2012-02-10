@@ -1060,7 +1060,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_INITMENUPOPUP:
       if (!HIWORD (lparam))
         {
-          init_menu_popup (wparam, lparam);
+          init_menu_popup (app1, wparam, lparam);
           return 0;
         }
       break;
@@ -1550,7 +1550,7 @@ dispatch (lChar cc, ApplicationFrame *app1)
   if (cc & LCHAR_MENU)
     {
       if (c >= MENU_ID_RANGE_MIN && c < MENU_ID_RANGE_MAX)
-        command = lookup_menu_command (c);
+        command = lookup_menu_command (app1, c);
       else if (c >= TOOL_ID_RANGE_MIN && c < TOOL_ID_RANGE_MAX)
         command = app1->mframe->lookup_command (c);
       else

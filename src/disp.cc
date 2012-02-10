@@ -3652,6 +3652,11 @@ Window::pending_refresh ()
     w_goal_column = w_column;
 }
 
+extern lisp get_default_menu(lisp app = Qnil);
+extern lisp get_last_active_menu(ApplicationFrame *app);
+extern lisp set_menu_to_apphash (ApplicationFrame* app1, lisp lmenu, lisp hashsym);
+
+
 void
 refresh_screen (int f)
 {
@@ -3667,16 +3672,16 @@ refresh_screen (int f)
 
 	  lisp lmenu = (win32_menu_p (selected_buffer (app1)->lmenu)
 					? selected_buffer (app1)->lmenu
-					: (win32_menu_p (xsymbol_value (Vdefault_menu))
-					   ? xsymbol_value (Vdefault_menu)
+					: (win32_menu_p (get_default_menu(app1->lfp))
+					   ? get_default_menu(app1->lfp)
 					   : Qnil));
-	  if (lmenu != xsymbol_value (Vlast_active_menu))
+	  if (lmenu != get_last_active_menu(app1))
 		{
 		  if (SetMenu (app1->toplev, lmenu == Qnil ? 0 : xwin32_menu_handle (lmenu)))
 			{
 			  DrawMenuBar (app1->toplev);
 #ifndef WINDOWBLINDS_FIXED // WindowBlinds‘Îô
-          if (lmenu == Qnil || xsymbol_value (Vlast_active_menu) == Qnil)
+          if (lmenu == Qnil || get_last_active_menu(app1) == Qnil)
             {
               RECT r;
               GetWindowRect (app1->toplev, &r);
@@ -3686,7 +3691,7 @@ refresh_screen (int f)
               MoveWindow (app1->toplev, r.left, r.top, w, h, 1);
             }
 #endif /* WINDOWBLINDS_FIXED */
-          xsymbol_value (Vlast_active_menu) = lmenu;
+		  set_menu_to_apphash(app1, lmenu, Vlast_active_menu);
            }
 	    }
 

@@ -150,10 +150,13 @@ check_popup_menu (lisp lmenu)
     }
 }
 
+lisp get_last_active_menu(ApplicationFrame *app);
+
+
 static void
 redraw_menu (lisp lmenu)
 {
-  if (xsymbol_value (Vlast_active_menu) == lmenu)
+  if (get_last_active_menu(&active_app_frame()) == lmenu)
     DrawMenuBar (active_app_frame().toplev);
 }
 
@@ -359,12 +362,53 @@ Finsert_menu_separator (lisp lmenu, lisp position, lisp tag)
 }
 
 lisp
-Fset_menu (lisp lmenu)
+set_menu_to_apphash (ApplicationFrame* app1, lisp lmenu, lisp hashsym)
 {
-  if (lmenu != Qnil)
+   if (lmenu != Qnil)
     check_popup_menu (lmenu);
-  xsymbol_value (Vdefault_menu) = lmenu;
+  if(xsymbol_value (hashsym) == Qnil)
+  {
+	  xsymbol_value (hashsym) = Fmake_hash_table(Qnil);
+  }
+  Fsi_puthash(app1->lfp, xsymbol_value (hashsym), lmenu);
   return lmenu;
+}
+
+static lisp
+get_menu_from_apphash(lisp app, lisp hashsym)
+{
+	if(xsymbol_value(hashsym) == Qnil)
+		return Qnil;
+	if(app == Qnil)
+	{
+		app = active_app_frame().lfp;
+	}
+	return Fgethash(app, xsymbol_value(hashsym), Qnil);
+}
+
+lisp
+Fset_menu (lisp lmenu, lisp app)
+{
+  check_appframe(app);
+  return set_menu_to_apphash(xappframe_fp (app), lmenu, Vdefault_menu);
+}
+
+lisp
+get_default_menu(lisp app = Qnil)
+{
+	return get_menu_from_apphash(app, Vdefault_menu);
+}
+
+lisp
+get_last_active_menu(ApplicationFrame *app)
+{
+	return get_menu_from_apphash(app->lfp, Vlast_active_menu);
+}
+
+lisp
+get_tracking_menu(ApplicationFrame* app)
+{
+	return get_menu_from_apphash(app->lfp, Vtracking_menu);
 }
 
 static lisp
@@ -674,13 +718,13 @@ lookup_menu (lisp lmenu, HMENU hmenu)
 }
 
 void
-init_menu_popup (WPARAM wparam, LPARAM lparam)
+init_menu_popup (ApplicationFrame* app, WPARAM wparam, LPARAM lparam)
 {
   lisp lmenu = 0;
-  if (win32_menu_p (xsymbol_value (Vtracking_menu)))
-    lmenu = lookup_menu (xsymbol_value (Vtracking_menu), HMENU (wparam));
-  if (!lmenu && win32_menu_p (xsymbol_value (Vlast_active_menu)))
-    lmenu = lookup_menu (xsymbol_value (Vlast_active_menu), HMENU (wparam));
+  if (win32_menu_p (get_tracking_menu(app)))
+    lmenu = lookup_menu (get_tracking_menu(app), HMENU (wparam));
+  if (!lmenu && win32_menu_p (get_last_active_menu(app)))
+    lmenu = lookup_menu (get_last_active_menu(app), HMENU (wparam));
   if (!lmenu)
     return;
   modify_menu_string (lmenu);
@@ -707,19 +751,19 @@ lookup_menu_command (lisp lmenu, int id)
 }
 
 lisp
-lookup_menu_command (int id)
+lookup_menu_command (ApplicationFrame *app1, int id)
 {
   if (id)
     {
-      if (win32_menu_p (xsymbol_value (Vtracking_menu)))
+      if (win32_menu_p (get_tracking_menu(app1)))
         {
-          lisp x = lookup_menu_command (xsymbol_value (Vtracking_menu), id);
+          lisp x = lookup_menu_command (get_tracking_menu(app1), id);
           if (x)
             return x;
         }
-      if (win32_menu_p (xsymbol_value (Vlast_active_menu)))
+      if (win32_menu_p (get_last_active_menu(app1)))
         {
-          lisp x = lookup_menu_command (xsymbol_value (Vlast_active_menu), id);
+          lisp x = lookup_menu_command (get_last_active_menu(app1), id);
           if (x)
             return x;
         }
@@ -727,12 +771,29 @@ lookup_menu_command (int id)
   return Qnil;
 }
 
+class dynamic_tracking_menu_bind
+{
+  ApplicationFrame *app;
+  lisp old;
+  protect_gc pgc;
+public:
+  dynamic_tracking_menu_bind (ApplicationFrame* a, lisp newmenu) : app(a), old(get_tracking_menu(app)), pgc (old) {
+	  set_menu_to_apphash(app, newmenu, Vtracking_menu);
+  }
+  ~dynamic_tracking_menu_bind () {
+	  set_menu_to_apphash(app, old, Vtracking_menu);
+  }
+};
+
+
+
 lisp
 track_popup_menu (lisp lmenu, lisp lbutton, const POINT *point)
 {
+  ApplicationFrame *app1 = &active_app_frame(); // for future change.
   check_popup_menu (lmenu);
-  dynamic_bind dynb (Vtracking_menu, lmenu);
-  int id = active_app_frame().mouse.track_popup_menu (xwin32_menu_handle (lmenu), lbutton, point);
+  dynamic_tracking_menu_bind dynb(app1, lmenu);
+  int id = app1->mouse.track_popup_menu (xwin32_menu_handle (lmenu), lbutton, point);
   if (!id)
     return Qnil;
   lisp command = lookup_menu_command (lmenu, id);
@@ -764,9 +825,9 @@ Fcurrent_menu (lisp buffer)
   if (!buffer)
     return (win32_menu_p (selected_buffer ()->lmenu)
             ? selected_buffer ()->lmenu
-            : xsymbol_value (Vdefault_menu));
+            : get_default_menu());
   else if (buffer == Qnil)
-    return xsymbol_value (Vdefault_menu);
+    return get_default_menu();
   else
     return Buffer::coerce_to_buffer (buffer)->lmenu;
 }

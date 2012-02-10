@@ -117,8 +117,8 @@ void process_gc_mark (void (*)(lisp));
 
 /* menu.cc */
 int init_menu_flags (lisp);
-void init_menu_popup (WPARAM, LPARAM);
-lisp lookup_menu_command (int);
+void init_menu_popup (ApplicationFrame*, WPARAM, LPARAM);
+lisp lookup_menu_command (ApplicationFrame*, int);
 lisp track_popup_menu (lisp, lisp, const POINT *);
 
 /* dialogs.cc */

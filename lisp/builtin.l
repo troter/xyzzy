@@ -1104,7 +1104,7 @@
 (si::defun-builtin insert-popup-menu (menu position popup-menu name))
 (si::defun-builtin insert-menu-item (menu position tag item-name &optional command init))
 (si::defun-builtin insert-menu-separator (menu position &optional tag))
-(si::defun-builtin set-menu (menu))
+(si::defun-builtin set-menu (menu frame))
 (si::defun-builtin get-menu (menu tag-or-position &optional tag-or-position-p))
 (si::defun-builtin delete-menu (menu tag-or-position &optional tag-or-position-p))
 (si::defun-builtin track-popup-menu (menu))

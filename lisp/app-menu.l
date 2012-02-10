@@ -30,8 +30,7 @@
 
 (defvar *init-app-menus-hook* nil)
 
-(defun init-app-menus ()
-
+(defun init-menu-handle()
   (setq *clipboard-char-encoding-popup-menu*
 	(make-char-encoding-popup-menu
 	 #'(lambda (encoding)
@@ -118,7 +117,6 @@
       (setq *recent-file-popup-menu* (create-popup-menu ':recent-file-popup)))
   (or *recent-session-popup-menu*
       (setq *recent-session-popup-menu* (create-popup-menu ':recent-session-popup)))
-
   (setq *app-menu*
 	(define-menu
 	  (:popup 'file "ƒtƒ@ƒCƒ‹(&F)"
@@ -448,10 +446,14 @@
 	  (:item 'close "•Â‚¶‚é(&C)"
 	   #'(lambda ()
 	       (interactive)
-	       (kill-buffer *buffer-bar-context-menu-buffer*)))))
+	       (kill-buffer *buffer-bar-context-menu-buffer*))))))
 
+  
+
+(defun init-app-menus (&optional (frame (selected-frame)))
+  (init-menu-handle)
   (run-hooks '*init-app-menus-hook*)
-  (set-menu *app-menu*)
+  (set-menu *app-menu* frame)
   (add-file-history-to-menu)
   (add-session-history-to-menu))
 

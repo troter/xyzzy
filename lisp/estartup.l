@@ -187,7 +187,7 @@
 ;      (unless *inhibit-history-load*
 ;	(ignore-errors (load-history-file))))
 ;    (ignore-errors (keep-compatibility))
-    (ignore-errors (init-app-menus))
+    (ignore-errors (init-app-menus frame))
     (ignore-errors (init-misc-options))
     (trap-errors
       (let ((scratch (find-buffer "*scratch*")))

@@ -2289,7 +2289,7 @@ static symbols ed[] =
   DEFUN3 (insert-popup-menu, 4, 0, 0),
   DEFUN3 (insert-menu-item, 4, 2, 0),
   DEFUN3 (insert-menu-separator, 2, 1, 0),
-  DEFUN3 (set-menu, 1, 0, 0),
+  DEFUN3 (set-menu, 2, 0, 0),
   DEFUN3 (delete-menu, 2, 1, 0),
   DEFUN3 (track-popup-menu, 1, 1, 0),
   DEFUN3 (use-local-menu, 1, 0, 0),
