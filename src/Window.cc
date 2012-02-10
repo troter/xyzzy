@@ -3117,7 +3117,9 @@ Fset_window_configuration (lisp lconf)
       check_window (lselected_window);
     }
 
-  ApplicationFrame* app_frame = xwindow_wp(lselected_window)->w_owner;
+// this is serialized window object (from previous session). w_owner is invalid.
+//  ApplicationFrame* app_frame = xwindow_wp(lselected_window)->w_owner;
+  ApplicationFrame* app_frame = &active_app_frame();
   x = xcdr (x);
   lisp ldefs = xcar (x);
   if (!consp (ldefs))
