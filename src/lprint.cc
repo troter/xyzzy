@@ -4014,7 +4014,12 @@ print_condition (lisp cc)
       || Fsi_structure_subtypep (xstrdata_def (cc),
                                  xsymbol_value (QCcondition)) == Qnil)
     {
-      assert (0);
+	  /*
+	  From ByteCode::xthrow, cc (nld->id) becomes Qnil and comming here.
+	  I'm sure this should not be assert fail, but I don't know the original intention.
+	  So leave original code as comment.
+	  */
+      // assert (0);
       return;
     }
 
