@@ -765,9 +765,6 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
   g_app.in_gc = 0; // whatever.
   active_app_frame().toplev = 0;
 
-  active_app_frame().lfp = make_appframe();
-
-  xappframe_fp (active_app_frame().lfp) = &active_app_frame();
 
 
   init_ucs2_table ();
@@ -793,6 +790,9 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 
   if (!init_lisp_objects ())
     return 0;
+
+  active_app_frame().lfp = make_appframe();
+  xappframe_fp (active_app_frame().lfp) = &active_app_frame();
 
   active_app_frame().hinst = hinst;
   if (!register_wndclasses (hinst))
