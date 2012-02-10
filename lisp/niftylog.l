@@ -17,7 +17,7 @@
 	  ))
 
 (defvar *log-menu*
-  (let ((menu (copy-menu-items *app-menu* (create-menu))))
+  (let ((menu (copy-menu-items (get-app-menu (selected-frame)) (create-menu))))
     (insert-popup-menu menu (get-menu-position menu 'search)
 		       (define-popup-menu
 			 (:item nil "メッセージを読んだことにする(&R)"

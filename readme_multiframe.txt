@@ -20,7 +20,9 @@ http://www.jsdlab.co.jp/~kamei/
 - estartup.l, estartup.lc
 - builtin.l
 - app-menu.l
-- builin.lc‚Æapp-menu.lc‚ğíœ
+- niftylog.l
+- session.l
+- builin.lc, app-menu.lc, niftylog.lc, session.lc‚ğíœ
 
 ‚Å‚·BŠù‘¶‚ÌŠÂ‹«‚Éã‘‚«‚·‚éê‡‚Íxyzzy.wxp‚ğíœ‚µ‚Ä‚­‚¾‚³‚¢B
 

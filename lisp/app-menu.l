@@ -7,15 +7,16 @@
 
 (in-package "editor")
 
-(export '(*app-menu* *app-popup-menu* *menu-history-max*
+(export '(*app-popup-menu* *menu-history-max*
 	  *app-rectangle-popup-menu* *clipboard-char-encoding-popup-menu*
 	  *dictionary-popup-menu* *paste-rectangle-popup-menu*
 	  *command-bar-popup-menu*
+	  get-app-menu set-app-menu 
 	  make-char-encoding-popup-menu
 	  add-file-history-to-menu *menu-display-length*
 	  *init-app-menus-hook*))
 
-(defvar *app-menu* nil)
+(defvar *app-menu* (make-hash-table))
 (defvar *app-popup-menu* nil)
 (defvar *app-rectangle-popup-menu* nil)
 (defvar *clipboard-char-encoding-popup-menu* nil)
@@ -23,14 +24,35 @@
 (defvar *paste-rectangle-popup-menu* nil)
 (defvar *command-bar-popup-menu* nil)
 
-(defvar *recent-file-popup-menu* nil)
+(defvar *recent-file-popup-menu* (make-hash-table))
 (defvar *recent-session-popup-menu* nil)
 
 (defvar *menu-history-max* 9)
 
 (defvar *init-app-menus-hook* nil)
 
-(defun init-menu-handle()
+(defun set-menu-to-frame-hash(frame hash menu)
+  (si:*puthash frame hash menu)) 
+
+(defun get-menu-from-frame-hash(frame hash)
+  (gethash frame hash)) 
+
+(defmacro generate-hash-accessor(name)
+  "ex. (generate-hash-accessor recent-file-popup-menu) will generate
+     get-recent-file-popup-menu and set-recent-file-popup-menu for *recent-file-popup-menu*"
+  (let ((getter (intern (concat "get-" (symbol-name name))))
+	(setter (intern (concat "set-" (symbol-name name))))
+	(varname (intern (concat "*" (symbol-name name) "*"))))
+    `(progn
+       (defun ,getter (frame)
+	 (get-menu-from-frame-hash frame ,varname))
+       (defun ,setter (frame menu)
+	 (set-menu-to-frame-hash frame ,varname menu)))))
+
+(generate-hash-accessor recent-file-popup-menu)
+(generate-hash-accessor app-menu)
+
+(defun init-menu-handle(frame)
   (setq *clipboard-char-encoding-popup-menu*
 	(make-char-encoding-popup-menu
 	 #'(lambda (encoding)
@@ -113,11 +135,11 @@
   (or *command-bar-popup-menu*
       (setq *command-bar-popup-menu* (create-popup-menu ':command-bar-popup)))
 
-  (or *recent-file-popup-menu*
-      (setq *recent-file-popup-menu* (create-popup-menu ':recent-file-popup)))
+  (or (get-recent-file-popup-menu frame)
+      (set-recent-file-popup-menu frame (create-popup-menu ':recent-file-popup)))
   (or *recent-session-popup-menu*
       (setq *recent-session-popup-menu* (create-popup-menu ':recent-session-popup)))
-  (setq *app-menu*
+  (set-app-menu frame
 	(define-menu
 	  (:popup 'file "ファイル(&F)"
 	   (:item :tag-command "新規作成(&N)"
@@ -153,7 +175,7 @@
 	    'print-selected-buffer-dialog)
 	   (:sep :above-recent)
 	   (:menu nil "最近使ったファイル(&F)"
-	    *recent-file-popup-menu*)
+	    (get-recent-file-popup-menu frame))
 	   (:menu nil "最近使ったセッション(&L)"
 	    *recent-session-popup-menu*)
 	   (:sep :above-kill-xyzzy)
@@ -451,9 +473,9 @@
   
 
 (defun init-app-menus (&optional (frame (selected-frame)))
-  (init-menu-handle)
+  (init-menu-handle frame)
   (run-hooks '*init-app-menus-hook*)
-  (set-menu *app-menu* frame)
+  (set-menu (get-app-menu frame) frame)
   (add-file-history-to-menu)
   (add-session-history-to-menu))
 
@@ -540,11 +562,13 @@
 	(incf count)))))
 
 (defun add-file-history-to-menu ()
-  (when (menup *app-menu*)
-    (add-lru-menu *recent-file-popup-menu*
-		  *minibuffer-file-name-history*
-		  #'(lambda (filename)
-		      #'(lambda ()
-			  (interactive)
-			  (find-file filename)
-			  (add-history filename '*minibuffer-file-name-history*))))))
+  (dolist (frame (frame-list))
+    (when (menup (get-app-menu frame))
+      (add-lru-menu (get-recent-file-popup-menu frame)
+		    *minibuffer-file-name-history*
+		    #'(lambda (filename)
+			#'(lambda ()
+			    (interactive)
+			    (find-file filename)
+			    (add-history filename '*minibuffer-file-name-history*)))))))
+  

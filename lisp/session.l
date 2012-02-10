@@ -251,7 +251,7 @@
 (add-hook '*save-history-hook* #'auto-save-session-file)
 
 (defun add-session-history-to-menu ()
-  (when (menup *app-menu*)
+  (when (menup (get-app-menu (selected-frame)))
     (add-lru-menu *recent-session-popup-menu*
 		  *session-file-history*
 		  #'(lambda (filename)

@@ -167,12 +167,16 @@ void delete_app_frame(ApplicationFrame *app1)
 // 	notify_focus(root);
 }
 
+extern void remove_menus(ApplicationFrame* app);
+
+
 
 void delete_floating_app_frame()
 {
 	for(std::vector<ApplicationFrame*>::iterator it = g_floating_frames.begin(); it != g_floating_frames.end(); it++)
 	{
 		ApplicationFrame *app1 = *it;
+		remove_menus(app1);
 		delete app1;
 	}
 	g_floating_frames.clear();
@@ -223,3 +227,17 @@ Fnext_frame (lisp frame, lisp minibufp)
   return next->lfp;
 }
 
+lisp
+Fframe_list ()
+{
+  ApplicationFrame *app1 = first_app_frame();
+  lisp result = xcons (app1->lfp, Qnil);
+  lisp p = result;
+  for(app1 = app1->a_next; app1; app1 = app1->a_next)
+  {
+      xcdr (p) = xcons (app1->lfp, Qnil);
+      p = xcdr (p);
+  }
+
+  return result;
+}

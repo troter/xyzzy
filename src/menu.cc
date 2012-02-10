@@ -374,6 +374,14 @@ set_menu_to_apphash (ApplicationFrame* app1, lisp lmenu, lisp hashsym)
   return lmenu;
 }
 
+void
+remove_menus(ApplicationFrame* app)
+{
+	Fremhash(app->lfp, xsymbol_value(Vdefault_menu));
+	Fremhash(app->lfp, xsymbol_value(Vlast_active_menu));
+	Fremhash(app->lfp, xsymbol_value(Vtracking_menu));
+}
+
 static lisp
 get_menu_from_apphash(lisp app, lisp hashsym)
 {
