@@ -47,7 +47,7 @@
 	 (let ((bar (list (package-name (symbol-package sym))
 			  (symbol-name sym) name nil edge x y w)))
 	   (setq *command-bar-list* (nconc *command-bar-list* (list bar)))
-	   (add-menu-item *command-bar-popup-menu* bar name
+	   (add-menu-item (get-command-bar-popup-menu (selected-frame)) bar name
 			  #'(lambda () (interactive) (toggle-command-bar-1 bar sym))
 			  #'(lambda () (command-bar-update bar))))))
   t)
@@ -74,7 +74,7 @@
 (defun delete-command-bar-1 (bar sym)
   (when (tool-bar-exist-p sym)
     (delete-tool-bar sym))
-  (delete-menu *command-bar-popup-menu* bar nil)
+  (delete-menu (get-command-bar-popup-menu (selected-frame)) bar nil)
   (setq *command-bar-list* (delete bar *command-bar-list*))
   t)
 
@@ -116,8 +116,8 @@
 
 (defun load-command-bar-info ()
   (setq *command-bar-loaded* t)
-  (or *command-bar-popup-menu*
-      (setq *command-bar-popup-menu* (create-popup-menu)))
+  (or (get-command-bar-popup-menu (selected-frame))
+      (set-command-bar-popup-menu (selected-frame) (create-popup-menu)))
   (mapc #'(lambda (bar)
 	    (ignore-errors
 	     (let* ((pkg (find-package (command-bar-package bar)))
@@ -127,7 +127,7 @@
 		      (let ((x (find sym *defer-define-command-bar-list* :key #'car)))
 			(when x
 			  (setq disp-name (cadr x))))
-		      (add-menu-item *command-bar-popup-menu* bar disp-name
+		      (add-menu-item (get-command-bar-popup-menu (selected-frame)) bar disp-name
 				     #'(lambda ()
 					 (interactive)
 					 (toggle-command-bar-1 bar sym))
@@ -136,7 +136,7 @@
 			(setf (command-bar-visible-p bar) nil)
 			(show-command-bar-1 bar sym)))
 		     (t
-		      (add-menu-item *command-bar-popup-menu* bar disp-name
+		      (add-menu-item (get-command-bar-popup-menu (selected-frame)) bar disp-name
 				     #'(lambda ()
 					 (interactive)
 					 (toggle-named-command-bar bar))

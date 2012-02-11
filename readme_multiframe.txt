@@ -18,11 +18,14 @@ http://www.jsdlab.co.jp/~kamei/
 変更ファイルは
 - xyzzy.exe
 - estartup.l, estartup.lc
+
+以下のファイルは.lが更新されていて、.lcは削除してあります。
 - builtin.l
 - app-menu.l
 - niftylog.l
 - session.l
-- builin.lc, app-menu.lc, niftylog.lc, session.lcを削除
+- mouse.l
+- cmdbar.l
 
 です。既存の環境に上書きする場合はxyzzy.wxpを削除してください。
 

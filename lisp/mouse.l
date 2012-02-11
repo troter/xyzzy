@@ -196,13 +196,13 @@
 
 (defun mouse-menu-popup (&optional apps)
   (interactive)
-  (delete-menu *app-popup-menu* 'url)
-  (delete-menu *app-popup-menu* 'url-sep)
+  (delete-menu (get-app-popup-menu (selected-frame)) 'url)
+  (delete-menu (get-app-popup-menu (selected-frame)) 'url-sep)
   (set-window *last-mouse-window*)
   (continue-pre-selection)
   (let (menu url)
     (cond ((eql (get-selection-type) 3)
-	   (setq menu *app-rectangle-popup-menu*))
+	   (setq menu (get-app-rectangle-popup-menu (selected-frame))))
 	  ((and (eql (get-selection-type) 2)
 		(save-excursion
 		  (goto-char (min (selection-point)
@@ -210,9 +210,9 @@
 		  (looking-at *url-scheme-regexp*)))
 	   (setq url (buffer-substring (selection-point)
 				       (selection-mark)))
-	   (setq menu *app-popup-menu*))
+	   (setq menu (get-app-popup-menu (selected-frame))))
 	  (t
-	   (setq menu *app-popup-menu*)
+	   (setq menu (get-app-popup-menu (selected-frame)))
 	   (save-excursion
 	     (goto-last-mouse-point)
 	     (skip-chars-backward "-a-zA-Z0-9_/~.#@%?&=;+(),'$!*:")
