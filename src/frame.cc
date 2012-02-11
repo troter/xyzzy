@@ -184,7 +184,7 @@ void delete_floating_app_frame()
 
 extern int init_app(HINSTANCE hinst, ApplicationFrame* app1);
 
-static ApplicationFrame * coerce_to_frame (lisp object)
+ApplicationFrame * coerce_to_frame (lisp object)
 {
   if (!object || object == Qnil)
     return &active_app_frame ();

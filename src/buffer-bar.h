@@ -3,18 +3,24 @@
 
 #include "dockbar.h"
 #include "DnD.h"
+#include <map>
+
+typedef std::map<Buffer*, bool> buf_bool_map;
 
 class buffer_bar: public tab_bar
 {
 private:
-  static buffer_bar *b_bar;
-  static Buffer *b_last_buffer;
+  Buffer *b_last_buffer;
   buffer_bar_drop_target b_drop_target;
+  int b_last_checked_version; // modified flag version.
+  buf_bool_map b_buf_map;
+  bool b_item_deleted;
   int b_drop_index;
+  ApplicationFrame *b_app;
   enum {DROP_TIMER_ID = 10};
 
   buffer_bar (dock_frame &);
-  virtual ~buffer_bar () {b_bar = 0;}
+  virtual ~buffer_bar () {}
   virtual int notify (NMHDR *, LRESULT &);
   int create (HWND);
   Buffer *nth (int i) const {return (Buffer *)tab_bar::nth (i);}
@@ -26,33 +32,27 @@ private:
   virtual void draw_item (const draw_item_struct &);
   void insert_buffers ();
   void delete_buffer (Buffer *);
-  virtual void post_nc_destroy () {b_bar = 0;}
+  virtual void post_nc_destroy () {}
   Buffer *next_buffer (Buffer *, int) const;
   Buffer *top_buffer () const;
   Buffer *bottom_buffer () const;
-  static void tab_color (const Buffer *, COLORREF &, COLORREF &);
+  void tab_color (const Buffer *, COLORREF &, COLORREF &);
   lisp buffer_list () const;
 protected:
   virtual lisp context_menu (int);
   virtual LRESULT wndproc (UINT, WPARAM, LPARAM);
 public:
-  static int make_instance ();
-  static void buffer_deleted (Buffer *bp)
-    {if (b_bar) b_bar->delete_buffer (bp);}
+  static buffer_bar* make_instance (ApplicationFrame* app);
+  static void buffer_deleted (Buffer *bp);
   virtual void update_ui ();
-  static Buffer *next_buffer (Buffer *bp)
-    {return b_bar ? b_bar->next_buffer (bp, 1) : 0;}
-  static Buffer *prev_buffer (Buffer *bp)
-    {return b_bar ? b_bar->next_buffer (bp, -1) : 0;}
-  static Buffer *get_top_buffer ()
-    {return b_bar ? b_bar->top_buffer () : 0;}
-  static Buffer *get_bottom_buffer ()
-    {return b_bar ? b_bar->bottom_buffer () : 0;}
+  static Buffer *next_buffer (Buffer *bp);
+  static Buffer *prev_buffer (Buffer *bp);
+  static Buffer *get_top_buffer ();
+  static Buffer *get_bottom_buffer ();
   void drag_enter (int, int);
   void drag_over (int, int);
   void drag_leave ();
-  static lisp list_buffers ()
-    {return b_bar ? b_bar->buffer_list () : 0;}
+  static lisp list_buffers ();
 };
 
 #endif /* _buffer_bar_h_ */

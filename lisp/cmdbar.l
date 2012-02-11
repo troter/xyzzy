@@ -10,11 +10,38 @@
 (export '(find-command-bar define-command-bar
 	  show-command-bar hide-command-bar
 	  delete-command-bar
+	  init-command-bars load-command-bar-info
 	  std-tool-bar buffer-bar))
 
 (define-history-variable *command-bar-list* nil)
-(defvar *defer-define-command-bar-list* nil)
-(defvar *command-bar-loaded* nil)
+(defvar *command-bar-list-multi* (make-hash-table))
+(defvar *defer-define-command-bar-list* (make-hash-table))
+(defvar *command-bar-loaded* (make-hash-table))
+
+;(defun set-command-bar-list(frame val)
+;  (setq *command-bar-list* (acons frame val *command-bar-list*)))
+
+;(defun get-command-bar-list(frame)
+;  (car (assoc frame *command-bar-list*)))
+
+(defun set-command-bar-list (frame val)
+  (if (< (length *command-bar-list*) (length val))
+      (setq *command-bar-list* val))
+  (si:*puthash frame *command-bar-list-multi* val))
+
+(defun get-command-bar-list(frame)
+  (let ((ret (gethash frame *command-bar-list-multi*)))
+    (if ret
+	ret
+      (progn
+	(si:*puthash frame *command-bar-list-multi* *command-bar-list*)
+	(gethash frame *command-bar-list-multi*)))))
+
+
+; (generate-hash-accessor command-bar-list)
+(generate-hash-accessor command-bar-loaded)
+(generate-hash-accessor defer-define-command-bar-list)
+
 
 ;;  0        1        2         3         4    5 6
 ;; (pkg-name sym-name disp-name visible-p edge x y)
@@ -26,28 +53,28 @@
 (defmacro command-bar-edge (bar) `(nth 4 ,bar))
 (defmacro command-bar-xy (bar) `(cdr (nthcdr 4 ,bar)))
 
-(defun find-command-bar (sym)
+(defun find-command-bar (sym &optional(frame (selected-frame)))
   (let ((pkg (package-name (symbol-package sym)))
 	(name (symbol-name sym)))
     (find-if #'(lambda (x)
 		 (and (equal (car x) pkg)
 		      (equal (cadr x) name)))
-	     *command-bar-list*)))
+	     (get-command-bar-list frame))))
 
 (defun command-bar-update (bar)
   (if (command-bar-visible-p bar) :check))
 
-(defun define-command-bar (sym name &optional edge x y w)
-  (cond ((null *command-bar-loaded*)
-	 (setq *defer-define-command-bar-list*
-	       (nconc (delete sym *defer-define-command-bar-list*
+(defun define-command-bar (sym name &optional edge x y w (frame (selected-frame)))
+  (cond ((null (get-command-bar-loaded frame))
+	 (set-defer-define-command-bar-list frame
+	    (nconc (delete sym (get-defer-define-command-bar-list frame)
 			      :test #'eq :key #'car)
 		      (list (list sym name edge x y w)))))
-	((not (find-command-bar sym))
+	((not (find-command-bar sym frame))
 	 (let ((bar (list (package-name (symbol-package sym))
 			  (symbol-name sym) name nil edge x y w)))
-	   (setq *command-bar-list* (nconc *command-bar-list* (list bar)))
-	   (add-menu-item (get-command-bar-popup-menu (selected-frame)) bar name
+	   (set-command-bar-list frame (nconc (get-command-bar-list frame) (list bar)))
+	   (add-menu-item (get-command-bar-popup-menu frame) bar name
 			  #'(lambda () (interactive) (toggle-command-bar-1 bar sym))
 			  #'(lambda () (command-bar-update bar))))))
   t)
@@ -55,12 +82,12 @@
 (defun show-command-bar-1 (bar sym)
   (unless (tool-bar-exist-p sym)
     (funcall sym))
-  (apply #'show-tool-bar sym (command-bar-position bar))
+  (apply #'show-tool-bar (selected-frame) sym (command-bar-position bar))
   (setf (command-bar-visible-p bar) t)
   t)
 
 (defun hide-command-bar-1 (bar sym)
-  (let ((r (multiple-value-list (hide-tool-bar sym))))
+  (let ((r (multiple-value-list (hide-tool-bar (selected-frame) sym))))
     (when (car r)
       (setf (command-bar-position bar) r)
       (setf (command-bar-visible-p bar) nil)))
@@ -71,23 +98,23 @@
       (hide-command-bar-1 bar sym)
     (show-command-bar-1 bar sym)))
 
-(defun delete-command-bar-1 (bar sym)
+(defun delete-command-bar-1 (bar sym frame)
   (when (tool-bar-exist-p sym)
     (delete-tool-bar sym))
-  (delete-menu (get-command-bar-popup-menu (selected-frame)) bar nil)
-  (setq *command-bar-list* (delete bar *command-bar-list*))
+  (delete-menu (get-command-bar-popup-menu frame) bar nil)
+  (set-command-bar-list frame (delete bar (get-command-bar-list frame)))
   t)
 
-(defun show-command-bar (sym)
-  (let ((bar (find-command-bar sym)))
+(defun show-command-bar (sym &optional (frame (selected-frame)))
+  (let ((bar (find-command-bar sym frame)))
     (and bar (show-command-bar-1 bar sym))))
 
-(defun hide-command-bar (sym)
-  (let ((bar (find-command-bar sym)))
+(defun hide-command-bar (sym &optional (frame (selected-frame)))
+  (let ((bar (find-command-bar sym frame)))
     (and bar (hide-command-bar-1 bar sym))))
 
-(defun toggle-command-bar (sym)
-  (let ((bar (find-command-bar sym)))
+(defun toggle-command-bar (sym &optional (frame (selected-frame)))
+  (let ((bar (find-command-bar sym frame)))
     (and bar (toggle-command-bar-1 bar sym))))
 
 (defun named-command-bar-update (bar)
@@ -100,34 +127,34 @@
     (when pkg
       (toggle-command-bar-1 bar (intern (command-bar-symbol-name bar) pkg)))))
 
-(defun delete-command-bar (sym)
-  (let ((bar (find-command-bar sym)))
-    (and bar (delete-command-bar-1 bar sym))))
+(defun delete-command-bar (sym &optional (frame (selected-frame)))
+  (let ((bar (find-command-bar sym frame)))
+    (and bar (delete-command-bar-1 bar sym frame))))
 
 (defun save-command-bar-info ()
   (mapc #'(lambda (edge list)
 	    (mapc #'(lambda (info)
-		      (let ((bar (find-command-bar (car info))))
+		      (let ((bar (find-command-bar (car info) (selected-frame))))
 			(when bar
 			  (setf (command-bar-edge bar) edge)
 			  (setf (command-bar-xy bar) (cdr info)))))
 		  list))
 	'(:left :top :right :bottom) (list-tool-bars)))
 
-(defun load-command-bar-info ()
-  (setq *command-bar-loaded* t)
-  (or (get-command-bar-popup-menu (selected-frame))
-      (set-command-bar-popup-menu (selected-frame) (create-popup-menu)))
+(defun load-command-bar-info (&optional (frame (selected-frame)))
+  (set-command-bar-loaded frame t)
+  (or (get-command-bar-popup-menu frame)
+      (set-command-bar-popup-menu frame (create-popup-menu)))
   (mapc #'(lambda (bar)
 	    (ignore-errors
 	     (let* ((pkg (find-package (command-bar-package bar)))
 		    (sym (and pkg (intern (command-bar-symbol-name bar) pkg)))
 		    (disp-name (command-bar-display-name bar)))
 	       (cond (sym
-		      (let ((x (find sym *defer-define-command-bar-list* :key #'car)))
+		      (let ((x (find sym (get-defer-define-command-bar-list frame) :key #'car)))
 			(when x
 			  (setq disp-name (cadr x))))
-		      (add-menu-item (get-command-bar-popup-menu (selected-frame)) bar disp-name
+		      (add-menu-item (get-command-bar-popup-menu frame) bar disp-name
 				     #'(lambda ()
 					 (interactive)
 					 (toggle-command-bar-1 bar sym))
@@ -136,20 +163,23 @@
 			(setf (command-bar-visible-p bar) nil)
 			(show-command-bar-1 bar sym)))
 		     (t
-		      (add-menu-item (get-command-bar-popup-menu (selected-frame)) bar disp-name
+		      (add-menu-item (get-command-bar-popup-menu frame) bar disp-name
 				     #'(lambda ()
 					 (interactive)
 					 (toggle-named-command-bar bar))
 				     #'(lambda () (named-command-bar-update bar))))))))
-	*command-bar-list*)
+	(get-command-bar-list frame))
   (mapc #'(lambda (x) (apply #'define-command-bar x))
-	*defer-define-command-bar-list*))
+	(get-defer-define-command-bar-list frame)))
 
 (add-hook '*save-history-hook* #'save-command-bar-info)
 (add-hook '*load-history-hook* #'load-command-bar-info)
 
-(define-command-bar 'std-tool-bar "標準(&S)")
-(define-command-bar 'buffer-bar "バッファ(&B)")
+(defun init-command-bars(frame)
+  (define-command-bar 'std-tool-bar "標準(&S)" nil nil nil nil frame)
+  (define-command-bar 'buffer-bar "バッファ(&B)" nil nil nil nil frame))
+
+(init-command-bars (selected-frame))
 
 (setf (symbol-function 'buffer-bar) #'create-buffer-bar)
 

@@ -19,7 +19,7 @@ int Buffer::b_default_linenum_mode = LNMODE_DISP;
 int Buffer::b_default_kinsoku_mode = KINSOKU_MODE_MASK;
 int Buffer::b_default_kinsoku_extend_limit = 3;
 int Buffer::b_default_kinsoku_shorten_limit = 10;
-u_char Buffer::b_buffer_bar_modified_any;
+int Buffer::b_last_modified_version_number = 1;
 
 fixed_heap ChunkHeap::a_heap (8192);
 fixed_heap textprop_heap::a_heap (4096);
@@ -208,7 +208,7 @@ Buffer::Buffer (lisp name, lisp filename, lisp dirname, int temporary)
   b_done_auto_save = 0;
   b_make_backup = 0;
   b_buffer_name_modified = 1;
-  b_buffer_bar_modified = 0;
+  b_modified_version = ++Buffer::b_last_modified_version_number;
   b_buffer_bar_fg = COLORREF (-1);
   b_buffer_bar_bg = COLORREF (-1);
 

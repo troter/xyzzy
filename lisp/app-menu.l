@@ -8,6 +8,7 @@
 (in-package "editor")
 
 (export '(*menu-history-max*
+	  generate-hash-accessor
 	  get-command-bar-popup-menu set-command-bar-popup-menu
 	  get-app-rectangle-popup-menu set-app-rectangle-popup-menu
 	  get-app-menu set-app-menu 

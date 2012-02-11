@@ -335,9 +335,13 @@ Fcreate_tool_bar (lisp name, lisp bitmap, lisp items)
   return name;
 }
 
+extern ApplicationFrame * coerce_to_frame (lisp object);
+
+
 lisp
-Fshow_tool_bar (lisp name, lisp ledge, lisp lx, lisp ly, lisp lw)
+Fshow_tool_bar (lisp frame, lisp name, lisp ledge, lisp lx, lisp ly, lisp lw)
 {
+  ApplicationFrame *app = coerce_to_frame(frame);
   int edge = dock_frame::EDGE_TOP;
   if (ledge == Kleft)
     edge = dock_frame::EDGE_LEFT;
@@ -348,20 +352,20 @@ Fshow_tool_bar (lisp name, lisp ledge, lisp lx, lisp ly, lisp lw)
   else if (ledge == Kbottom)
     edge = dock_frame::EDGE_BOTTOM;
 
-  dock_bar *bar = active_main_frame().find (name);
+  dock_bar *bar = app->mframe->find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
 
   int w = lw && lw != Qnil ? fixnum_value (lw) : -1;
 
   if (!lx || !ly || lx == Qnil || ly == Qnil)
-    active_main_frame().show (bar, edge, 0, w);
+    app->mframe->show (bar, edge, 0, w);
   else
     {
       POINT p;
       p.x = fixnum_value (lx);
       p.y = fixnum_value (ly);
-      active_main_frame().show (bar, edge, &p, w);
+      app->mframe->show (bar, edge, &p, w);
     }
 
   return Qt;
@@ -390,9 +394,10 @@ edge_sym (int edge)
 }
 
 lisp
-Fhide_tool_bar (lisp name)
+Fhide_tool_bar (lisp frame, lisp name)
 {
-  dock_bar *bar = active_main_frame().find (name);
+  ApplicationFrame *app = coerce_to_frame(frame);
+  dock_bar *bar = app->mframe->find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
 
@@ -400,7 +405,7 @@ Fhide_tool_bar (lisp name)
   int edge = bar->edge ();
   int w = bar->horz_width ();
 
-  active_main_frame().hide (bar);
+  app->mframe->hide (bar);
 
   multiple_value::value (1) = make_fixnum (r.left);
   multiple_value::value (2) = make_fixnum (r.top);

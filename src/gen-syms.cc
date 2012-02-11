@@ -1699,7 +1699,7 @@ static symbols ed[] =
   DEFUN3 (set-hjump-columns, 1, 1, 0),
   DEFUN3 (hjump-columns, 0, 1, 0),
   DEFUN3 (refresh-title-bar, 0, 0, 0),
-  DEFUN3 (create-buffer-bar, 0, 0, 0),
+  DEFUN3 (create-buffer-bar, 0, 1, 0),
   MAKE_SYMBOL2 (buffer-bar),
   DEFVAR2 (*buffer-bar-selected-buffer-to-first*),
   DEFVAR2 (*buffer-bar-hook*),
@@ -2544,8 +2544,8 @@ static symbols ed[] =
 
   /* usertool.cc */
   DEFUN3 (create-tool-bar, 3, 0, 0),
-  DEFUN3 (show-tool-bar, 1, 4, 0),
-  DEFUN3 (hide-tool-bar, 1, 0, 0),
+  DEFUN3 (show-tool-bar, 2, 4, 0),
+  DEFUN3 (hide-tool-bar, 2, 0, 0),
   DEFUN3 (delete-tool-bar, 1, 0, 0),
   DEFUN3 (tool-bar-exist-p, 1, 0, 0),
   DEFUN3 (tool-bar-info, 1, 0, 0),

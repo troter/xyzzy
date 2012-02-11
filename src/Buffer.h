@@ -489,18 +489,10 @@ struct Buffer
   selection_type b_reverse_temp;
   Region b_reverse_region;
 
-  enum
-    {
-      BUFFER_BAR_MODIFIED = 1,
-      BUFFER_BAR_CREATED = 2,
-      BUFFER_BAR_DELETED = 4,
-      BUFFER_BAR_LAST_MODIFIED_FLAG = 8,
-      BUFFER_BAR_MARK = 16
-    };
   COLORREF b_buffer_bar_fg;
   COLORREF b_buffer_bar_bg;
-  static u_char b_buffer_bar_modified_any;
-  u_char b_buffer_bar_modified;
+  static int b_last_modified_version_number;
+  int b_modified_version;
   u_char b_truncated;
   u_char b_modified;
   long b_modified_count;
@@ -796,15 +788,15 @@ struct Buffer
   void modify_mode_line () const;
   void modify_buffer_bar ()
     {
-      b_buffer_bar_modified |= BUFFER_BAR_MODIFIED;
-      b_buffer_bar_modified_any |= BUFFER_BAR_MODIFIED;
+	  b_modified_version = ++Buffer::b_last_modified_version_number;
     }
   static void maybe_modify_buffer_bar ()
-    {b_buffer_bar_modified_any |= BUFFER_BAR_MODIFIED;}
+    {
+  	  ++Buffer::b_last_modified_version_number;
+    }
   void buffer_bar_created ()
     {
-      b_buffer_bar_modified |= BUFFER_BAR_CREATED;
-      b_buffer_bar_modified_any |= BUFFER_BAR_CREATED;
+	  b_modified_version = ++Buffer::b_last_modified_version_number;
     }
   static int count_modified_buffers ();
   static int query_kill_xyzzy ();
