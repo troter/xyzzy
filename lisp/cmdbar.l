@@ -34,7 +34,7 @@
     (if ret
 	ret
       (progn
-	(si:*puthash frame *command-bar-list-multi* *command-bar-list*)
+	(si:*puthash frame *command-bar-list-multi* (copy-tree *command-bar-list*))
 	(gethash frame *command-bar-list-multi*)))))
 
 
@@ -75,28 +75,32 @@
 			  (symbol-name sym) name nil edge x y w)))
 	   (set-command-bar-list frame (nconc (get-command-bar-list frame) (list bar)))
 	   (add-menu-item (get-command-bar-popup-menu frame) bar name
-			  #'(lambda () (interactive) (toggle-command-bar-1 bar sym))
+			  #'(lambda () (interactive) (toggle-command-bar-broad-cast sym))
 			  #'(lambda () (command-bar-update bar))))))
   t)
 
-(defun show-command-bar-1 (bar sym)
+(defun show-command-bar-1 (frame bar sym)
   (unless (tool-bar-exist-p sym)
     (funcall sym))
-  (apply #'show-tool-bar (selected-frame) sym (command-bar-position bar))
+  (apply #'show-tool-bar frame sym (command-bar-position bar))
   (setf (command-bar-visible-p bar) t)
   t)
 
-(defun hide-command-bar-1 (bar sym)
-  (let ((r (multiple-value-list (hide-tool-bar (selected-frame) sym))))
+(defun hide-command-bar-1 (frame bar sym)
+  (let ((r (multiple-value-list (hide-tool-bar frame sym))))
     (when (car r)
       (setf (command-bar-position bar) r)
       (setf (command-bar-visible-p bar) nil)))
   t)
 
-(defun toggle-command-bar-1 (bar sym)
+(defun toggle-command-bar-broad-cast(sym)
+  (dolist (frame (frame-list))
+    (toggle-command-bar sym frame)))
+
+(defun toggle-command-bar-1 (frame bar sym)
   (if (command-bar-visible-p bar)
-      (hide-command-bar-1 bar sym)
-    (show-command-bar-1 bar sym)))
+      (hide-command-bar-1 frame bar sym)
+    (show-command-bar-1 frame bar sym)))
 
 (defun delete-command-bar-1 (bar sym frame)
   (when (tool-bar-exist-p sym)
@@ -107,15 +111,15 @@
 
 (defun show-command-bar (sym &optional (frame (selected-frame)))
   (let ((bar (find-command-bar sym frame)))
-    (and bar (show-command-bar-1 bar sym))))
+    (and bar (show-command-bar-1 frame bar sym))))
 
 (defun hide-command-bar (sym &optional (frame (selected-frame)))
   (let ((bar (find-command-bar sym frame)))
-    (and bar (hide-command-bar-1 bar sym))))
+    (and bar (hide-command-bar-1 frame bar sym))))
 
 (defun toggle-command-bar (sym &optional (frame (selected-frame)))
   (let ((bar (find-command-bar sym frame)))
-    (and bar (toggle-command-bar-1 bar sym))))
+    (and bar (toggle-command-bar-1 frame bar sym))))
 
 (defun named-command-bar-update (bar)
   (if (find-package (command-bar-package bar))
@@ -125,7 +129,7 @@
 (defun toggle-named-command-bar (bar)
   (let ((pkg (find-package (command-bar-package bar))))
     (when pkg
-      (toggle-command-bar-1 bar (intern (command-bar-symbol-name bar) pkg)))))
+      (toggle-command-bar-1 (selected-frame) bar (intern (command-bar-symbol-name bar) pkg)))))
 
 (defun delete-command-bar (sym &optional (frame (selected-frame)))
   (let ((bar (find-command-bar sym frame)))
@@ -157,11 +161,11 @@
 		      (add-menu-item (get-command-bar-popup-menu frame) bar disp-name
 				     #'(lambda ()
 					 (interactive)
-					 (toggle-command-bar-1 bar sym))
+					 (toggle-command-bar-broad-cast sym))
 				     #'(lambda () (command-bar-update bar)))
 		      (when (command-bar-visible-p bar)
 			(setf (command-bar-visible-p bar) nil)
-			(show-command-bar-1 bar sym)))
+			(show-command-bar-1 frame bar sym)))
 		     (t
 		      (add-menu-item (get-command-bar-popup-menu frame) bar disp-name
 				     #'(lambda ()
