@@ -115,8 +115,8 @@
 			     (list (list (pseudo-frame-name frame)
 					 (winconf-to-readable-winconf
 					  (pseudo-frame-winconf frame))
-					 (eq frame *current-pseudo-frame*)))))
-		       *pseudo-frame-list*))
+					 (eq frame (get-current-pseudo-frame (selected-frame)))))))
+		       (get-pseudo-frame-list (selected-frame))))
 	(binfo (list-buffer-info)))
     (princ ";;; xyzzy session file.
 ;;; This file is generated automatically. do not edit.\n" s)
@@ -164,8 +164,8 @@
 		  (setq current frame))))
 	  finfo)
     (when current
-      (setq *current-pseudo-frame* nil)
-      (select-pseudo-frame current))))
+      (set-current-pseudo-frame (selected-frame) nil)
+      (select-pseudo-frame current (selected-frame)))))
 
 (defun close-session (&optional noask (create-new t) (fn #'write-file))
   (interactive "p")

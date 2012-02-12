@@ -30,7 +30,7 @@ class user_tab_bar: public tab_bar
 
 public:
   enum {UTB_FIRST, UTB_LAST, UTB_BEFORE, UTB_AFTER, UTB_MAX};
-  user_tab_bar (dock_frame &, lisp, lisp);
+  user_tab_bar (ApplicationFrame*, dock_frame &, lisp, lisp);
 
   virtual void gc_mark (void (*)(lisp));
   void add_item (lisp, lisp, lisp, lisp, int, lisp);
@@ -47,15 +47,15 @@ public:
       return item_pos (item, tem);
     }
   virtual void *ident () const {return (void *)&u_ident;}
-  static user_tab_bar *check_bar (lisp);
+  static user_tab_bar *check_bar (ApplicationFrame*, lisp);
 };
 
 char user_tab_bar::u_ident;
 
 /* (item name . tooltip) */
 
-user_tab_bar::user_tab_bar (dock_frame &frame, lisp name, lisp callback)
-     : tab_bar (frame, name), u_item (Qnil), u_callback (callback)
+user_tab_bar::user_tab_bar (ApplicationFrame* app, dock_frame &frame, lisp name, lisp callback)
+     : tab_bar (app, frame, name), u_item (Qnil), u_callback (callback)
 {
 }
 
@@ -117,7 +117,7 @@ user_tab_bar::notify (NMHDR *nm, LRESULT &result)
 
     case TCN_SELCHANGE:
     case TCN_SELCHANGING:
-      if (!active_app_frame().kbdq.idlep ())
+      if (!b_app_frame->kbdq.idlep ())
         {
           result = 1; // prevent the selection
           return 1;
@@ -312,9 +312,9 @@ user_tab_bar::list_items ()
 }
 
 user_tab_bar *
-user_tab_bar::check_bar (lisp name)
+user_tab_bar::check_bar (ApplicationFrame* app, lisp name)
 {
-  dock_bar *bar = active_main_frame().find (name);
+  dock_bar *bar = app->mframe->find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
   if (bar->ident () != (void *)&u_ident)
@@ -322,17 +322,20 @@ user_tab_bar::check_bar (lisp name)
   return (user_tab_bar *)bar;
 }
 
+extern ApplicationFrame * coerce_to_frame (lisp object);
+
 lisp
-Fcreate_tab_bar (lisp name, lisp callback)
+Fcreate_tab_bar (lisp frame, lisp name, lisp callback)
 {
-  if (active_main_frame().find (name))
+  ApplicationFrame* app = coerce_to_frame(frame);
+  if (app->mframe->find (name))
     FEsimple_error (Etoolbar_exist, name);
 
-  user_tab_bar *bar = new user_tab_bar (active_main_frame(), name, callback);
+  user_tab_bar *bar = new user_tab_bar (app, *app->mframe, name, callback);
 
   try
     {
-      bar->create (active_app_frame().toplev);
+      bar->create (app->toplev);
     }
   catch (nonlocal_jump &)
     {
@@ -340,14 +343,15 @@ Fcreate_tab_bar (lisp name, lisp callback)
       throw;
     }
 
-  active_main_frame().add (bar);
+  app->mframe->add (bar);
   return name;
 }
 
 lisp
-Ftab_bar_add_item (lisp name, lisp item, lisp string,
+Ftab_bar_add_item (lisp frame, lisp name, lisp item, lisp string,
                    lisp tooltip, lisp menu, lisp keys)
 {
+  ApplicationFrame *app = coerce_to_frame(frame);
   lisp u[user_tab_bar::UTB_MAX];
 
   u[user_tab_bar::UTB_FIRST] = find_keyword (Kfirst, keys);
@@ -367,7 +371,7 @@ Ftab_bar_add_item (lisp name, lisp item, lisp string,
   if (n > 1)
     FEsimple_error (Emultiple_position_specified);
 
-  user_tab_bar::check_bar (name)->add_item (item, string,
+  user_tab_bar::check_bar (app, name)->add_item (item, string,
                                             tooltip ? tooltip : Qnil,
                                             menu ? menu : Qnil,
                                             pos, u[pos]);
@@ -375,39 +379,39 @@ Ftab_bar_add_item (lisp name, lisp item, lisp string,
 }
 
 lisp
-Ftab_bar_delete_item (lisp name, lisp item)
+Ftab_bar_delete_item (lisp frame, lisp name, lisp item)
 {
-  return boole (user_tab_bar::check_bar (name)->delete_item (item));
+  return boole (user_tab_bar::check_bar (coerce_to_frame(frame), name)->delete_item (item));
 }
 
 lisp
-Ftab_bar_select_item (lisp name, lisp item)
+Ftab_bar_select_item (lisp frame, lisp name, lisp item)
 {
-  return boole (user_tab_bar::check_bar (name)->select_item (item));
+  return boole (user_tab_bar::check_bar (coerce_to_frame(frame), name)->select_item (item));
 }
 
 lisp
-Ftab_bar_current_item (lisp name)
+Ftab_bar_current_item (lisp frame, lisp name)
 {
-  return user_tab_bar::check_bar (name)->current_item ();
+  return user_tab_bar::check_bar (coerce_to_frame(frame), name)->current_item ();
 }
 
 lisp
-Ftab_bar_find_item (lisp name, lisp item)
+Ftab_bar_find_item (lisp frame, lisp name, lisp item)
 {
-  return boole (user_tab_bar::check_bar (name)->item_pos (item) >= 0);
+  return boole (user_tab_bar::check_bar (coerce_to_frame(frame), name)->item_pos (item) >= 0);
 }
 
 lisp
-Ftab_bar_list_items (lisp name)
+Ftab_bar_list_items (lisp frame, lisp name)
 {
-  return user_tab_bar::check_bar (name)->list_items ();
+  return user_tab_bar::check_bar (coerce_to_frame(frame), name)->list_items ();
 }
 
 lisp
-Ftab_bar_modify_item (lisp name, lisp item, lisp string,
+Ftab_bar_modify_item (lisp frame, lisp name, lisp item, lisp string,
                       lisp tooltip, lisp menu)
 {
-  return boole (user_tab_bar::check_bar (name)
+  return boole (user_tab_bar::check_bar (coerce_to_frame(frame), name)
                 ->modify_item (item, string, tooltip, menu));
 }

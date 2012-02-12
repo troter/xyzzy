@@ -26,7 +26,7 @@ class user_tool_bar: public tool_bar
   int index_from_id (int) const;
 
 public:
-  user_tool_bar (dock_frame &, lisp);
+  user_tool_bar (ApplicationFrame*, dock_frame &, lisp);
   ~user_tool_bar ();
 
   void create (lisp, lisp);
@@ -38,8 +38,8 @@ public:
 u_long user_tool_bar::u_command_id[(TOOL_ID_RANGE_MAX - TOOL_ID_RANGE_MIN)
                                    / sizeof (u_long)];
 
-user_tool_bar::user_tool_bar (dock_frame &frame, lisp name)
-     : tool_bar (frame, name), u_item (0), u_nitems (0)
+user_tool_bar::user_tool_bar (ApplicationFrame* app,dock_frame &frame, lisp name)
+     : tool_bar (app, frame, name), u_item (0), u_nitems (0)
 {
 }
 
@@ -122,7 +122,7 @@ user_tool_bar::update_ui ()
       {
         int flags;
         if (u_item[i].ti_init == Kend_macro)
-          flags = (active_app_frame().kbdq.save_p ()
+          flags = (b_app_frame->kbdq.save_p ()
                    ? MF_ENABLED | MF_UNCHECKED
                    : MF_GRAYED | MF_UNCHECKED);
         else
@@ -265,7 +265,7 @@ user_tool_bar::create (lisp bitmap, lisp items)
   for (p = items, i = 0; consp (p); p = xcdr (p), i++)
     has_tooltips |= set_item (u_item[i], xcar (p));
 
-  if (!tool_bar::create (active_app_frame().toplev,
+  if (!tool_bar::create (b_app_frame->toplev,
                          (WS_CHILD | WS_CLIPSIBLINGS | CCS_NOMOVEY
                           | CCS_NORESIZE | CCS_NOPARENTALIGN | CCS_NODIVIDER
                           | (has_tooltips ? TBSTYLE_TOOLTIPS : 0)),
@@ -313,13 +313,17 @@ user_tool_bar::create (lisp bitmap, lisp items)
   add_buttons (u_nitems, tbb);
 }
 
+extern ApplicationFrame * coerce_to_frame (lisp object);
+
+
 lisp
-Fcreate_tool_bar (lisp name, lisp bitmap, lisp items)
+Fcreate_tool_bar (lisp frame, lisp name, lisp bitmap, lisp items)
 {
-  if (active_main_frame().find (name))
+  ApplicationFrame *app = coerce_to_frame(frame);
+  if (app->mframe->find (name))
     FEsimple_error (Etoolbar_exist, name);
 
-  user_tool_bar *bar = new user_tool_bar (active_main_frame(), name);
+  user_tool_bar *bar = new user_tool_bar (app, *app->mframe, name);
 
   try
     {
@@ -331,12 +335,9 @@ Fcreate_tool_bar (lisp name, lisp bitmap, lisp items)
       throw;
     }
 
-  active_main_frame().add (bar);
+  app->mframe->add (bar);
   return name;
 }
-
-extern ApplicationFrame * coerce_to_frame (lisp object);
-
 
 lisp
 Fshow_tool_bar (lisp frame, lisp name, lisp ledge, lisp lx, lisp ly, lisp lw)
@@ -415,25 +416,26 @@ Fhide_tool_bar (lisp frame, lisp name)
 }
 
 lisp
-Fdelete_tool_bar (lisp name)
+Fdelete_tool_bar (lisp frame, lisp name)
 {
-  dock_bar *bar = active_main_frame().find (name);
+  ApplicationFrame *app = coerce_to_frame(frame);
+  dock_bar *bar = app->mframe->find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
-  active_main_frame().remove (bar);
+  app->mframe->remove (bar);
   return Qt;
 }
 
 lisp
-Ftool_bar_exist_p (lisp name)
+Ftool_bar_exist_p (lisp frame, lisp name)
 {
-  return boole (active_main_frame().find (name));
+  return boole (coerce_to_frame(frame)->mframe->find (name));
 }
 
 lisp
-Ftool_bar_info (lisp name)
+Ftool_bar_info (lisp frame, lisp name)
 {
-  dock_bar *bar = active_main_frame().find (name);
+  dock_bar *bar = coerce_to_frame(frame)->mframe->find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
 
@@ -447,20 +449,20 @@ Ftool_bar_info (lisp name)
 }
 
 lisp
-Flist_tool_bars ()
+Flist_tool_bars (lisp frame)
 {
-  return active_main_frame().list_bars ();
+  return coerce_to_frame(frame)->mframe->list_bars ();
 }
 
 lisp
-Ffocus_tool_bar ()
+Ffocus_tool_bar (lisp frame)
 {
-  return boole (active_main_frame().focus_next (0));
+  return boole (coerce_to_frame(frame)->mframe->focus_next (0));
 }
 
 lisp
-Frefresh_tool_bars ()
+Frefresh_tool_bars (lisp frame)
 {
-  active_main_frame().refresh ();
+  coerce_to_frame(frame)->mframe->refresh ();
   return Qt;
 }

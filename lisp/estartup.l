@@ -168,7 +168,7 @@
 
 (defun startup-frame (frame)
 ;  (trap-errors (init-misc-objects))
-  (trap-errors (init-pseudo-frame))
+  (trap-errors (init-pseudo-frame frame))
   (trap-errors (run-hooks '*pre-startup-hook*))
   (let (no-init-file
 	(cl (car si:*command-line-args*)))
@@ -188,6 +188,7 @@
 ;	(ignore-errors (load-history-file))))
 ;    (ignore-errors (keep-compatibility))
     (init-command-bars frame)
+    (init-pseudo-frame-bars frame)
     (unless *inhibit-history-load*
       (ignore-errors (load-command-bar-info frame)))
     (ignore-errors (init-app-menus frame))
@@ -198,5 +199,5 @@
 	  (save-excursion
 	    (set-buffer scratch)
 	    (funcall *initial-buffer-mode*)))))
-    (trap-errors (process-command-line))
+    ; (trap-errors (process-command-line))
     (trap-errors (run-hooks '*post-startup-hook*))))

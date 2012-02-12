@@ -26,6 +26,7 @@ http://www.jsdlab.co.jp/~kamei/
 - session.l
 - mouse.l
 - cmdbar.l
+- pframe.l
 
 ‚Å‚·BŠù‘¶‚ÌŠÂ‹«‚Éã‘‚«‚·‚éê‡‚Íxyzzy.wxp‚ğíœ‚µ‚Ä‚­‚¾‚³‚¢B
 

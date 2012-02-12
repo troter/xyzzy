@@ -9,8 +9,8 @@ static app_buf_map g_buffer_bar_map;
 
 
 #pragma warning (disable: 4355)
-buffer_bar::buffer_bar (dock_frame &frame)
-	: tab_bar (frame, Vbuffer_bar), b_drop_target (this), b_drop_index (-1), b_last_checked_version(-1), b_item_deleted(false), b_last_buffer(0)
+buffer_bar::buffer_bar (ApplicationFrame* app, dock_frame &frame)
+	: tab_bar (app, frame, Vbuffer_bar), b_drop_target (this), b_drop_index (-1), b_last_checked_version(-1), b_item_deleted(false), b_last_buffer(0)
 {
 }
 #pragma warning (default: 4355)
@@ -68,7 +68,7 @@ buffer_bar::notify (NMHDR *nm, LRESULT &result)
 
     case TCN_SELCHANGE:
     case TCN_SELCHANGING:
-      if (!active_app_frame().kbdq.idlep ()
+      if (!b_app_frame->kbdq.idlep ()
           || selected_window ()->minibuffer_window_p ())
         {
           result = 1; // prevent the selection
@@ -84,7 +84,7 @@ buffer_bar::notify (NMHDR *nm, LRESULT &result)
     {
       try
         {
-          selected_buffer (b_app)->run_hook (Vbuffer_bar_hook, bp->lbp);
+          selected_buffer (b_app_frame)->run_hook (Vbuffer_bar_hook, bp->lbp);
         }
       catch (nonlocal_jump &)
         {
@@ -123,7 +123,7 @@ buffer_bar::need_text (TOOLTIPTEXT &ttt)
 void
 buffer_bar::tab_color (const Buffer *bp, COLORREF &fg, COLORREF &bg)
 {
-  if (bp == selected_buffer (b_app))
+  if (bp == selected_buffer (b_app_frame))
     {
       fg = get_misc_color (MC_BUFTAB_SEL_FG);
       bg = get_misc_color (MC_BUFTAB_SEL_BG);
@@ -131,7 +131,7 @@ buffer_bar::tab_color (const Buffer *bp, COLORREF &fg, COLORREF &bg)
   else
     {
 	  Window *wp;
-      for (wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+      for (wp = b_app_frame->active_frame.windows; wp; wp = wp->w_next)
         if (wp->w_bufp == bp)
           {
             fg = get_misc_color (MC_BUFTAB_DISP_FG);
@@ -171,7 +171,7 @@ buffer_bar::insert_buffers ()
     if (!bp->internal_buffer_p ())
       {
         insert (bp, i);
-        if (bp == selected_buffer (b_app))
+        if (bp == selected_buffer (b_app_frame))
           current = i;
         i++;
       }
@@ -197,12 +197,11 @@ buffer_bar::make_instance (ApplicationFrame* app)
 	{
 		return it->second;
 	}
-	buffer_bar* bar = new buffer_bar (*app->mframe);
+	buffer_bar* bar = new buffer_bar (app, *app->mframe);
 	if (!bar->create (app->toplev)) {
 		delete bar;
 		return 0;
 	}
-	bar->b_app = app;
 	bar->insert_buffers ();
 	app->mframe->add (bar);
 	g_buffer_bar_map[app] = bar;
@@ -279,7 +278,7 @@ buffer_bar::delete_buffer (Buffer *bp)
       Buffer *p = nth (i);
       if (p == bp)
         found = i;
-      if (p == selected_buffer (b_app))
+      if (p == selected_buffer (b_app_frame))
         current = i;
       if (found >= 0 && current >= 0)
         break;
@@ -365,14 +364,14 @@ buffer_bar::update_ui ()
 
   if (
 		b_last_checked_version != Buffer::b_last_modified_version_number
-		|| b_last_buffer != selected_buffer (b_app))
+		|| b_last_buffer != selected_buffer (b_app_frame))
     {
       for (int i = 0; i < n; i++)
         {
           Buffer *bp = nth (i);
           if (!bp)
             continue;
-          if (bp == selected_buffer (b_app))
+          if (bp == selected_buffer (b_app_frame))
             cur = i;
           if (checked.find(bp) != checked.end() &&
 			  b_last_checked_version > bp->b_modified_version)
@@ -408,7 +407,7 @@ buffer_bar::update_ui ()
   if (cur >= 1 && xsymbol_value (Vbuffer_bar_selected_buffer_to_first) != Qnil
       && GetFocus () != b_hwnd)
     {
-      Buffer *bp = selected_buffer (b_app);
+      Buffer *bp = selected_buffer (b_app_frame);
       if (!bp->internal_buffer_p ())
         {
           set_cursel (0);
@@ -426,7 +425,7 @@ buffer_bar::update_ui ()
   if (cur >= -1)
     set_cursel (cur);
 
-  b_last_buffer = selected_buffer (b_app);
+  b_last_buffer = selected_buffer (b_app_frame);
 
   b_item_deleted = false;
   b_last_checked_version = Buffer::b_last_modified_version_number;
@@ -473,15 +472,15 @@ buffer_bar::wndproc (UINT msg, WPARAM wparam, LPARAM lparam)
           KillTimer (b_hwnd, DROP_TIMER_ID);
           b_drop_index = -1;
           if (index >= 0
-              && (active_app_frame().drag_window || active_app_frame().kbdq.idlep ())
-              && !selected_window ()->minibuffer_window_p ())
+              && (b_app_frame->drag_window || b_app_frame->kbdq.idlep ())
+              && !selected_window (b_app_frame)->minibuffer_window_p ())
             {
               Buffer *bp = nth (index);
               if (bp)
                 {
                   try
                     {
-                      selected_buffer (b_app)->run_hook (Vbuffer_bar_hook, bp->lbp);
+                      selected_buffer (b_app_frame)->run_hook (Vbuffer_bar_hook, bp->lbp);
                     }
                   catch (nonlocal_jump &)
                     {

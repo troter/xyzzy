@@ -127,6 +127,8 @@ const wcolor_index_name wcolor_index_names[] =
   {0, RGB (0, 0, 0), "選択モード行背景色"},
 };
 
+extern ApplicationFrame * coerce_to_frame (lisp object);
+
 ModelineParam::ModelineParam ()
      : m_hfont (0)
 {
@@ -1590,9 +1592,10 @@ Window::delete_other_windows ()
 }
 
 lisp
-Fdelete_other_windows ()
+Fdelete_other_windows (lisp lapp)
 {
-  selected_window ()->delete_other_windows ();
+  ApplicationFrame *app = coerce_to_frame(lapp);
+  selected_window (app)->delete_other_windows ();
   return Qt;
 }
 
@@ -1761,17 +1764,18 @@ Fdelete_window ()
 }
 
 lisp
-Fselected_window ()
+Fselected_window (lisp lapp)
 {
-  assert (xwindow_wp (selected_window ()->lwp));
-  assert (xwindow_wp (selected_window ()->lwp) == selected_window ());
-  return selected_window ()->lwp;
+	ApplicationFrame *app = coerce_to_frame(lapp);
+  assert (xwindow_wp (selected_window (app)->lwp));
+  assert (xwindow_wp (selected_window (app)->lwp) == selected_window (app));
+  return selected_window (app)->lwp;
 }
 
 lisp
-Fminibuffer_window ()
+Fminibuffer_window (lisp frame)
 {
-  return Window::minibuffer_window ()->lwp;
+  return Window::minibuffer_window (coerce_to_frame(frame) )->lwp;
 }
 
 lisp
@@ -2757,10 +2761,11 @@ Fwindow_coordinate (lisp lwindow)
 }
 
 lisp
-Fcurrent_window_configuration ()
+Fcurrent_window_configuration (lisp lapp)
 {
+  ApplicationFrame* app = coerce_to_frame(lapp);
   lisp ldefs = Qnil;
-  for (Window *wp = active_app_frame().active_frame.windows; wp->w_next; wp = wp->w_next)
+  for (Window *wp = app->active_frame.windows; wp->w_next; wp = wp->w_next)
     {
       Buffer *bp = wp->w_bufp;
       ldefs = xcons (make_list (wp->lwp,
@@ -2793,10 +2798,10 @@ Fcurrent_window_configuration ()
     }
 
   return make_list (Qwindow_configuration,
-                    Fselected_window (),
+                    Fselected_window (app->lfp),
                     Fnreverse (ldefs),
-                    make_list (make_fixnum (active_app_frame().active_frame.size.cx),
-                               make_fixnum (active_app_frame().active_frame.size.cy),
+                    make_list (make_fixnum (app->active_frame.size.cx),
+                               make_fixnum (app->active_frame.size.cy),
                                0),
                     0);
 }
@@ -3101,7 +3106,7 @@ wc_restore (ApplicationFrame* owner, winconf *conf, int nwindows, const SIZE &si
 }
 
 lisp
-Fset_window_configuration (lisp lconf)
+Fset_window_configuration (lisp lconf, lisp lappframe)
 {
   lisp x = lconf;
   if (xlist_length (x) != 4 || xcar (x) != Qwindow_configuration)
@@ -3117,9 +3122,7 @@ Fset_window_configuration (lisp lconf)
       check_window (lselected_window);
     }
 
-// this is serialized window object (from previous session). w_owner is invalid.
-//  ApplicationFrame* app_frame = xwindow_wp(lselected_window)->w_owner;
-  ApplicationFrame* app_frame = &active_app_frame();
+  ApplicationFrame* app_frame = coerce_to_frame(lappframe);
   x = xcdr (x);
   lisp ldefs = xcar (x);
   if (!consp (ldefs))

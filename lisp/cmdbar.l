@@ -18,15 +18,8 @@
 (defvar *defer-define-command-bar-list* (make-hash-table))
 (defvar *command-bar-loaded* (make-hash-table))
 
-;(defun set-command-bar-list(frame val)
-;  (setq *command-bar-list* (acons frame val *command-bar-list*)))
-
-;(defun get-command-bar-list(frame)
-;  (car (assoc frame *command-bar-list*)))
-
 (defun set-command-bar-list (frame val)
-  (if (< (length *command-bar-list*) (length val))
-      (setq *command-bar-list* val))
+  (setq *command-bar-list* val)
   (si:*puthash frame *command-bar-list-multi* val))
 
 (defun get-command-bar-list(frame)
@@ -34,11 +27,10 @@
     (if ret
 	ret
       (progn
-	(si:*puthash frame *command-bar-list-multi* (copy-tree *command-bar-list*))
+	(set-command-bar-list frame (copy-tree *command-bar-list*))
 	(gethash frame *command-bar-list-multi*)))))
 
 
-; (generate-hash-accessor command-bar-list)
 (generate-hash-accessor command-bar-loaded)
 (generate-hash-accessor defer-define-command-bar-list)
 
@@ -75,12 +67,12 @@
 			  (symbol-name sym) name nil edge x y w)))
 	   (set-command-bar-list frame (nconc (get-command-bar-list frame) (list bar)))
 	   (add-menu-item (get-command-bar-popup-menu frame) bar name
-			  #'(lambda () (interactive) (toggle-command-bar-broad-cast sym))
+			  #'(lambda () (interactive) (toggle-command-bar sym))
 			  #'(lambda () (command-bar-update bar))))))
   t)
 
 (defun show-command-bar-1 (frame bar sym)
-  (unless (tool-bar-exist-p sym)
+  (unless (tool-bar-exist-p frame sym)
     (funcall sym))
   (apply #'show-tool-bar frame sym (command-bar-position bar))
   (setf (command-bar-visible-p bar) t)
@@ -93,9 +85,6 @@
       (setf (command-bar-visible-p bar) nil)))
   t)
 
-(defun toggle-command-bar-broad-cast(sym)
-  (dolist (frame (frame-list))
-    (toggle-command-bar sym frame)))
 
 (defun toggle-command-bar-1 (frame bar sym)
   (if (command-bar-visible-p bar)
@@ -103,7 +92,7 @@
     (show-command-bar-1 frame bar sym)))
 
 (defun delete-command-bar-1 (bar sym frame)
-  (when (tool-bar-exist-p sym)
+  (when (tool-bar-exist-p frame sym)
     (delete-tool-bar sym))
   (delete-menu (get-command-bar-popup-menu frame) bar nil)
   (set-command-bar-list frame (delete bar (get-command-bar-list frame)))
@@ -161,7 +150,7 @@
 		      (add-menu-item (get-command-bar-popup-menu frame) bar disp-name
 				     #'(lambda ()
 					 (interactive)
-					 (toggle-command-bar-broad-cast sym))
+					 (toggle-command-bar sym))
 				     #'(lambda () (command-bar-update bar)))
 		      (when (command-bar-visible-p bar)
 			(setf (command-bar-visible-p bar) nil)

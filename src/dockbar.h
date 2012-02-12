@@ -28,6 +28,7 @@ private:
 protected:
   dock_frame &b_frame;
   lisp b_lname;
+  ApplicationFrame *b_app_frame;
   enum {TTBUFSIZE = 256};
   static char b_ttbuf[TTBUFSIZE];
 private:
@@ -85,7 +86,7 @@ public:
   enum {DOCK_LENGTH_INFINITE = 0x7fff};
 
 protected:
-  dock_bar (dock_frame &, lisp, int);
+  dock_bar (ApplicationFrame*, dock_frame &, lisp, int);
   virtual ~dock_bar ();
   static int new_comctl_p ()
     {return sysdep.comctl32_version >= PACK_VERSION (4, 70);}
@@ -214,7 +215,7 @@ protected:
   int tb_flat_p () const {return new_comctl_p () && style () & TBSTYLE_FLAT;}
   void erase_bkgnd (HDC) const;
 public:
-  tool_bar (dock_frame &, lisp);
+  tool_bar (ApplicationFrame *app, dock_frame &, lisp);
   ~tool_bar ();
   int create (HWND, DWORD, UINT);
   int set_bitmap_size (int cx, int cy)
@@ -310,7 +311,7 @@ private:
   static void parent_notify (UINT, UINT, HWND);
   static LRESULT CALLBACK spin_wndproc (HWND, UINT, WPARAM, LPARAM);
 public:
-  tab_bar (dock_frame &, lisp);
+  tab_bar (ApplicationFrame *app, dock_frame &, lisp);
   ~tab_bar () {}
   int create (HWND hwnd_parent, DWORD style, UINT id)
     {

@@ -16,10 +16,9 @@ private:
   buf_bool_map b_buf_map;
   bool b_item_deleted;
   int b_drop_index;
-  ApplicationFrame *b_app;
   enum {DROP_TIMER_ID = 10};
 
-  buffer_bar (dock_frame &);
+  buffer_bar (ApplicationFrame*, dock_frame &);
   virtual ~buffer_bar () {}
   virtual int notify (NMHDR *, LRESULT &);
   int create (HWND);
