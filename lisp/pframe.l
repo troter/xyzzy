@@ -13,6 +13,7 @@
 	  delete-all-pseudo-frames rename-pseudo-frame
 	  init-pseudo-frame-bars
 	  get-current-pseudo-frame
+	  selected-pseudo-frame-name
 	  get-pseudo-frame-list
 	  selected-pseudo-frame *select-pseudo-frame-hook*
 	  switch-pseudo-frame pseudo-frame-selector))
@@ -29,6 +30,9 @@
 
 (generate-hash-accessor current-pseudo-frame)
 (generate-hash-accessor pseudo-frame-list)
+
+(defun selected-pseudo-frame-name()
+  (pseudo-frame-name (selected-pseudo-frame)))
 
 (defun selected-pseudo-frame ()
   (get-current-pseudo-frame (selected-frame)))
