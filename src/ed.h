@@ -429,7 +429,6 @@ public:
   int default_tab_columns;
   int auto_save_count;
 
-  int toplevel_is_active;
   int ime_composition;
   int ime_open_mode;
 
@@ -485,6 +484,7 @@ public:
 
   char dump_image[PATH_MAX + 8];
   char *ini_file_path;
+  int toplevel_is_active;
 
   void *initial_stack;
   int in_gc;

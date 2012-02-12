@@ -125,7 +125,7 @@ mouse_state::dispatch (Window *wp, WPARAM wparam, LPARAM lparam, int op)
       break;
 
     default:
-      if (op != MOVE || !active_app_frame().toplevel_is_active)
+      if (op != MOVE || !g_app.toplevel_is_active)
         return;
       c = CCF_MOUSEMOVE;
       mouse_move_p = 1;

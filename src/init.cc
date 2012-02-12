@@ -37,6 +37,7 @@ char enable_quit::q_enable;
 
 Application::Application ()
 {
+  toplevel_is_active = 0;
   ini_file_path = 0;
 
   int tem;

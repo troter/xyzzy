@@ -160,7 +160,7 @@ lisp
 Fbegin_wait_cursor ()
 {
   active_app_frame().wait_cursor_depth++;
-  if (active_app_frame().toplevel_is_active)
+  if (g_app.toplevel_is_active)
     {
       SetCursor (sysdep.hcur_wait);
       mouse_state::show_cursor ();
@@ -182,7 +182,7 @@ end_wait_cursor (int f, ApplicationFrame *app1)
       if (app1->wait_cursor_depth)
         return 0;
     }
-  if (app1->toplevel_is_active)
+  if (g_app.toplevel_is_active)
     {
       if (GetFocus () == app1->toplev)
         mouse_state::hide_cursor ();
@@ -206,7 +206,7 @@ Fset_cursor (lisp cur)
     sysdep.hcur_current = sysdep.hcur_arrow;
   else
     return Qnil;
-  if (active_app_frame().toplevel_is_active)
+  if (g_app.toplevel_is_active)
     set_current_cursor (&active_app_frame());
   xsymbol_value (Vcursor_shape) = cur;
   return Qt;
@@ -554,7 +554,7 @@ static int
 process_mouse_activate (ApplicationFrame *app1, LPARAM lparam)
 {
   int r;
-  if (app1->toplevel_is_active
+  if (g_app.toplevel_is_active
       || xsymbol_value (Veat_mouse_activate) == Qnil)
     r = MA_ACTIVATE;
   else
@@ -971,7 +971,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     case WM_ACTIVATEAPP:
     case WM_PRIVATE_ACTIVATEAPP:
-      app1->toplevel_is_active = wparam;
+      g_app.toplevel_is_active = wparam;
       PostThreadMessage (app1->quit_thread_id, msg, wparam, lparam);
       return 0;
 

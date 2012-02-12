@@ -7,7 +7,6 @@ ApplicationFrame::ApplicationFrame ()
 {
   default_tab_columns = 8;
   auto_save_count = 0;
-  toplevel_is_active = 0;
   ime_composition = 0;
   ime_open_mode = kbd_queue::IME_MODE_OFF;
   sleep_timer_exhausted = 0;
@@ -206,6 +205,7 @@ Fmake_frame (lisp opt)
 	root = new_app;
 
 	init_app(hinst, new_app);
+
 	return new_app->lfp;
 }
 lisp
