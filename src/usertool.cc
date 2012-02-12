@@ -317,7 +317,7 @@ extern ApplicationFrame * coerce_to_frame (lisp object);
 
 
 lisp
-Fcreate_tool_bar (lisp frame, lisp name, lisp bitmap, lisp items)
+Fcreate_tool_bar (lisp name, lisp bitmap, lisp items, lisp frame)
 {
   ApplicationFrame *app = coerce_to_frame(frame);
   if (app->mframe->find (name))
@@ -340,7 +340,7 @@ Fcreate_tool_bar (lisp frame, lisp name, lisp bitmap, lisp items)
 }
 
 lisp
-Fshow_tool_bar (lisp frame, lisp name, lisp ledge, lisp lx, lisp ly, lisp lw)
+Fshow_tool_bar (lisp name, lisp ledge, lisp lx, lisp ly, lisp lw, lisp frame)
 {
   ApplicationFrame *app = coerce_to_frame(frame);
   int edge = dock_frame::EDGE_TOP;
@@ -395,7 +395,7 @@ edge_sym (int edge)
 }
 
 lisp
-Fhide_tool_bar (lisp frame, lisp name)
+Fhide_tool_bar (lisp name, lisp frame)
 {
   ApplicationFrame *app = coerce_to_frame(frame);
   dock_bar *bar = app->mframe->find (name);
@@ -416,7 +416,7 @@ Fhide_tool_bar (lisp frame, lisp name)
 }
 
 lisp
-Fdelete_tool_bar (lisp frame, lisp name)
+Fdelete_tool_bar (lisp name, lisp frame)
 {
   ApplicationFrame *app = coerce_to_frame(frame);
   dock_bar *bar = app->mframe->find (name);
@@ -427,13 +427,13 @@ Fdelete_tool_bar (lisp frame, lisp name)
 }
 
 lisp
-Ftool_bar_exist_p (lisp frame, lisp name)
+Ftool_bar_exist_p (lisp name, lisp frame)
 {
   return boole (coerce_to_frame(frame)->mframe->find (name));
 }
 
 lisp
-Ftool_bar_info (lisp frame, lisp name)
+Ftool_bar_info (lisp name, lisp frame)
 {
   dock_bar *bar = coerce_to_frame(frame)->mframe->find (name);
   if (!bar)

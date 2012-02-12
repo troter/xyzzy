@@ -72,14 +72,14 @@
   t)
 
 (defun show-command-bar-1 (frame bar sym)
-  (unless (tool-bar-exist-p frame sym)
+  (unless (tool-bar-exist-p sym frame)
     (funcall sym))
-  (apply #'show-tool-bar frame sym (command-bar-position bar))
+  (apply #'show-tool-bar sym (append (command-bar-position bar) (list frame)))
   (setf (command-bar-visible-p bar) t)
   t)
 
 (defun hide-command-bar-1 (frame bar sym)
-  (let ((r (multiple-value-list (hide-tool-bar frame sym))))
+  (let ((r (multiple-value-list (hide-tool-bar sym frame))))
     (when (car r)
       (setf (command-bar-position bar) r)
       (setf (command-bar-visible-p bar) nil)))
@@ -92,7 +92,7 @@
     (show-command-bar-1 frame bar sym)))
 
 (defun delete-command-bar-1 (bar sym frame)
-  (when (tool-bar-exist-p frame sym)
+  (when (tool-bar-exist-p sym frame)
     (delete-tool-bar sym))
   (delete-menu (get-command-bar-popup-menu frame) bar nil)
   (set-command-bar-list frame (delete bar (get-command-bar-list frame)))

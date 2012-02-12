@@ -325,7 +325,7 @@ user_tab_bar::check_bar (ApplicationFrame* app, lisp name)
 extern ApplicationFrame * coerce_to_frame (lisp object);
 
 lisp
-Fcreate_tab_bar (lisp frame, lisp name, lisp callback)
+Fcreate_tab_bar (lisp name, lisp callback, lisp frame)
 {
   ApplicationFrame* app = coerce_to_frame(frame);
   if (app->mframe->find (name))
@@ -348,8 +348,8 @@ Fcreate_tab_bar (lisp frame, lisp name, lisp callback)
 }
 
 lisp
-Ftab_bar_add_item (lisp frame, lisp name, lisp item, lisp string,
-                   lisp tooltip, lisp menu, lisp keys)
+Ftab_bar_add_item (lisp name, lisp item, lisp string,
+                   lisp tooltip, lisp menu, lisp frame, lisp keys)
 {
   ApplicationFrame *app = coerce_to_frame(frame);
   lisp u[user_tab_bar::UTB_MAX];
@@ -379,38 +379,38 @@ Ftab_bar_add_item (lisp frame, lisp name, lisp item, lisp string,
 }
 
 lisp
-Ftab_bar_delete_item (lisp frame, lisp name, lisp item)
+Ftab_bar_delete_item (lisp name, lisp item, lisp frame)
 {
   return boole (user_tab_bar::check_bar (coerce_to_frame(frame), name)->delete_item (item));
 }
 
 lisp
-Ftab_bar_select_item (lisp frame, lisp name, lisp item)
+Ftab_bar_select_item (lisp name, lisp item, lisp frame)
 {
   return boole (user_tab_bar::check_bar (coerce_to_frame(frame), name)->select_item (item));
 }
 
 lisp
-Ftab_bar_current_item (lisp frame, lisp name)
+Ftab_bar_current_item (lisp name, lisp frame)
 {
   return user_tab_bar::check_bar (coerce_to_frame(frame), name)->current_item ();
 }
 
 lisp
-Ftab_bar_find_item (lisp frame, lisp name, lisp item)
+Ftab_bar_find_item (lisp name, lisp item, lisp frame)
 {
   return boole (user_tab_bar::check_bar (coerce_to_frame(frame), name)->item_pos (item) >= 0);
 }
 
 lisp
-Ftab_bar_list_items (lisp frame, lisp name)
+Ftab_bar_list_items (lisp name, lisp frame)
 {
   return user_tab_bar::check_bar (coerce_to_frame(frame), name)->list_items ();
 }
 
 lisp
-Ftab_bar_modify_item (lisp frame, lisp name, lisp item, lisp string,
-                      lisp tooltip, lisp menu)
+Ftab_bar_modify_item (lisp name, lisp item, lisp string,
+                      lisp tooltip, lisp menu, lisp frame)
 {
   return boole (user_tab_bar::check_bar (coerce_to_frame(frame), name)
                 ->modify_item (item, string, tooltip, menu));
