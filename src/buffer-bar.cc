@@ -462,6 +462,7 @@ buffer_bar::wndproc (UINT msg, WPARAM wparam, LPARAM lparam)
   switch (msg)
     {
     case WM_DESTROY:
+	  g_buffer_bar_map.erase(b_app_frame);
       RevokeDragDrop (b_hwnd);
       break;
 
