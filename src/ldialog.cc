@@ -1281,7 +1281,7 @@ ldialog_proc (HWND dlg, UINT msg, WPARAM wparam, LPARAM lparam)
       return 1;
 
     case WM_ACTIVATEAPP:
-      PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
+      PostThreadMessage (g_app.quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
                          wparam, lparam);
       return 0;
 
@@ -1803,7 +1803,7 @@ lprop_page_proc (HWND dlg, UINT msg, WPARAM wparam, LPARAM lparam)
 
 #if 0
     case WM_ACTIVATEAPP:
-      PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
+      PostThreadMessage (g_app.quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
                          wparam, lparam);
       return 0;
 #endif

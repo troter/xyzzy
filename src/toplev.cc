@@ -19,8 +19,7 @@ mouse_wheel g_wheel;
 static u_int __stdcall
 quit_thread_entry (void *p)
 {
-  ApplicationFrame *app1 = (ApplicationFrame*)p;
-  DWORD parent = app1->parent_thread_id;
+  DWORD parent = (DWORD)p;
 
 #define HK_BREAK 1
 #define HK_QUIT 2
@@ -36,6 +35,7 @@ quit_thread_entry (void *p)
   MSG msg;
   while (GetMessage (&msg, 0, 0, 0))
     {
+	  ApplicationFrame *app1 = &active_app_frame();
       if (msg.hwnd)
         {
           XyzzyTranslateMessage (&msg);
@@ -47,6 +47,17 @@ quit_thread_entry (void *p)
           case WM_TIMER:
             hwnd_fg = GetForegroundWindow ();
             msg.wParam = hwnd_fg ? GetWindowThreadProcessId (hwnd_fg, 0) == parent : 0;
+			if(!msg.wParam)
+			{
+				// may be ghost window. 
+				if(IsHungAppWindow(hwnd_fg))
+				{
+					if(IsHungAppWindow(app1->toplev))
+					{
+						msg.wParam = 1;
+					}
+				}
+			}
             /* fall thru... */
           case WM_ACTIVATEAPP:
           case WM_PRIVATE_ACTIVATEAPP:
@@ -119,9 +130,8 @@ quit_thread_entry (void *p)
 int
 start_quit_thread (ApplicationFrame* app1)
 {
-  app1->parent_thread_id = GetCurrentThreadId();
-  u_long h = _beginthreadex (0, 0, quit_thread_entry, (void *)app1,
-                             0, &app1->quit_thread_id);
+  u_long h = _beginthreadex (0, 0, quit_thread_entry, (void *)GetCurrentThreadId ,
+                             0, &g_app.quit_thread_id);
   if (h == -1)
     return 0;
   CloseHandle (HANDLE (h));
@@ -974,7 +984,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_ACTIVATEAPP:
     case WM_PRIVATE_ACTIVATEAPP:
       g_app.toplevel_is_active = wparam;
-      PostThreadMessage (app1->quit_thread_id, msg, wparam, lparam);
+      PostThreadMessage (g_app.quit_thread_id, msg, wparam, lparam);
       return 0;
 
     case WM_PRIVATE_PROCESS_OUTPUT:
@@ -1954,7 +1964,7 @@ Fset_quit_char (lisp ch)
   active_app_frame().quit_vkey = vk;
   active_app_frame().quit_mod = mod;
 
-  PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_MODIFY_HOTKEY, 0, 0);
+  PostThreadMessage (g_app.quit_thread_id, WM_PRIVATE_MODIFY_HOTKEY, 0, 0);
 
   return ch;
 }

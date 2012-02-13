@@ -410,7 +410,6 @@ public:
   HWND hwnd_sw;
 
   HWND hwnd_clipboard;
-  DWORD parent_thread_id;
 
   kbd_queue kbdq;
   mouse_state mouse;
@@ -436,7 +435,6 @@ public:
   int kbd_repeat_count;
   int wait_cursor_depth;
 
-  u_int quit_thread_id;
   int sleep_timer_exhausted;
   int f_protect_quit;
 
@@ -485,6 +483,7 @@ public:
   char dump_image[PATH_MAX + 8];
   char *ini_file_path;
   int toplevel_is_active;
+  u_int quit_thread_id;
 
   void *initial_stack;
   int in_gc;
@@ -507,7 +506,7 @@ public:
       if (!q_save)
         {
           q_enable = 1;
-          PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_REGISTER_HOTKEY, 0, 0);
+          PostThreadMessage (g_app.quit_thread_id, WM_PRIVATE_REGISTER_HOTKEY, 0, 0);
         }
     }
   ~enable_quit () {if (!q_save) disable ();}
@@ -515,7 +514,7 @@ public:
     {
       if (q_enable)
         {
-          PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_UNREGISTER_HOTKEY, 0, 0);
+          PostThreadMessage (g_app.quit_thread_id, WM_PRIVATE_UNREGISTER_HOTKEY, 0, 0);
           q_enable = 0;
         }
     }

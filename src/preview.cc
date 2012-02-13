@@ -962,7 +962,7 @@ preview_dialog::wndproc (UINT msg, WPARAM wparam, LPARAM lparam)
       return quit ();
 
     case WM_ACTIVATEAPP:
-      PostThreadMessage (active_app_frame().quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
+      PostThreadMessage (g_app.quit_thread_id, WM_PRIVATE_ACTIVATEAPP,
                          wparam, lparam);
       return 0;
 

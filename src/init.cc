@@ -940,10 +940,6 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1)
 
   xappframe_fp (app1->lfp) = app1;
 
-
-  if (!start_quit_thread(app1))
-	return 0;
-
   Fbegin_wait_cursor ();
 
   ShowWindow(app1->toplev, SW_SHOW);
