@@ -34,6 +34,8 @@ const char FunctionKeyClassName[] = "     ";
 Application g_app;
 
 char enable_quit::q_enable;
+int defer_change_focus::s_count = 0;
+ApplicationFrame* defer_change_focus::s_focus_candidate = 0;
 
 Application::Application ()
 {

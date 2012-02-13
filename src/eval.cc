@@ -696,6 +696,7 @@ Feval (lisp arg)
 {
   lex_env lex;
   enable_quit eq;
+  defer_change_focus dcf;
   return eval (arg, lex);
 }
 
@@ -708,6 +709,7 @@ Fevalhook (lisp form, lisp evalhook, lisp applyhook, lisp env)
   dynamic_bind dynb3 (Vbypass_evalhook, boole (evalhook != Qnil));
   dynamic_bind dynb4 (Vbypass_applyhook, Qnil);
   enable_quit eq;
+  defer_change_focus dcf;
   return eval (form, lex);
 }
 
@@ -748,6 +750,7 @@ Ffuncall (lisp fn, lisp args)
     gc (-1);
 
   enable_quit eq;
+  defer_change_focus dcf;
 
   multiple_value::clear ();
 
@@ -805,6 +808,7 @@ Fapplyhook (lisp fn, lisp args, lisp evalhook, lisp applyhook)
   dynamic_bind dynb3 (Vbypass_evalhook, Qnil);
   dynamic_bind dynb4 (Vbypass_applyhook, boole (applyhook != Qnil));
   enable_quit eq;
+  defer_change_focus dcf;
   return Ffuncall (fn, args);
 }
 
@@ -2015,6 +2019,7 @@ lisp
 Fcommand_execute (lisp command, lisp hook)
 {
   enable_quit eq;
+  defer_change_focus dcf;
 
   lisp fn = command;
   if (symbolp (fn))

@@ -520,6 +520,48 @@ public:
     }
 };
 
+void change_focus_to_frame(ApplicationFrame *app);
+
+class defer_change_focus
+{
+	static int s_count;
+	static ApplicationFrame* s_focus_candidate;
+public :
+	static void request_change_focus(ApplicationFrame *app)
+	{
+		// should use semaphore, but inconsistency is not so serious in this case (just re-activate is enough).
+		if(s_count == 0)
+		{
+			change_focus_to_frame(app);
+		}
+		else
+		{
+			// may be killed and refocus during evalling lisp.
+			change_focus_to_frame(&active_app_frame());
+			if(app == &active_app_frame())
+				s_focus_candidate = 0;
+			else
+				s_focus_candidate = app;
+		}
+	}
+	defer_change_focus() {
+		s_count++;
+	}
+	~defer_change_focus() {
+		s_count--;
+		if(s_count == 0)
+		{
+			if(s_focus_candidate)
+			{
+				change_focus_to_frame(s_focus_candidate);
+			}
+			s_focus_candidate = 0;
+		}
+	}
+
+};
+
+
 # include "Buffer.h"
 # include "Window.h"
 # include "syntax.h"

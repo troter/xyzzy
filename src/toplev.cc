@@ -645,6 +645,16 @@ extern ApplicationFrame *first_app_frame();
 extern bool is_last_app_frame();
 extern void delete_app_frame(ApplicationFrame *app1);
 
+void change_focus_to_frame(ApplicationFrame *app1)
+{
+	  notify_focus(app1);
+      app1->active_frame.has_focus = 1;
+      app1->kbdq.toggle_ime (app1->ime_open_mode, 0);
+      set_caret_blink_time (app1);
+      Window::update_last_caret (app1);
+      app1->active_frame.fnkey->update_vkey (0);
+}
+
 LRESULT CALLBACK
 toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -806,12 +816,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_SETFOCUS:
-	  notify_focus(app1);
-      app1->active_frame.has_focus = 1;
-      app1->kbdq.toggle_ime (app1->ime_open_mode, 0);
-      set_caret_blink_time (app1);
-      Window::update_last_caret (app1);
-      app1->active_frame.fnkey->update_vkey (0);
+	  defer_change_focus::request_change_focus(app1);
       return 0;
 
     case WM_KILLFOCUS:

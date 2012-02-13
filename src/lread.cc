@@ -1821,6 +1821,8 @@ static lisp
 parser (lisp stream, lisp recursive_p, int preserve_white)
 {
   enable_quit eq;
+  defer_change_focus dcf;
+
   dynamic_bind dynb (Vreader_preserve_white,
                      xsymbol_value (Vreader_preserve_white));
   if (preserve_white)
