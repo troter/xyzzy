@@ -130,7 +130,7 @@ quit_thread_entry (void *p)
 int
 start_quit_thread (ApplicationFrame* app1)
 {
-  u_long h = _beginthreadex (0, 0, quit_thread_entry, (void *)GetCurrentThreadId ,
+  u_long h = _beginthreadex (0, 0, quit_thread_entry, (void *)GetCurrentThreadId() ,
                              0, &g_app.quit_thread_id);
   if (h == -1)
     return 0;
