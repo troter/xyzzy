@@ -18,6 +18,9 @@ http://www.jsdlab.co.jp/~kamei/
 変更ファイルは
 - xyzzy.exe
 - estartup.l, estartup.lc
+- keymap.l, keymap.lc
+- window.l, window.lc
+- cmds.l, cmds.lc
 
 以下のファイルは.lが更新されていて、.lcは削除してあります。
 - builtin.l

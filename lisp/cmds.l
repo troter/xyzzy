@@ -1027,6 +1027,7 @@
 (define-key ctl-x-map #\C-u 'upcase-region)
 (define-key ctl-x-map #\C-x 'exchange-point-and-mark)
 (define-key ctl-x-map #\4 'ctl-x-4-prefix)
+(define-key ctl-x-map #\5 'ctl-x-5-prefix)
 (define-key ctl-x-map #\< 'scroll-left)
 (define-key ctl-x-map #\> 'scroll-right)
 (define-key ctl-x-map #\? 'describe-key-briefly)
