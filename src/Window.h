@@ -497,11 +497,11 @@ struct Window
     }
   int caret_line () const
     {return w_linenum - w_last_top_linenum;}
-  static int caret_xpixel (int column)
-    {return (column * active_app_frame().text_font.cell ().cx
-             + active_app_frame().text_font.cell ().cx / 2);}
-  static int caret_ypixel (int line)
-    {return line * active_app_frame().text_font.cell ().cy;}
+  int caret_xpixel (int column) const
+    {return (column * w_owner->text_font.cell ().cx
+             + w_owner->text_font.cell ().cx / 2);}
+  int caret_ypixel (int line) const
+    {return line * w_owner->text_font.cell ().cy;}
   int caret_x () const
     {return caret_xpixel (caret_column ());}
   int caret_y () const
@@ -511,8 +511,16 @@ struct Window
   static void update_last_caret (ApplicationFrame* owner);
   static void update_caret (ApplicationFrame *, HWND, int, int, int, int, COLORREF);
   static void delete_caret (ApplicationFrame *owner);
-  static void compute_geometry (ApplicationFrame* owner, const SIZE & = active_app_frame().active_frame.size,
-                                int = active_app_frame().text_font.cell ().cy);
+  static inline void compute_geometry (ApplicationFrame* owner)
+  {
+	  compute_geometry(owner, owner->active_frame.size);
+  }
+  static inline void compute_geometry (ApplicationFrame* owner, const SIZE &size)
+  {
+	  compute_geometry(owner, size, owner->text_font.cell ().cy);
+  }
+  static void compute_geometry (ApplicationFrame* owner, const SIZE &,
+                                int);
   static void move_all_windows (ApplicationFrame* owner, int = 1);
   static void repaint_all_windows (ApplicationFrame* owner);
   static void destroy_windows ();
