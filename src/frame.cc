@@ -248,7 +248,7 @@ Fother_frame ()
   ApplicationFrame *app1 = first_app_frame();
   if(app1->a_next)
   {
-	  PostMessage(app1->a_next->toplev, WM_SETFOCUS, 0, 0);
+	  SetFocus(app1->a_next->toplev);
 	  return Qt;
   }
   return Qnil;
