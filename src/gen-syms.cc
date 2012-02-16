@@ -1718,6 +1718,7 @@ static symbols ed[] =
   DEFUN3 (selected-frame, 0, 0, 0),
   DEFUN3 (next-frame, 1, 1, 0),
   DEFUN3 (frame-list, 0, 0, 0),
+  DEFCMD3 (other-frame, 0, 0, 0, ""),
 
   /* insdel.cc */
   DEFUN3 (insert-file-contents, 1, 3, 0),
