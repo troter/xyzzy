@@ -5,15 +5,24 @@ class dyn_handle
 {
 private:
   void operator = (const dyn_handle &);
+  dyn_handle (const dyn_handle &, int = 0);
 protected:
   HANDLE h;
 public:
   dyn_handle ();
   dyn_handle (HANDLE);
-  dyn_handle (const dyn_handle &, int = 0);
   ~dyn_handle ();
   int valid () const;
   operator HANDLE () const;
+  // sometime, cast cause un-intented copy constructor call.
+  inline HANDLE get_handle() const { return h; }
+  inline void explicit_copy(dyn_handle &to) {
+	  int inherit = 0;
+	  HANDLE hproc = GetCurrentProcess ();
+	 if (!DuplicateHandle (hproc, h, hproc, &to.h, 0, inherit,
+		                    DUPLICATE_SAME_ACCESS))
+		to.h = INVALID_HANDLE_VALUE;
+  }
   void fix (HANDLE);
   HANDLE unfix ();
   void close ();
@@ -33,14 +42,6 @@ dyn_handle::dyn_handle (HANDLE h_)
 {
 }
 
-inline
-dyn_handle::dyn_handle (const dyn_handle &src, int inherit)
-{
-  HANDLE hproc = GetCurrentProcess ();
-  if (!DuplicateHandle (hproc, src.h, hproc, &h, 0, inherit,
-                        DUPLICATE_SAME_ACCESS))
-    h = INVALID_HANDLE_VALUE;
-}
 
 inline int
 dyn_handle::valid () const

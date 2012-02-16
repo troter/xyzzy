@@ -229,6 +229,7 @@ Fcall_process (lisp cmd, lisp keys)
     wait = Qt;
 
   SECURITY_ATTRIBUTES sa;
+  bzero (&sa, sizeof(sa));
   sa.nLength = sizeof sa;
   sa.lpSecurityDescriptor = 0;
   sa.bInheritHandle = 1;
@@ -247,11 +248,11 @@ Fcall_process (lisp cmd, lisp keys)
   if (!no_std_handles)
     {
       si.dwFlags |= STARTF_USESTDHANDLES;
-      si.hStdInput = hin.valid () ? hin : GetStdHandle (STD_INPUT_HANDLE);
-      si.hStdOutput = hout.valid () ? hout : GetStdHandle (STD_OUTPUT_HANDLE);
+	  si.hStdInput = hin.valid () ? hin.get_handle() : GetStdHandle (STD_INPUT_HANDLE);
+      si.hStdOutput = hout.valid () ? hout.get_handle() :  GetStdHandle (STD_OUTPUT_HANDLE);
       si.hStdError = (lstdout != lstderr
-                      ? herr.valid () ? herr : GetStdHandle (STD_ERROR_HANDLE)
-                      : hout.valid () ? hout : GetStdHandle (STD_ERROR_HANDLE));
+                      ? herr.valid () ? herr.get_handle() : GetStdHandle (STD_ERROR_HANDLE)
+                      : hout.valid () ? hout.get_handle() : GetStdHandle (STD_ERROR_HANDLE));
     }
 
   WINFS::SetCurrentDirectory (dir);
@@ -266,6 +267,7 @@ Fcall_process (lisp cmd, lisp keys)
 
   w2s (dir, xsymbol_value (Qdefault_dir));
   WINFS::SetCurrentDirectory (dir);
+
 
   DWORD exit_code = 0;
   if (!result)
@@ -882,7 +884,8 @@ NormalProcess::create (lisp command, lisp execdir, const char *env)
   if (!pipe (ipipe_r, ipipe_w, &sa))
     file_error (GetLastError ());
 
-  dyn_handle d (ipipe_w);
+  dyn_handle d;
+  ipipe_w.explicit_copy(d);
   if (!d.valid ())
     file_error (GetLastError ());
   CloseHandle (ipipe_w.unfix ());
