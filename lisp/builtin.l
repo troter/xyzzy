@@ -911,7 +911,7 @@
 (si::defun-builtin list-xyzzy-windows ())
 (si::defun-builtin activate-xyzzy-window (instance))
 (si::defun-builtin count-xyzzy-instance ())
-(si::defun-builtin current-window-configuration (&optional (appframe selected-frame)))
+(si::defun-builtin current-window-configuration (&optional (appframe (selected-frame))))
 (si::defun-builtin set-window-configuration (conf &optional (appframe (selected-frame))))
 (si::defun-builtin window-coordinate (&optional window))
 (si::defun-builtin begin-auto-scroll ())
