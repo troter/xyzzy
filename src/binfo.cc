@@ -186,10 +186,7 @@ buffer_info::percent (char *b, char *be) const
   else if (b_bufp && b_wp)
     {
       char tem[64];
-	  if(b_bufp->b_nchars > 0)
-	      sprintf_s (tem, 64, "%d", (100*b_wp->w_point.p_point) / b_bufp->b_nchars);
-	  else
-		  sprintf_s (tem, 64, "100");
+	  sprintf_s(tem, 64, "%d", mode_line_percent_painter::calc_percent(b_bufp, b_wp->w_point.p_point));
       b = stpncpy (b, tem, be - b);
     }
   return b;

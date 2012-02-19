@@ -3294,7 +3294,7 @@ mode_line_percent_painter::need_repaint_all ()
 }
 
 int
-mode_line_percent_painter::calc_percent (Buffer* bufp, point_t point)
+mode_line_percent_painter::calc_percent (const Buffer* bufp, point_t point)
 {
   if(bufp->b_nchars > 0)
     return (100*point) / bufp->b_nchars;

@@ -314,7 +314,7 @@ public:
 	  m_ml_size.cy = winsize.cy;
   }
 
-  static int calc_percent(Buffer *bufp, point_t point);
+  static int calc_percent(const Buffer *bufp, point_t point);
 
 private:
   int paint_percent (HDC hdc);
