@@ -17,19 +17,17 @@ http://www.jsdlab.co.jp/~kamei/
 
 変更ファイルは
 - xyzzy.exe
-- estartup.l, estartup.lc
-- keymap.l, keymap.lc
-- window.l, window.lc
-- cmds.l, cmds.lc
-
-以下のファイルは.lが更新されていて、.lcは削除してあります。
-- builtin.l
-- app-menu.l
-- niftylog.l
-- session.l
-- mouse.l
-- cmdbar.l
-- pframe.l
+- estartup.l, そのlc
+- keymap.l,  そのlc
+- window.l,  そのlc
+- cmds.l,  そのlc
+- builtin.l,  そのlc
+- app-menu.l,  そのlc
+- niftylog.l,  そのlc
+- session.l,  そのlc
+- mouse.l,  そのlc
+- cmdbar.l,  そのlc
+- pframe.l,  そのlc
 
 です。既存の環境に上書きする場合はxyzzy.wxpを削除してください。
 
