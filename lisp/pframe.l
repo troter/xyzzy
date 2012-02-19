@@ -11,6 +11,7 @@
 	  other-pseudo-frame delete-pseudo-frame ctl-x-6-prefix
 	  ctl-x-6-map next-pseudo-frame previous-pseudo-frame
 	  delete-all-pseudo-frames rename-pseudo-frame
+	  init-pseudo-frame-bars
 	  get-current-pseudo-frame
 	  selected-pseudo-frame-name
 	  get-pseudo-frame-list
@@ -250,7 +251,10 @@
 			      (caddr (pseudo-frame-winconf frame)))))
 	     (get-pseudo-frame-list (selected-frame))))
 
-(define-command-bar 'pseudo-frame-bar "フレーム(&F)")
+(defun init-pseudo-frame-bars(frame)
+  (define-command-bar 'pseudo-frame-bar "フレーム(&F)" nil nil nil nil frame))
+
+(init-pseudo-frame-bars (selected-frame))
 
 (defvar ctl-x-6-map (make-sparse-keymap))
 (setf (symbol-function 'ctl-x-6-prefix) ctl-x-6-map)

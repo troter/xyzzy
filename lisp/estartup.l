@@ -187,6 +187,8 @@
 ;      (unless *inhibit-history-load*
 ;	(ignore-errors (load-history-file))))
 ;    (ignore-errors (keep-compatibility))
+    (init-command-bars frame)
+    (init-pseudo-frame-bars frame)
     (unless *inhibit-history-load*
       (ignore-errors (load-command-bar-info frame)))
     (ignore-errors (init-app-menus frame))
