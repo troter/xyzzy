@@ -10,16 +10,16 @@
 (export '(find-command-bar define-command-bar
 	  show-command-bar hide-command-bar
 	  delete-command-bar
-	  init-command-bars load-command-bar-info
+	  load-command-bar-info
 	  std-tool-bar buffer-bar))
 
 (define-history-variable *command-bar-list* nil)
 (defvar *command-bar-list-multi* (make-hash-table))
-(defvar *defer-define-command-bar-list* (make-hash-table))
-(defvar *command-bar-loaded* (make-hash-table))
+(defvar *defer-define-command-bar-list* nil)
+(defvar *command-bar-loaded* nil)
+(defvar *command-bar-first-get* t)
 
 (defun set-command-bar-list (frame val)
-  (setq *command-bar-list* val)
   (si:*puthash frame *command-bar-list-multi* val))
 
 (defun get-command-bar-list(frame)
@@ -27,12 +27,15 @@
     (if ret
 	ret
       (progn
-	(set-command-bar-list frame (copy-tree *command-bar-list*))
+	(if *command-bar-first-get*
+	    (progn
+	      ;; for main frame, share *command-bar-list* to there own command-bar-list.
+	      (set-command-bar-list frame *command-bar-list*)
+	      (setq *command-bar-first-get* nil))
+	  (set-command-bar-list frame (copy-tree *command-bar-list*))
+	  )
 	(gethash frame *command-bar-list-multi*)))))
 
-
-(generate-hash-accessor command-bar-loaded)
-(generate-hash-accessor defer-define-command-bar-list)
 
 
 ;;  0        1        2         3         4    5 6
@@ -56,19 +59,20 @@
 (defun command-bar-update (bar)
   (if (command-bar-visible-p bar) :check))
 
-(defun define-command-bar (sym name &optional edge x y w (frame (selected-frame)))
-  (cond ((null (get-command-bar-loaded frame))
-	 (set-defer-define-command-bar-list frame
-	    (nconc (delete sym (get-defer-define-command-bar-list frame)
-			      :test #'eq :key #'car)
-		      (list (list sym name edge x y w)))))
-	((not (find-command-bar sym frame))
+(defun define-command-bar (sym name &optional edge x y w)
+  (if (null *command-bar-loaded*)
+      (setq *defer-define-command-bar-list*
+	    (nconc (delete sym *defer-define-command-bar-list*
+		   :test #'eq :key #'car)
+			(list (list sym name edge x y w))))
+    (dolist (frame (frame-list))
+      (unless (find-command-bar sym frame)
 	 (let ((bar (list (package-name (symbol-package sym))
 			  (symbol-name sym) name nil edge x y w)))
 	   (set-command-bar-list frame (nconc (get-command-bar-list frame) (list bar)))
 	   (add-menu-item (get-command-bar-popup-menu frame) bar name
 			  #'(lambda () (interactive) (toggle-command-bar sym))
-			  #'(lambda () (command-bar-update bar))))))
+			  #'(lambda () (command-bar-update bar)))))))
   t)
 
 (defun show-command-bar-1 (frame bar sym)
@@ -135,7 +139,7 @@
 	'(:left :top :right :bottom) (list-tool-bars)))
 
 (defun load-command-bar-info (&optional (frame (selected-frame)))
-  (set-command-bar-loaded frame t)
+  (setq *command-bar-loaded* t)
   (or (get-command-bar-popup-menu frame)
       (set-command-bar-popup-menu frame (create-popup-menu)))
   (mapc #'(lambda (bar)
@@ -144,7 +148,7 @@
 		    (sym (and pkg (intern (command-bar-symbol-name bar) pkg)))
 		    (disp-name (command-bar-display-name bar)))
 	       (cond (sym
-		      (let ((x (find sym (get-defer-define-command-bar-list frame) :key #'car)))
+		      (let ((x (find sym *defer-define-command-bar-list* :key #'car)))
 			(when x
 			  (setq disp-name (cadr x))))
 		      (add-menu-item (get-command-bar-popup-menu frame) bar disp-name
@@ -163,16 +167,13 @@
 				     #'(lambda () (named-command-bar-update bar))))))))
 	(get-command-bar-list frame))
   (mapc #'(lambda (x) (apply #'define-command-bar x))
-	(get-defer-define-command-bar-list frame)))
+	*defer-define-command-bar-list*))
 
 (add-hook '*save-history-hook* #'save-command-bar-info)
 (add-hook '*load-history-hook* #'load-command-bar-info)
 
-(defun init-command-bars(frame)
-  (define-command-bar 'std-tool-bar "標準(&S)" nil nil nil nil frame)
-  (define-command-bar 'buffer-bar "バッファ(&B)" nil nil nil nil frame))
-
-(init-command-bars (selected-frame))
+(define-command-bar 'std-tool-bar "標準(&S)")
+(define-command-bar 'buffer-bar "バッファ(&B)")
 
 (setf (symbol-function 'buffer-bar) #'create-buffer-bar)
 
