@@ -31,6 +31,16 @@
 ;; temporary put here.
 (define-key ctl-x-5-map #\2 'make-frame)
 
+(defun delete-other-frames() 
+  (interactive)
+  (let ((cur (selected-frame)))
+    (dolist (frame (frame-list))
+      (unless (eq cur frame)
+	(delete-frame frame)))))
+(define-key ctl-x-5-map #\1 'delete-other-frames)
+(define-key ctl-x-5-map #\0 'delete-frame)
+
+
 (defun copy-keymap (map)
   (if (consp map)
       (copy-tree map)

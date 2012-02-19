@@ -253,3 +253,18 @@ Fother_frame ()
   }
   return Qnil;
 }
+
+lisp
+Fdelete_frame (lisp frame, lisp force)
+{
+  ApplicationFrame *app = coerce_to_frame(frame);
+  if(!is_last_app_frame())
+  {
+	  PostMessage(app->toplev, WM_CLOSE, 0, 0);
+	  return Qnil;
+  }
+  if(force != Qt)
+	  return Qnil;
+  Fkill_xyzzy();
+  return Qnil;
+}
