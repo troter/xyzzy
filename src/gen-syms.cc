@@ -1083,6 +1083,7 @@ static symbols kwd[] =
   DEFKWD2 (windows-nt),
   DEFKWD2 (windows-2000),
   DEFKWD2 (windows-xp),
+  DEFKWD2 (multiple-frames),
   DEFKWD2 (no-dup),
   DEFKWD2 (case-fold),
   DEFKWD2 (reverse),

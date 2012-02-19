@@ -247,7 +247,7 @@ init_dump_path ()
 static void
 init_env_symbols (const char *config_path, const char *ini_file)
 {
-  xsymbol_value (Vfeatures) = xcons (Kxyzzy, xcons (Kieee_floating_point, Qnil));
+  xsymbol_value (Vfeatures) = xcons(Kmultiple_frames, xcons (Kxyzzy, xcons (Kieee_floating_point, Qnil)));
   xsymbol_value (Qdump_image_path) = make_path (g_app.dump_image, 0);
   init_module_dir ();
   init_current_dir ();
