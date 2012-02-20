@@ -714,15 +714,19 @@ Window::change_parameters (const FontSetParam &param,
                            const XCOLORREF *colors, const XCOLORREF *mlcolors,
                            const XCOLORREF *fg, const XCOLORREF *bg)
 {
-  int ocell = active_app_frame().text_font.cell ().cy;
-
-  active_app_frame().text_font.create (param);
+  // move init_colors outside of loop. Is this really OK?
   init_colors (colors, mlcolors, fg, bg);
+  for(ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
+  {
+	  int ocell = app1->text_font.cell ().cy;
 
-  compute_geometry (&active_app_frame(), active_app_frame().active_frame.size, ocell);
+	  app1->text_font.create (param);
 
-  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
-    wp->invalidate_glyphs ();
+	  compute_geometry (app1, app1->active_frame.size, ocell);
+
+	  for (Window *wp = app1->active_frame.windows; wp; wp = wp->w_next)
+		wp->invalidate_glyphs ();
+  }
 }
 
 static void
@@ -1353,6 +1357,7 @@ int
 Window::count_windows ()
 {
   int n = 0;
+  // TODO: check whether this is OK or should use all_window_iterator.
   for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next, n++)
     ;
   return n;
@@ -2362,6 +2367,7 @@ WindowConfiguration::WindowConfiguration ()
   wc_chain = this;
 
   Data *d = wc_data;
+  //TODO: check whether this is OK or should use all_window_iterator.
   for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next, d++)
     {
       d->wp = wp;
@@ -2614,7 +2620,8 @@ Fset_local_window_flags (lisp lobj, lisp lflags, lisp lon)
           new_flags &= ~(Window::WF_MODE_LINE | Window::WF_RULER);
           new_flags_mask &= ~(Window::WF_MODE_LINE | Window::WF_RULER);
         }
-      for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+	  all_window_iterator itr;
+      for (Window *wp = itr.begin(); wp; wp = itr.next())
         if (wp->w_bufp == bp)
           {
             bp->b_wflags = old_flags;

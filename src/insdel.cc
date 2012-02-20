@@ -848,8 +848,8 @@ Buffer::adjust_deletion (const Point &point, int size)
       lisp x = xcar (marker);
       ADJDEL (xmarker_point (x));
     }
-
-  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+  all_window_iterator itr;
+  for (Window *wp = itr.begin(); wp; wp = itr.next())
     if (wp->w_bufp == this)
       {
         if (point.p_point < wp->w_disp && point.p_point + size > wp->w_disp)

@@ -853,7 +853,8 @@ Buffer::quoted_buffer_name (char *b, char *be, int qc, int qe) const
 void
 Buffer::modify_mode_line () const
 {
-  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+  all_window_iterator itr;
+  for (Window *wp = itr.begin(); wp; wp = itr.next())
     if (wp->w_bufp == this)
       wp->w_disp_flags |= Window::WDF_MODELINE;
 }
@@ -1493,7 +1494,8 @@ Buffer::change_colors (const XCOLORREF *cc)
       b_colors_enable = 0;
     }
 
-  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+  all_window_iterator itr;
+  for (Window *wp = itr.begin(); wp; wp = itr.next())
     if (wp->w_bufp == this)
       wp->change_color ();
 }
@@ -1546,12 +1548,16 @@ change_local_colors (const XCOLORREF *cc, int dir, int subdir)
     }
 }
 
+
 void
 Buffer::refresh_buffer () const
 {
-  for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+  all_window_iterator itr;
+  for (Window *wp = itr.begin(); wp; wp = itr.next())
+  {
     if (wp->w_bufp == this)
       wp->w_disp_flags |= Window::WDF_WINDOW;
+  }
 }
 
 void

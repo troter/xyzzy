@@ -672,4 +672,38 @@ public:
     }
 };
 
+class all_window_iterator
+{
+	ApplicationFrame *curApp;
+	Window *curWin;
+public:
+	all_window_iterator()
+	{
+		curApp = 0;
+		curWin = 0;
+	}
+	Window* begin()
+	{
+		curApp = first_app_frame();
+		if(curApp != 0)
+			curWin = curApp->active_frame.windows;
+		return curWin;
+	}
+	Window* next()
+	{
+		if(curWin->w_next)
+		{
+			curWin = curWin->w_next;
+			return curWin;
+		}
+		curApp = curApp->a_next;
+		if(curApp == 0)
+			return 0;
+		curWin = curApp->active_frame.windows;
+		return curWin;
+	}
+
+};
+
+
 #endif

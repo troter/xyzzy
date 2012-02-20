@@ -2018,7 +2018,8 @@ Fset_tab_columns (lisp column, lisp lbuffer)
                   bp->fold_width_modified ();
                 }
             }
-          for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+		  all_window_iterator itr;
+          for (Window *wp = itr.begin(); wp; wp = itr.next())
             if (wp->w_bufp && !wp->w_bufp->b_local_tab_columns)
               wp->w_disp_flags |= Window::WDF_WINDOW;
         }

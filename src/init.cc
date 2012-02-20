@@ -1045,11 +1045,14 @@ WinMain (HINSTANCE hinst, HINSTANCE, LPSTR, int cmdshow)
         b_next = bp->b_next;
         delete bp;
       }
-    for (Window *wp = active_app_frame().active_frame.windows, *w_next; wp; wp = w_next)
-      {
-        w_next = wp->w_next;
-        delete wp;
-      }
+	for (ApplicationFrame *app1 = first_app_frame(); app1; app1 = app1->a_next)
+	{
+		for (Window *wp = app1->active_frame.windows, *w_next; wp; wp = w_next)
+		  {
+			w_next = wp->w_next;
+			delete wp;
+		  }
+	}
 
     // active_main_frame().cleanup ();
 

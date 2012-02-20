@@ -3969,12 +3969,13 @@ Window::update_window ()
 lisp
 Frefresh_screen (lisp f)
 {
+  all_window_iterator itr;
   if (!f || f == Qnil)
     refresh_screen (0);
   else if (f != Qt)
     refresh_screen (1);
   else
-    for (Window *wp = active_app_frame().active_frame.windows; wp; wp = wp->w_next)
+    for (Window *wp = itr.begin(); wp; wp = itr.next())
       wp->w_disp_flags |= Window::WDF_WINDOW;
   return Qt;
 }
