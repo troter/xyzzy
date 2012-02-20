@@ -29,7 +29,7 @@
 (defvar *command-bar-popup-menu* (make-hash-table))
 
 (defvar *recent-file-popup-menu* (make-hash-table))
-(defvar *recent-session-popup-menu* nil)
+(defvar *recent-session-popup-menu* (make-hash-table))
 
 (defvar *menu-history-max* 9)
 
@@ -61,6 +61,7 @@
 (generate-hash-accessor command-bar-popup-menu)
 (generate-hash-accessor clipboard-char-encoding-popup-menu)
 (generate-hash-accessor recent-file-popup-menu)
+(generate-hash-accessor recent-session-popup-menu)
 
 
 (defun init-menu-handle(frame)
@@ -148,8 +149,8 @@
 
   (or (get-recent-file-popup-menu frame)
       (set-recent-file-popup-menu frame (create-popup-menu ':recent-file-popup)))
-  (or *recent-session-popup-menu*
-      (setq *recent-session-popup-menu* (create-popup-menu ':recent-session-popup)))
+  (or (get-recent-session-popup-menu frame)
+      (set-recent-session-popup-menu frame (create-popup-menu ':recent-session-popup)))
   (set-app-menu frame
 	(define-menu
 	  (:popup 'file "ファイル(&F)"
@@ -188,7 +189,7 @@
 	   (:menu nil "最近使ったファイル(&F)"
 	    (get-recent-file-popup-menu frame))
 	   (:menu nil "最近使ったセッション(&L)"
-	    *recent-session-popup-menu*)
+	    (get-recent-session-popup-menu frame))
 	   (:sep :above-kill-xyzzy)
 	   (:item :tag-command "保存して終了(&E)"
 	    'save-all-buffers-kill-xyzzy)

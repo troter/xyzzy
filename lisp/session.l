@@ -252,7 +252,7 @@
 
 (defun add-session-history-to-menu ()
   (when (menup (get-app-menu (selected-frame)))
-    (add-lru-menu *recent-session-popup-menu*
+    (add-lru-menu (get-recent-session-popup-menu (selected-frame))
 		  *session-file-history*
 		  #'(lambda (filename)
 		      #'(lambda ()
