@@ -157,7 +157,7 @@
   (let ((current nil))
     (mapc #'(lambda (info)
 	      (let ((frame (or (find-pseudo-frame (car info))
-			       (create-pseudo-frame-1 (car info) t))))
+			       (create-pseudo-frame-1 (selected-frame) (car info) t))))
 		(setf (pseudo-frame-winconf frame)
 		      (readable-winconf-to-winconf (cadr info)))
 		(when (caddr info)
