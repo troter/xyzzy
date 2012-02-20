@@ -556,6 +556,7 @@ struct Buffer
   static int b_default_fold_mode;
   enum {FOLD_DEFAULT = -2, FOLD_NONE = -1, FOLD_WINDOW = 0};
   int b_fold_mode;
+  int b_fold_columns;
 
   // don't want to include STL inside header.
   // std::map<const Window*, int>*

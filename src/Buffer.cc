@@ -260,6 +260,8 @@ Buffer::Buffer (lisp name, lisp filename, lisp dirname, int temporary)
   b_colors_enable = 0;
 
   b_fold_mode = FOLD_DEFAULT;
+  b_fold_columns = Buffer::FOLD_NONE;
+
   init_fold_width (b_default_fold_mode);
 
   b_hjump_columns = -1;
@@ -448,6 +450,9 @@ Buffer::~Buffer ()
 
 int Buffer::get_fold_columns(const Window* win) const 
 {
+  if(b_fold_columns != FOLD_WINDOW)
+	return b_fold_columns;
+
   if(!fold_columns_exist(win))
   {
     return Buffer::FOLD_NONE;
@@ -1582,6 +1587,12 @@ static void
 set_fold_window(Buffer* buf)
 {
   bool modified = false;
+  if(buf->b_fold_columns != Buffer::FOLD_WINDOW)
+  {
+	  buf->b_fold_columns = Buffer::FOLD_WINDOW;
+	  modified = true;
+  }
+
   for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
   {
 	for (Window *wp = app->active_frame.windows; wp; wp = wp->w_next)
@@ -1612,25 +1623,13 @@ set_fold_window(Buffer* buf)
   }
 }
 
+// set fold width except for fold-window.
 static void
-set_fold_width(Buffer *buf, int w)
+set_fold_width_no_window(Buffer *buf, int w)
 {
-  bool modified;
-  for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+  if(buf->b_fold_columns != w)
   {
-	for (Window *wp = app->active_frame.windows; wp; wp = wp->w_next)
-	{
-	  if (wp->w_bufp == buf)
-	  {
-		bool mod = buf->init_fold_width_with_window(wp, w);
-		modified |= mod;
-
-	  }
-	}
-  }
-
-  if(modified)
-  {
+	buf->b_fold_columns = w;
     buf->fold_width_modified ();
     buf->refresh_buffer ();
   }
@@ -1646,7 +1645,7 @@ Buffer::init_fold_width (int w)
   }
   else
   {
-	 set_fold_width(this, w);
+	 set_fold_width_no_window(this, w);
   }
 }
 
