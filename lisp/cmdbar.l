@@ -20,6 +20,8 @@
 (defvar *command-bar-first-get* t)
 
 (defun set-command-bar-list (frame val)
+  ;; *command-bar-list* null means this is root frame.
+  (if (null *command-bar-list*) (setq *command-bar-list* val))
   (si:*puthash frame *command-bar-list-multi* val))
 
 (defun get-command-bar-list(frame)
