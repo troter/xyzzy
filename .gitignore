@@ -11,6 +11,11 @@ site-lisp/
 src/d/
 src/r/
 etc/DOC
+src/Debug/xyzzy_mak.log
+src/xyzzy.vcxproj.user
+src/xyzzy_mak.vcxproj.user
+xyzzy.opensdf
+xyzzy.sdf
 src/char-width.h
 src/chtab.cc
 src/dpp.exe
