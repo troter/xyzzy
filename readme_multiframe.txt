@@ -10,6 +10,9 @@ C-x 5 2
 最新版は以下からダウンロード出来ます。
 https://bitbucket.org/mumurik/xyzzy/downloads
 
+githubへの乗り換え評価中。
+https://github.com/mumurik/xyzzy
+
 
 ** 変更箇所 **
 ベースは以下のURLのxyzzy-0.2.2.235.zipを元にしております。
