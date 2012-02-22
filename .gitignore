@@ -6,10 +6,13 @@
 XTAGS
 *~
 
+Debug/
+Release/
 ipch/
 usr/
 site-lisp/
 src/d/
+src/Debug/
 src/r/
 etc/DOC
 src/Debug/xyzzy_mak.log

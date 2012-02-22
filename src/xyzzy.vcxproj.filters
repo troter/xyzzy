@@ -368,6 +368,15 @@
     <ClCompile Include="xlist.cc">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="..\privctrl\listviewex.cc">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\privctrl\privctrl.cc">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\privctrl\url.cc">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="r\xyzzy.res">
@@ -769,6 +778,15 @@
       <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="xyzzycli.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\privctrl\mousemsg.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\privctrl\privctlimpl.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\privctrl\privctrl.h">
       <Filter>header</Filter>
     </ClInclude>
   </ItemGroup>
