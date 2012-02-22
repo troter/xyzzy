@@ -97,7 +97,8 @@ FontSet::paint_newline_bitmap (HDC hdc)
     SetPixel (hdc, ox, y0 - y, RGB (0, 0, 0));
   for (y = 0; y < h / 2 - 1; y++)
     SetPixel (hdc, ox + y, y0 - y, RGB (0, 0, 0));
-  for (int w = (y + 1) / 2, x = y; x >= w; x--)
+  int w;
+  for (w = (y + 1) / 2, x = y; x >= w; x--)
     SetPixel (hdc, ox + x, y0 - y, RGB (0, 0, 0));
   for (x++; y < h; y++)
     SetPixel (hdc, ox + x, y0 - y, RGB (0, 0, 0));
