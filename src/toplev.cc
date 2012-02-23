@@ -1127,7 +1127,9 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_IME_REQUEST:
       if (wparam == IMR_RECONVERTSTRING)
         return app1->kbdq.reconvert ((RECONVERTSTRING *)lparam, 0);
-      break;
+       if (wparam == IMR_DOCUMENTFEED)
+        return app1->kbdq.documentfeed ((RECONVERTSTRING *)lparam, 0);
+     break;
 
     case WM_DRAWITEM:
       if (app1->status_window.paint ((DRAWITEMSTRUCT *)lparam)
@@ -1146,7 +1148,9 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           if ((msg == msime || msg == atok)
               && wparam == IMR_RECONVERTSTRING)
             return app1->kbdq.reconvert ((RECONVERTSTRING *)lparam, 1);
-        }
+          if (wparam == IMR_DOCUMENTFEED)
+            return app1->kbdq.documentfeed ((RECONVERTSTRING *)lparam, 1);
+         }
 
       wheel_info wi;
       if (xsymbol_value (Vsupport_mouse_wheel) != Qnil
