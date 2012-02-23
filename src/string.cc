@@ -1110,8 +1110,7 @@ done:
   if ((le - lb) + (re - rb) + 3 > l)
     return 0;
 
-  for (int i = 0; i < 3; i++)
-    le[i] = '.';
+  memmove(le, "...", 3);
   strcpy (le + 3, rb);
   return 1;
 }
