@@ -1,3 +1,28 @@
+2009-12-18  NANRI Masaoki  <southly@gmail.com>
+
+	* src : fix apps in 'etc/'.
+	Makefile
+		'-EHsc'オプションを追加。
+		'-merge'オプションを修正。ただ、これでいいのかは自信なし。
+		いっそ削除してしまった方が良いかもしれない。
+	den8util.cc
+		インクルードヘッダの修正。
+		'ios::nocreate'の削除。同じ動作にするには処理を追加する必要
+		があるかもしれない。
+	tail-f.cc
+		forループのスコープに対応。
+
+2009-12-16  NANRI Masaoki  <southly@gmail.com>
+
+	* src : remove compiler option '-Zc:wchar_t-'.
+	wchar_t をネイティブ型として扱うように修正。
+	gccではVCと異なりwchar_tのサイズが4なので修正すべきかどうかも不明。
+	とりあえずCスタイルのキャストで型を合わせることで対応している。
+
+	* src : remove compiler option '-Zc:forScope-'.
+	forループのスコープをC++の標準にしてもコンパイル可能なように修正。
+	必要な箇所だけ変数宣言をforループの前に出すのを基本方針にしている。
+
 2009-12-10  NANRI Masaoki  <southly@gmail.com>
 
 	* src : fix format "~n@A".
