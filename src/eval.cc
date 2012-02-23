@@ -258,7 +258,7 @@ class special_bind
 {
   lisp *vec;
   char *flags;
-  int n;
+  int vec_length;
 
 public:
   special_bind (lisp *, char *, int);
@@ -267,15 +267,19 @@ public:
 
 inline
 special_bind::special_bind (lisp *v, char *f, int nv)
-     : vec (v), flags (f), n (nv)
+     : vec (v), flags (f), vec_length (nv)
 {
 }
 
 inline
 special_bind::~special_bind ()
 {
-  for (int i = n - 2, j = n/2 - 1; i >= 0; i -= 2, j--)
+  assert(vec_length%2 == 0);
+  int i = 0;
+  for (int k = 0; k < vec_length; k += 2)
     {
+      i = vec_length-k-2;
+      int j = i/2;
       assert (consp (vec[i]));
       assert (symbolp (xcar (vec[i])));
       assert (xcdr (vec[i]) == Qunbound);
@@ -287,6 +291,7 @@ special_bind::~special_bind ()
       xcdr (vec[i]) = xsymbol_value (sym);
       xsymbol_value (sym) = vec[i + 1];
     }
+  assert(i == 0);
 }
 
 static lisp

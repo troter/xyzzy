@@ -36,6 +36,7 @@ src/gen-msg.exe
 src/gen-syms.exe
 src/gen-utf2sjis.exe
 src/gen-vinf.exe
+src/gen-ucs2tab.exe
 src/ibmext.h
 src/iso2022state.h
 src/jisx0212-hash.h
