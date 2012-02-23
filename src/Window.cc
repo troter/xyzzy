@@ -1769,6 +1769,13 @@ Fdelete_window ()
 }
 
 lisp
+Fdeleted_window_p (lisp window)
+{
+  check_window (window);
+  return boole (!xwindow_wp (window));
+}
+
+lisp
 Fselected_window (lisp lapp)
 {
 	ApplicationFrame *app = coerce_to_frame(lapp);

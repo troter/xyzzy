@@ -887,6 +887,7 @@
 (si::defun-builtin split-window (&optional arg vertical))
 (si::defun-builtin delete-other-windows (&optional (appframe (selected-frame))))
 (si::defun-builtin delete-window ())
+(si::defun-builtin deleted-window-p (window))
 (si::defun-builtin selected-window ())
 (si::defun-builtin minibuffer-window (&optional (frame (selected-frame))))
 (si::defun-builtin minibuffer-window-p (window))
