@@ -83,6 +83,7 @@ public:
       HMODULE l_omodule;
     public:
       lock (const ArchiverInterface &);
+      void load_module();
       ~lock ();
     };
   friend class lock;
