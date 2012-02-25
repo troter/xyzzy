@@ -86,6 +86,9 @@ DECLARE_CONF (cfgSelectionBackColor, "selectionBackColor");
 DECLARE_CONF (cfgSelectionTextColor, "selectionTextColor");
 DECLARE_CONF (cfgUnselectedModeLineBg, "unselectedModeLineBg");
 DECLARE_CONF (cfgUnselectedModeLineFg, "unselectedModeLineFg");
+DECLARE_CONF (cfgUsbInit, "USBInit");
+DECLARE_CONF (cfgUsbConfigDir, "usbConfigDir");
+DECLARE_CONF (cfgUsbHomeDir, "usbHomeDir");
 
 struct PRLOGFONT;
 

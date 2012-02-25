@@ -471,6 +471,7 @@ public:
   Application ();
   ~Application ();
 
+
   static const char ToplevelClassName[];
   static const char FrameClassName[];
   static const char ClientClassName[];
@@ -489,6 +490,12 @@ public:
   int in_gc;
 
 };
+
+// does not take care parent (ex. ..\).
+// similar to Fmerge_pathnames, but does not require any initialization.
+errno_t ResolveModuleRelativeDir(char *dest, int destSize, const char* relative);
+// relativeDir can be null.
+errno_t ResolveModuleRelativePath(char *dest, int destSize, const char* relativeDir, const char* file);
 
 extern ApplicationFrame& active_app_frame();
 extern ApplicationFrame* first_app_frame();

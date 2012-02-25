@@ -52,6 +52,51 @@ Application::~Application ()
   xfree (ini_file_path);
 }
 
+errno_t
+ResolveModuleRelativePath(char *dest, int destSize, const char* relativeDir, const char *file)
+{
+	assert(relativeDir == 0 || relativeDir[strlen(relativeDir)-1] == '\\');
+    char path_name[_MAX_PATH];
+    char drive[_MAX_DRIVE];
+    char dir[_MAX_DIR];
+	char tmp_fname[_MAX_FNAME];
+	char tmp_ext[_MAX_EXT];
+
+	errno_t err = ResolveModuleRelativeDir(path_name, _MAX_PATH, relativeDir);
+	if(err != 0) return err;
+	err = _splitpath_s(path_name, drive,  _MAX_DRIVE, dir, _MAX_DIR,  NULL, 0,  NULL, 0);
+	if(err != 0) return err; // ??
+
+	err = _splitpath_s(file, NULL, 0, NULL, 0, tmp_fname, _MAX_FNAME, tmp_ext, _MAX_EXT);
+	if(err != 0) return err;
+
+	err = _makepath_s(dest, destSize, drive, dir, tmp_fname, tmp_ext);
+	return err;	
+}
+
+
+errno_t
+ResolveModuleRelativeDir(char *dest, int destSize, const char* relativeDir)
+{
+    char module_path_name[_MAX_PATH];
+    char drive[_MAX_DRIVE];
+    char dir[_MAX_DIR];
+
+	GetModuleFileName (0, module_path_name, sizeof module_path_name);
+	_splitpath_s(module_path_name, drive,  _MAX_DRIVE, dir, _MAX_DIR,  NULL, 0,  NULL, 0);
+	errno_t err;
+	if(relativeDir != 0)
+	{
+		err = strcat_s(dir, _MAX_DIR, relativeDir);
+		if(err != 0) {
+			return err;
+		}
+	}
+	err = _makepath_s(dest, destSize, drive, dir, NULL, NULL);
+	return err;
+}
+
+
 static lisp
 make_path (const char *s, int append_slash = 1)
 {
@@ -112,6 +157,15 @@ init_home_dir ()
   static const char xyzzyhome[] = "XYZZYHOME";
   static const char cfgInit[] = "init";
 
+  // top priority is USBInit.
+  if (read_conf (cfgUsbInit, cfgUsbHomeDir, path, sizeof path))
+  {
+	  char absPath[PATH_MAX];
+	  errno_t err = ResolveModuleRelativeDir(absPath, PATH_MAX, path);
+	  if(!err && init_home_dir (absPath))
+		  return;
+  }
+
   if (read_conf (cfgInit, "homeDir", path, sizeof path)
       && init_home_dir (path))
     return;
@@ -160,6 +214,18 @@ init_load_path ()
            xsymbol_value (Vload_path));
 }
 
+static bool
+try_assign_config_path(char *path)
+{
+    DWORD a = WINFS::GetFileAttributes (path);
+    if (a != DWORD (-1) && a & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        xsymbol_value (Quser_config_path) = make_path (path);
+		return true;
+	}
+	return false;
+}
+
 static void
 init_user_config_path (const char *config_path)
 {
@@ -171,14 +237,22 @@ init_user_config_path (const char *config_path)
       int l = WINFS::GetFullPathName (config_path, sizeof path, path, &tem);
       if (l && l < sizeof path)
         {
-          DWORD a = WINFS::GetFileAttributes (path);
-          if (a != DWORD (-1) && a & FILE_ATTRIBUTE_DIRECTORY)
-            {
-              xsymbol_value (Quser_config_path) = make_path (path);
-              return;
-            }
+		  if(try_assign_config_path(path))
+			  return;
         }
     }
+
+  if(g_app.ini_file_path)
+  {
+	  char path[_MAX_PATH];
+	  if(read_conf(cfgUsbInit, cfgUsbConfigDir, path, _MAX_PATH))
+	  {
+		  char absPath[_MAX_PATH];
+		  errno_t err = ResolveModuleRelativeDir(absPath, _MAX_PATH, path);
+		  if(!err && try_assign_config_path(absPath))
+			  return;
+	  }
+  }
 
   char *path = (char *)alloca (w2sl (xsymbol_value (Qmodule_dir))
                                + w2sl (xsymbol_value (Vuser_name))
@@ -191,16 +265,46 @@ init_user_config_path (const char *config_path)
   *p++ = '/';
   strcpy (p, sysdep.windows_short_name);
   WINFS::CreateDirectory (path, 0);
-  DWORD a = WINFS::GetFileAttributes (path);
-  if (a != DWORD (-1) && a & FILE_ATTRIBUTE_DIRECTORY)
-    xsymbol_value (Quser_config_path) = make_path (path);
-  else
-    xsymbol_value (Quser_config_path) = xsymbol_value (Qmodule_dir);
+  if(!try_assign_config_path(path))
+    xsymbol_value (Quser_config_path) = xsymbol_value (Qmodule_dir); //fail all, use module dir. 
+}
+
+static bool
+FileExists (const char* path) {
+  HANDLE h = WINFS::CreateFile (path, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
+  if (h == INVALID_HANDLE_VALUE)
+	  return false;
+  CloseHandle (h);
+  return true;
 }
 
 static void
-init_user_inifile_path (const char *ini_file)
+try_load_inifile_of_modulepath()
 {
+   char path[_MAX_PATH];
+   errno_t err = ResolveModuleRelativePath(path, _MAX_PATH, 0, "xyzzy.ini");
+   if(err != 0)
+      return;
+   if(FileExists(path))
+   {
+      g_app.ini_file_path = xstrdup (path);
+   }
+}
+
+static void
+init_user_inifile_path_1st_phase (const char *ini_file)
+{
+  // if there is no ini file specification, use the same place as xyzzy.exe if exist.
+  if(!ini_file)
+    try_load_inifile_of_modulepath();
+}
+
+static void
+init_user_inifile_path_2nd_phase (const char *ini_file)
+{
+  if(g_app.ini_file_path)
+	  return;
+
   if (!ini_file)
     ini_file = getenv ("XYZZYINIFILE");
   if (ini_file && find_slash (ini_file))
@@ -253,7 +357,7 @@ init_env_symbols (const char *config_path, const char *ini_file)
   init_current_dir ();
   init_environ ();
   init_user_config_path (config_path);
-  init_user_inifile_path (ini_file);
+  init_user_inifile_path_2nd_phase (ini_file);
   init_home_dir ();
   init_load_path ();
   init_windows_dir ();
@@ -571,6 +675,10 @@ init_lisp_objects ()
 
   try
     {
+      if (!ini_file)
+        ini_file = getenv ("XYZZYINIFILE");
+	  init_user_inifile_path_1st_phase(ini_file);
+
       init_dump_path ();
       if ((ac < __argc || !check_dump_key ())
           && rdump_xyzzy ())
