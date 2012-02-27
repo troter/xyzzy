@@ -167,7 +167,7 @@
     (trap-errors (run-hooks '*post-startup-hook*))))
 
 
-(defun startup-frame (frame)
+(defun startup-frame (frame parent)
 ;  (trap-errors (init-misc-objects))
   (trap-errors (init-pseudo-frame frame))
   (trap-errors (run-hooks '*before-make-frame-hook*))
@@ -193,10 +193,7 @@
     (ignore-errors (init-app-menus frame))
     (ignore-errors (init-misc-options))
     (trap-errors
-      (let ((scratch (find-buffer "*scratch*")))
-	(when scratch
-	  (save-excursion
-	    (set-buffer scratch)
-	    (funcall *initial-buffer-mode*)))))
+      (let ((scratch (selected-buffer parent)))
+	(set-buffer scratch)))
     ; (trap-errors (process-command-line))
     (trap-errors (run-hooks '*after-make-frame-hook*))))

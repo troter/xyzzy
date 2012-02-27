@@ -1632,7 +1632,7 @@ static symbols ed[] =
   DEFUN3 (buffer-size, 0, 1, 0),
   DEFUN3 (buffer-lines, 0, 1, 0),
   DEFUN3 (create-new-buffer, 1, 0, 0),
-  DEFUN3 (selected-buffer, 0, 0, 0),
+  DEFUN3 (selected-buffer, 0, 1, 0),
   DEFUN3 (deleted-buffer-p, 1, 0, 0),
   DEFUN3 (get-next-buffer, 0, 4, 0),
   DEFUN3 (set-buffer, 1, 0, 0),

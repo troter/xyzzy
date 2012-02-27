@@ -1932,7 +1932,7 @@ process_interactive_string (lisp fmt, lisp args)
               {
                 lisp def = load_default (args, nargs);
                 if (def == Qnil)
-                  def = c == 'B' ? Fother_buffer (0) : Fselected_buffer ();
+                  def = c == 'B' ? Fother_buffer (0) : Fselected_buffer (Qnil);
                 if (bufferp (def))
                   def = Fbuffer_name (def);
                 v1 = complete_read (p0, p - p0, def,

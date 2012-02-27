@@ -710,10 +710,13 @@ Fcreate_new_buffer (lisp buffer_name)
   return Buffer::create_buffer (buffer_name, Qnil, Qnil)->lbp;
 }
 
+extern ApplicationFrame * coerce_to_frame (lisp object);
+
 lisp
-Fselected_buffer ()
+Fselected_buffer (lisp lframe)
 {
-  return selected_buffer ()->lbp;
+  ApplicationFrame *frame = coerce_to_frame(lframe);
+  return selected_buffer (frame)->lbp;
 }
 
 lisp

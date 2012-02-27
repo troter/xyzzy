@@ -185,7 +185,7 @@ void delete_floating_app_frame()
 	g_floating_frames.clear();
 }
 
-extern int init_app(HINSTANCE hinst, ApplicationFrame* app1);
+extern int init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent);
 
 ApplicationFrame * coerce_to_frame (lisp object)
 {
@@ -202,13 +202,14 @@ ApplicationFrame * coerce_to_frame (lisp object)
 lisp
 Fmake_frame (lisp opt)
 {
+	ApplicationFrame *parent = root;
 	HINSTANCE hinst = root->hinst;
 
 	ApplicationFrame* new_app = new ApplicationFrame();
 	new_app->a_next = root;
 	root = new_app;
 
-	init_app(hinst, new_app);
+	init_app(hinst, new_app, parent);
 
 	return new_app->lfp;
 }

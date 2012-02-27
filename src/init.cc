@@ -1020,7 +1020,7 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 }
 
 static void
-call_startup(ApplicationFrame *app1)
+call_startup(ApplicationFrame *app1, ApplicationFrame *parent)
 {
 	if (xsymbol_function (Vstartup_frame) == Qunbound
 		|| xsymbol_function (Vstartup_frame) == Qnil)
@@ -1029,7 +1029,7 @@ call_startup(ApplicationFrame *app1)
   suppress_gc sgc;
   try
     {
-		funcall_1 (Vstartup_frame, app1->lfp);
+		funcall_2 (Vstartup_frame, app1->lfp, parent->lfp);
     }
   catch (nonlocal_jump &)
     {
@@ -1038,7 +1038,7 @@ call_startup(ApplicationFrame *app1)
 }
 
 int
-init_app(HINSTANCE hinst, ApplicationFrame* app1)
+init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent)
 {
   app1->toplev = 0;
   app1->hinst = hinst;
@@ -1069,7 +1069,7 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1)
   if (!init_editor_objects (app1))
     return 0;
 
-  call_startup(app1);
+  call_startup(app1, parent);
 
   return 1;
 }

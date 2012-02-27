@@ -967,7 +967,7 @@ Fread_exist_buffer_name (lisp prompt, lisp keys)
 {
   lisp def = find_keyword (Kdefault, keys);
   if (def == Qnil)
-    def = Fselected_buffer ();
+    def = Fselected_buffer (Qnil);
   if (bufferp (def))
     def = Fbuffer_name (def);
   return complete_read (prompt, def, Kexist_buffer_name, Qnil, Kbuffer_name, 1, keys);

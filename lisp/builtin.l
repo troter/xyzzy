@@ -642,7 +642,7 @@
 (si::defun-builtin delete-frame (&optional frame force))
 (si::defun-builtin frame-list ())
 (si::defun-builtin buffer-list ())
-(si::defun-builtin selected-buffer ())
+(si::defun-builtin selected-buffer (&optional frame))
 (si::defun-builtin deleted-buffer-p (buffer))
 (si::defun-builtin get-next-buffer (&optional buffer reverse tab-order internal))
 (si::defun-builtin set-buffer (buffer))
