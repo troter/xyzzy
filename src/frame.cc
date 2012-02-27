@@ -28,6 +28,8 @@ ApplicationFrame::ApplicationFrame ()
   quit_mod = MOD_CONTROL;
   minibuffer_prompt_column = -1;
   mframe = new main_frame();
+  lminibuffer_prompt = Qnil;
+  lminibuffer_message = Qnil;
 
   memset((void*)&active_frame, 0, sizeof(active_frame));
   a_next = 0;
@@ -87,7 +89,9 @@ void app_frame_gc_mark(void (*f)(lisp))
 
 	  app1->mframe->gc_mark(f);
 
-
+	  (*f)(app1->lminibuffer_message);
+	  (*f)(app1->lminibuffer_prompt);
+	  (*f)(app1->lquit_char);
 	  (*f)(app1->lfp);
       app1->user_timer.gc_mark (f);
   }

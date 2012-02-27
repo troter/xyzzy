@@ -1441,8 +1441,6 @@ static symbols unint[] =
   MAKE_SYMBOL2Q (or-string-stream),
 
   MAKE_SYMBOL2Q (temporary-string),
-  MAKE_SYMBOL2 (minibuffer-message),
-  MAKE_SYMBOL2 (minibuffer-prompt),
   MAKE_SYMBOL2 (default-menu),
   MAKE_SYMBOL2 (last-active-menu),
   MAKE_SYMBOL2 (tracking-menu),

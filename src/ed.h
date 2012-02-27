@@ -456,6 +456,8 @@ public:
 
   ATOM atom_toplev;
   int minibuffer_prompt_column;
+  lisp lminibuffer_message;
+  lisp lminibuffer_prompt;
 
   utimer user_timer;
   main_frame* mframe;

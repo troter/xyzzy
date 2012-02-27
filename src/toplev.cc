@@ -1703,9 +1703,9 @@ main_loop ()
         pending_refresh_screen ();
       else
         {
-          if (stringp (xsymbol_value (Vminibuffer_message)))
+          if (stringp (active_app_frame().lminibuffer_message))
             {
-              xsymbol_value (Vminibuffer_message) = Qnil;
+              active_app_frame().lminibuffer_message = Qnil;
               Window::minibuffer_window ()->w_disp_flags |= Window::WDF_WINDOW;
             }
           refresh_screen (1);
@@ -1802,12 +1802,12 @@ Fsi_minibuffer_message (lisp message, lisp prompt)
 {
   active_app_frame().minibuffer_prompt_column = -1;
   if (message == Qnil)
-    xsymbol_value (Vminibuffer_message) = Qnil;
+    active_app_frame().lminibuffer_message = Qnil;
   else
     {
       check_string (message);
-      xsymbol_value (Vminibuffer_message) = message;
-      xsymbol_value (Vminibuffer_prompt) = boole (prompt && prompt != Qnil);
+      active_app_frame().lminibuffer_message = message;
+      active_app_frame().lminibuffer_prompt = boole (prompt && prompt != Qnil);
     }
   Window::minibuffer_window ()->w_disp_flags |= Window::WDF_WINDOW;
   if (!active_app_frame().kbdq.macro_is_running ())

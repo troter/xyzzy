@@ -598,11 +598,13 @@ init_symbol_value_once ()
 static void
 init_symbol_value ()
 {
+  // when root app constructor is called, Qnil is not yet initialized.
+  active_app_frame().lminibuffer_message = Qnil;
+  active_app_frame().lminibuffer_prompt = Qnil;
   xsymbol_value (Vquit_flag) = Qnil;
   xsymbol_value (Vinhibit_quit) = Qnil;
   xsymbol_value (Voverwrite_mode) = Qnil;
   xsymbol_value (Vprocess_list) = Qnil;
-  xsymbol_value (Vminibuffer_message) = Qnil;
   xsymbol_value (Vsi_find_motion) = Qt;
   xsymbol_value (Vdefault_menu) = Qnil;
   xsymbol_value (Vlast_active_menu) = Qnil;
