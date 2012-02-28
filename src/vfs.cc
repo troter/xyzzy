@@ -99,7 +99,7 @@ WINWOW64::file_path_mode
 WINWOW64::GetFilePathMode ()
 {
   file_path_mode m = wow64;
-  if (xsymbol_value (Vwow64_enable_file_system_redirector) == Qnil)
+  if (Vwow64_enable_file_system_redirector && xsymbol_value (Vwow64_enable_file_system_redirector) == Qnil)
     {
       m = native;
     }
@@ -190,7 +190,7 @@ Wow64FsRedirectionSelector::Wow64FsRedirectionSelector ()
 {
   if (WINWOW64::IsWow64 () && WINWOW64::GetFilePathMode () == WINWOW64::native)
     {
-      WINWOW64::Wow64Wow64FsRedirectionSelector (&OldValue);
+      WINWOW64::Wow64DisableWow64FsRedirection (&OldValue);
     }
 }
 
