@@ -545,12 +545,7 @@ public :
 		}
 		else
 		{
-			// may be killed and refocus during evalling lisp.
-			change_focus_to_frame(&active_app_frame());
-			if(app == &active_app_frame())
-				s_focus_candidate = 0;
-			else
-				s_focus_candidate = app;
+			s_focus_candidate = app;
 		}
 	}
 	defer_change_focus() {

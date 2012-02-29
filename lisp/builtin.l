@@ -640,6 +640,7 @@
 (si::defun-builtin create-new-buffer (name))
 (si::defun-builtin make-frame (&optional name))
 (si::defun-builtin delete-frame (&optional frame force))
+(si::defun-builtin other-frame ())
 (si::defun-builtin frame-list ())
 (si::defun-builtin buffer-list ())
 (si::defun-builtin selected-buffer (&optional frame))

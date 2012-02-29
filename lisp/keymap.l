@@ -30,6 +30,7 @@
 (setf (symbol-function 'ctl-x-5-prefix) ctl-x-5-map)
 ;; temporary put here.
 (define-key ctl-x-5-map #\2 'make-frame)
+(define-key ctl-x-5-map #\o 'other-frame)
 
 (defun delete-other-frames() 
   (interactive)
