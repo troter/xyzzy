@@ -18,3 +18,12 @@
     ;; (delete-frame frame)
     res)
   => t)
+
+;; "(list-all-packages) should return 'a copy of' system package list."
+(deftest fix-list-all-packages-test ()
+  (let* ((name :temporary-package-for-test)
+	 (pkg (make-package name))
+	 (pkglist (list-all-packages)))
+    (delete pkg pkglist)
+    (eq pkg (find-package name)))
+  => t)
