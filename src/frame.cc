@@ -205,6 +205,10 @@ Fmake_frame (lisp opt)
 	ApplicationFrame *parent = root;
 	HINSTANCE hinst = root->hinst;
 
+	if (Qnil == selected_buffer(root)->run_hook_while_success (Vbefore_make_frame_hook))
+		return Qnil;
+
+
 	ApplicationFrame* new_app = new ApplicationFrame();
 	new_app->a_next = root;
 	root = new_app;

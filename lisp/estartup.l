@@ -8,7 +8,7 @@
 (in-package "editor")
 
 (export '(*inhibit-history-load* *pre-startup-hook* *post-startup-hook*
-	  *before-make-frame-hook* *after-make-frame-hook*
+	  *after-make-frame-hook*
 	  *command-line-mailto-hook* *print-option-show-dialog*
 	  *process-command-line-hook* *loading-user-initial-file*))
 
@@ -170,7 +170,6 @@
 (defun startup-frame (frame parent)
 ;  (trap-errors (init-misc-objects))
   (trap-errors (init-pseudo-frame frame))
-  (trap-errors (run-hooks '*before-make-frame-hook*))
   (let (no-init-file
 	(cl (car si:*command-line-args*)))
 ;    (when (or (equal cl "-q")
@@ -196,4 +195,4 @@
       (let ((scratch (selected-buffer parent)))
 	(set-buffer scratch)))
     ; (trap-errors (process-command-line))
-    (trap-errors (run-hooks '*after-make-frame-hook*))))
+    (trap-errors (run-hook-with-args '*after-make-frame-hook* frame))))
