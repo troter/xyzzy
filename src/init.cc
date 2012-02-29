@@ -879,6 +879,9 @@ sw_maximized_p (int sw)
   return sw == SW_SHOWMAXIMIZED;
 }
 
+static SIZE g_initial_size;
+
+
 static int
 init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 {
@@ -925,6 +928,7 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
   POINT point;
   SIZE size;
   int cmdshow = environ::load_geometry (passed_cmdshow, &point, &size);
+  g_initial_size = size;
   int restore_maximized = 0;
   if (sw_minimized_p (passed_cmdshow))
     {
@@ -1051,8 +1055,7 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent)
 
   app1->toplev = CreateWindow (Application::ToplevelClassName, TitleBarString,
                              WS_OVERLAPPEDWINDOW,
-                             // point.x, point.y, size.cx, size.cy,
-							 10, 10, 600, 480,
+							 CW_USEDEFAULT, CW_USEDEFAULT, g_initial_size.cx, g_initial_size.cy,
                              HWND_DESKTOP, 0, hinst, app1);
 
   if (!app1->toplev)
