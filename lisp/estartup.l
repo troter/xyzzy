@@ -190,7 +190,10 @@
     (unless *inhibit-history-load*
       (ignore-errors (load-command-bar-info frame)))
     (ignore-errors (init-app-menus frame))
-    (ignore-errors (init-misc-options))
+    ; (ignore-errors (init-misc-options))
+    (ignore-errors
+     (when (and *use-global-ime*
+		(not (ignore-errors (enable-global-ime t frame))))))
     (trap-errors
       (let ((scratch (selected-buffer parent)))
 	(set-buffer scratch)))

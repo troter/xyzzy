@@ -2319,7 +2319,7 @@ static symbols ed[] =
   DEFUN3 (pop-ime-composition-string, 0, 0, 0),
   DEFUN3 (set-ime-read-string, 0, 1, 0),
   DEFUN3 (*ime-register-word-dialog, 0, 2, 0),
-  DEFUN3 (enable-global-ime, 1, 0, 0),
+  DEFUN3 (enable-global-ime, 1, 1, 0),
   DEFVAR2 (*ime-control*),
   DEFVAR2 (*extended-key-translate-table*),
   DEFVAR2 (*kbd-translate-table*),

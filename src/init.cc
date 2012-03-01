@@ -41,6 +41,7 @@ Application::Application ()
 {
   toplevel_is_active = 0;
   ini_file_path = 0;
+  default_tab_columns = 8;
 
   int tem;
   initial_stack = &tem;
@@ -715,12 +716,16 @@ init_lisp_objects ()
 }
 
 static int
-init_editor_objects (ApplicationFrame* app1, BOOL first)
+init_editor_objects (ApplicationFrame* app1, Buffer* iniBuf)
 {
   try
     {
       Window::create_default_windows (app1);
-      if (first)
+      if (iniBuf)
+	  {
+		  selected_window (app1)->set_buffer (iniBuf);
+	  }
+	  else
         create_default_buffers ();
     }
   catch (nonlocal_jump &)
@@ -1018,7 +1023,7 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 
   active_app_frame().modeline_param.init (HFONT (SendMessage (active_app_frame().hwnd_sw, WM_GETFONT, 0, 0)));
 
-  if (!init_editor_objects (&active_app_frame(), TRUE))
+  if (!init_editor_objects (&active_app_frame(), NULL))
     return 0;
 
   try {Dde::initialize ();} catch (Dde::Exception &) {}
@@ -1072,7 +1077,7 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent)
 
   app1->modeline_param.init (HFONT (SendMessage (app1->hwnd_sw, WM_GETFONT, 0, 0)));
 
-  if (!init_editor_objects (app1, FALSE))
+  if (!init_editor_objects (app1, selected_buffer(parent)))
     return 0;
 
   call_startup(app1, parent);

@@ -127,8 +127,6 @@ const wcolor_index_name wcolor_index_names[] =
   {0, RGB (0, 0, 0), "選択モード行背景色"},
 };
 
-extern ApplicationFrame * coerce_to_frame (lisp object);
-
 ModelineParam::ModelineParam ()
      : m_hfont (0)
 {
@@ -1564,7 +1562,7 @@ Window::delete_other_windows ()
   if (minibuffer_window_p ())
     return;
 
-  Window *mini = minibuffer_window ();
+  Window *mini = minibuffer_window (w_owner);
 
   int f = 0;
   for (Window *wp = w_owner->active_frame.windows, *next; wp; wp = next)
@@ -1599,7 +1597,7 @@ Window::delete_other_windows ()
 lisp
 Fdelete_other_windows (lisp lapp)
 {
-  ApplicationFrame *app = coerce_to_frame(lapp);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(lapp);
   selected_window (app)->delete_other_windows ();
   return Qt;
 }
@@ -1778,7 +1776,7 @@ Fdeleted_window_p (lisp window)
 lisp
 Fselected_window (lisp lapp)
 {
-	ApplicationFrame *app = coerce_to_frame(lapp);
+	ApplicationFrame *app = ApplicationFrame::coerce_to_frame(lapp);
   assert (xwindow_wp (selected_window (app)->lwp));
   assert (xwindow_wp (selected_window (app)->lwp) == selected_window (app));
   return selected_window (app)->lwp;
@@ -1787,7 +1785,7 @@ Fselected_window (lisp lapp)
 lisp
 Fminibuffer_window (lisp frame)
 {
-  return Window::minibuffer_window (coerce_to_frame(frame) )->lwp;
+  return Window::minibuffer_window (ApplicationFrame::coerce_to_frame(frame) )->lwp;
 }
 
 lisp
@@ -2777,7 +2775,7 @@ Fwindow_coordinate (lisp lwindow)
 lisp
 Fcurrent_window_configuration (lisp lapp)
 {
-  ApplicationFrame* app = coerce_to_frame(lapp);
+  ApplicationFrame* app = ApplicationFrame::coerce_to_frame(lapp);
   lisp ldefs = Qnil;
   for (Window *wp = app->active_frame.windows; wp->w_next; wp = wp->w_next)
     {
@@ -3136,7 +3134,7 @@ Fset_window_configuration (lisp lconf, lisp lappframe)
       check_window (lselected_window);
     }
 
-  ApplicationFrame* app_frame = coerce_to_frame(lappframe);
+  ApplicationFrame* app_frame = ApplicationFrame::coerce_to_frame(lappframe);
   x = xcdr (x);
   lisp ldefs = xcar (x);
   if (!consp (ldefs))

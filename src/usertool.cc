@@ -313,13 +313,11 @@ user_tool_bar::create (lisp bitmap, lisp items)
   add_buttons (u_nitems, tbb);
 }
 
-extern ApplicationFrame * coerce_to_frame (lisp object);
-
 
 lisp
 Fcreate_tool_bar (lisp name, lisp bitmap, lisp items, lisp frame)
 {
-  ApplicationFrame *app = coerce_to_frame(frame);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(frame);
   if (app->mframe->find (name))
     FEsimple_error (Etoolbar_exist, name);
 
@@ -342,7 +340,7 @@ Fcreate_tool_bar (lisp name, lisp bitmap, lisp items, lisp frame)
 lisp
 Fshow_tool_bar (lisp name, lisp ledge, lisp lx, lisp ly, lisp lw, lisp frame)
 {
-  ApplicationFrame *app = coerce_to_frame(frame);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(frame);
   int edge = dock_frame::EDGE_TOP;
   if (ledge == Kleft)
     edge = dock_frame::EDGE_LEFT;
@@ -397,7 +395,7 @@ edge_sym (int edge)
 lisp
 Fhide_tool_bar (lisp name, lisp frame)
 {
-  ApplicationFrame *app = coerce_to_frame(frame);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(frame);
   dock_bar *bar = app->mframe->find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
@@ -418,7 +416,7 @@ Fhide_tool_bar (lisp name, lisp frame)
 lisp
 Fdelete_tool_bar (lisp name, lisp frame)
 {
-  ApplicationFrame *app = coerce_to_frame(frame);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(frame);
   dock_bar *bar = app->mframe->find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
@@ -429,13 +427,13 @@ Fdelete_tool_bar (lisp name, lisp frame)
 lisp
 Ftool_bar_exist_p (lisp name, lisp frame)
 {
-  return boole (coerce_to_frame(frame)->mframe->find (name));
+  return boole (ApplicationFrame::coerce_to_frame(frame)->mframe->find (name));
 }
 
 lisp
 Ftool_bar_info (lisp name, lisp frame)
 {
-  dock_bar *bar = coerce_to_frame(frame)->mframe->find (name);
+  dock_bar *bar = ApplicationFrame::coerce_to_frame(frame)->mframe->find (name);
   if (!bar)
     FEsimple_error (Eundefined_toolbar, name);
 
@@ -451,18 +449,18 @@ Ftool_bar_info (lisp name, lisp frame)
 lisp
 Flist_tool_bars (lisp frame)
 {
-  return coerce_to_frame(frame)->mframe->list_bars ();
+  return ApplicationFrame::coerce_to_frame(frame)->mframe->list_bars ();
 }
 
 lisp
 Ffocus_tool_bar (lisp frame)
 {
-  return boole (coerce_to_frame(frame)->mframe->focus_next (0));
+  return boole (ApplicationFrame::coerce_to_frame(frame)->mframe->focus_next (0));
 }
 
 lisp
 Frefresh_tool_bars (lisp frame)
 {
-  coerce_to_frame(frame)->mframe->refresh ();
+  ApplicationFrame::coerce_to_frame(frame)->mframe->refresh ();
   return Qt;
 }

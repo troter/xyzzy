@@ -1410,11 +1410,12 @@ Fime_register_word_dialog (lisp lcomp, lisp lread)
 }
 
 lisp
-Fenable_global_ime (lisp f)
+Fenable_global_ime (lisp f, lisp lframe)
 {
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(lframe);
   if (f == Qnil)
-    active_app_frame().kbdq.gime.disable ();
-  else if (!active_app_frame().kbdq.gime.enable (&active_app_frame().atom_toplev, 1))
+    app->kbdq.gime.disable ();
+  else if (!app->kbdq.gime.enable (&app->atom_toplev, 1))
     FEsimple_win32_error (GetLastError ());
   return Qt;
 }

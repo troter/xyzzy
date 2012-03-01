@@ -405,6 +405,7 @@ public:
   ApplicationFrame ();
   ~ApplicationFrame();
 
+  static ApplicationFrame * coerce_to_frame (lisp object);
   HINSTANCE hinst;
   HWND toplev;
   HWND hwnd_sw;
@@ -487,6 +488,7 @@ public:
   char *ini_file_path;
   int toplevel_is_active;
   u_int quit_thread_id;
+  int default_tab_columns;
 
   void *initial_stack;
   int in_gc;
@@ -575,7 +577,6 @@ public :
 inline Window *
 selected_window (ApplicationFrame *owner = &active_app_frame())
 {
-//  ApplicationFrame *frame = owner != 0? owner : &active_app_frame();
   return owner->active_frame.selected;
 }
 

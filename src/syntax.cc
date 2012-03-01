@@ -1991,7 +1991,7 @@ lisp
 Ftab_columns (lisp lbuffer)
 {
   if (!lbuffer || lbuffer == Qnil)
-    return make_fixnum (active_app_frame().default_tab_columns);
+    return make_fixnum (g_app.default_tab_columns);
   Buffer *bp = Buffer::coerce_to_buffer (lbuffer);
   multiple_value::count () = 2;
   multiple_value::value (1) = boole (bp->b_local_tab_columns);
@@ -2006,9 +2006,9 @@ Fset_tab_columns (lisp column, lisp lbuffer)
       int n = fixnum_value (column);
       if (n < 1 || n > 32)
         FErange_error (column);
-      if (active_app_frame().default_tab_columns != n)
+      if (g_app.default_tab_columns != n)
         {
-          active_app_frame().default_tab_columns = n;
+          g_app.default_tab_columns = n;
           for (Buffer *bp = Buffer::b_blist; bp; bp = bp->b_next)
             {
 			  bp->set_nfolded_all(-1);
@@ -2031,7 +2031,7 @@ Fset_tab_columns (lisp column, lisp lbuffer)
       if (column == Qnil)
         {
           bp->b_local_tab_columns = 0;
-          n = active_app_frame().default_tab_columns;
+          n = g_app.default_tab_columns;
         }
       else
         {

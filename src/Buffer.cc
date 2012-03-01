@@ -151,7 +151,7 @@ Buffer::Buffer (lisp name, lisp filename, lisp dirname, int temporary)
   b_prev = b_next = 0;
   b_ldisp = 0;
 
-  b_tab_columns = active_app_frame().default_tab_columns;
+  b_tab_columns = g_app.default_tab_columns;
   b_local_tab_columns = 0;
 
   lbp = temporary ? Qnil : make_buffer ();
@@ -710,12 +710,11 @@ Fcreate_new_buffer (lisp buffer_name)
   return Buffer::create_buffer (buffer_name, Qnil, Qnil)->lbp;
 }
 
-extern ApplicationFrame * coerce_to_frame (lisp object);
 
 lisp
 Fselected_buffer (lisp lframe)
 {
-  ApplicationFrame *frame = coerce_to_frame(lframe);
+  ApplicationFrame *frame = ApplicationFrame::coerce_to_frame(lframe);
   return selected_buffer (frame)->lbp;
 }
 

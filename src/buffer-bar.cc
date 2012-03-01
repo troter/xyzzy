@@ -554,12 +554,10 @@ buffer_bar::buffer_list () const
   return Fnreverse (r);
 }
 
-extern ApplicationFrame * coerce_to_frame (lisp object);
-
 lisp
 Fcreate_buffer_bar (lisp frame)
 {
-  ApplicationFrame* app = coerce_to_frame(frame);
+  ApplicationFrame* app = ApplicationFrame::coerce_to_frame(frame);
   buffer_bar* bar = buffer_bar::make_instance(app);
   if (bar == 0)
     FEsimple_error (ECannot_create_toolbar);

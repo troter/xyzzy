@@ -2474,7 +2474,7 @@ Fcount_column (lisp string, lisp start, lisp lbuffer)
   if (column < 0)
     FErange_error (start);
   int tab = ((!lbuffer || lbuffer == Qnil)
-             ? active_app_frame().default_tab_columns
+             ? g_app.default_tab_columns
              : Buffer::coerce_to_buffer (lbuffer)->b_tab_columns);
   for (const Char *p = xstring_contents (string), *pe = p + xstring_length (string);
        p < pe; p++)

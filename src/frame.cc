@@ -5,7 +5,6 @@
 ApplicationFrame::ApplicationFrame ()
      : mouse (kbdq)
 {
-  default_tab_columns = 8;
   auto_save_count = 0;
   ime_composition = 0;
   ime_open_mode = kbd_queue::IME_MODE_OFF;
@@ -187,7 +186,8 @@ void delete_floating_app_frame()
 
 extern int init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent);
 
-ApplicationFrame * coerce_to_frame (lisp object)
+ApplicationFrame *
+ApplicationFrame::coerce_to_frame (lisp object)
 {
   if (!object || object == Qnil)
     return &active_app_frame ();
@@ -210,10 +210,13 @@ Fmake_frame (lisp opt)
 
 
 	ApplicationFrame* new_app = new ApplicationFrame();
-	new_app->a_next = root;
-	root = new_app;
+	ApplicationFrame* next = root->a_next;
+	root->a_next = new_app;
+	new_app->a_next = next;
 
 	init_app(hinst, new_app, parent);
+
+	defer_change_focus::request_change_focus(new_app);	
 
 	return new_app->lfp;
 }
@@ -229,7 +232,7 @@ Fselected_frame ()
 lisp
 Fnext_frame (lisp frame, lisp minibufp)
 {
-  ApplicationFrame *app = coerce_to_frame(frame);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(frame);
   ApplicationFrame *next = app->a_next;
   if (!next)
     next = first_app_frame();
@@ -266,7 +269,7 @@ Fother_frame ()
 lisp
 Fdelete_frame (lisp frame, lisp force)
 {
-  ApplicationFrame *app = coerce_to_frame(frame);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(frame);
   if(!is_last_app_frame())
   {
 	  PostMessage(app->toplev, WM_CLOSE, 0, 0);
