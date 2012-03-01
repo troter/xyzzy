@@ -8,7 +8,7 @@
 (in-package "editor")
 
 (export '(*inhibit-history-load* *pre-startup-hook* *post-startup-hook*
-	  *after-make-frame-hook*
+	  *after-make-frame-functions*
 	  *command-line-mailto-hook* *print-option-show-dialog*
 	  *process-command-line-hook* *loading-user-initial-file*))
 
@@ -198,4 +198,4 @@
       (let ((scratch (selected-buffer parent)))
 	(set-buffer scratch)))
     ; (trap-errors (process-command-line))
-    (trap-errors (run-hook-with-args '*after-make-frame-hook* frame))))
+    (trap-errors (run-hook-with-args '*after-make-frame-functions* frame))))
