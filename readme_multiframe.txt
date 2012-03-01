@@ -19,8 +19,28 @@ https://github.com/mumurik/xyzzy
 配布のzipを展開してxyzzy.exeを実行するだけです。 
 既存の環境に上書きする場合はxyzzy.wxpを削除してください。
 
+また、幾つかのlispパッケージはそのままでは動かない事が分かっています。
+以下を参照してください。
+https://bitbucket.org/mumurik/xyzzy/wiki/%E5%8B%95%E3%81%8B%E3%81%AA%E3%81%84lisp%E3%83%91%E3%83%83%E3%82%B1%E3%83%BC%E3%82%B8%E4%B8%80%E8%A6%A7
+
 
 ## 更新履歴 ##
+
+== 0.2.3.3から0.2.3.4への修正点 ==
+
+今回は主にfix寄りでしたが、結構変更されてます。
+
+* WoW64環境でsystem32以下のファイルが見えるように(Thanks to Part17 638氏)
+* frame-hook系をemacsとより互換に
+** *before-make-frame-hook*をframeが作られる前に
+** *after-make-frame-hook*を*after-make-frame-functions*にリネーム
+** *delete-frame-functions*を追加
+** C-x 5 o other-framesの実装
+* UnitTestを入れる (Thanks to bowbow99氏, southly氏）
+* *scratch*<2>とかかっこ悪いのが出来てたのが直る (Thanks to tn氏）
+* previous-pseudo-frameが壊れてたのをfix (Thanks to youz氏）
+
+そのほかバグfixが幾つか。
 
 == 0.2.3.2から0.2.3.3への修正点 ==
 
