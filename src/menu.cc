@@ -395,10 +395,10 @@ get_menu_from_apphash(lisp app, lisp hashsym)
 }
 
 lisp
-Fset_menu (lisp lmenu, lisp app)
+Fset_menu (lisp lmenu, lisp lapp)
 {
-  check_appframe(app);
-  return set_menu_to_apphash(xappframe_fp (app), lmenu, Vdefault_menu);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(lapp);
+  return set_menu_to_apphash(xappframe_fp (app->lfp), lmenu, Vdefault_menu);
 }
 
 lisp
