@@ -1390,7 +1390,7 @@ Fkill_xyzzy ()
 {
   if(!is_last_app_frame())
   {
-    PostMessage(active_app_frame().toplev, WM_CLOSE, 0, 0);
+    Fdelete_frame(active_app_frame().lfp, Qnil);
     return Qnil;
   }
 

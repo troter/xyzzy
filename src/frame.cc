@@ -270,6 +270,16 @@ lisp
 Fdelete_frame (lisp frame, lisp force)
 {
   ApplicationFrame *app = ApplicationFrame::coerce_to_frame(frame);
+  try
+  {
+	selected_buffer(app)->run_hook (Vdelete_frame_functions, app->lfp);
+  }
+  catch (nonlocal_jump &)
+  {
+    print_condition (nonlocal_jump::data ());
+  }
+
+
   if(!is_last_app_frame())
   {
 	  PostMessage(app->toplev, WM_CLOSE, 0, 0);
