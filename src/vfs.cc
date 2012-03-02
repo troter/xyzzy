@@ -16,6 +16,7 @@ protected:
   static const WOW64DISABLEWOW64FSREDIRECTION fnWow64DisableWow64FsRedirection;
   static const WOW64REVERTWOW64FSREDIRECTION fnWow64RevertWow64FsRedirection;
   static BOOL b_wow64;
+  static int normalizeMultibytePathChar (int c);
 
 public:
   struct WoW64SpecialRedirectionPath
@@ -31,7 +32,9 @@ public:
   static BOOL WINAPI Wow64RevertWow64FsRedirection (PVOID *OldValue);
   static BOOL IsWow64 ();
   static const WoW64SpecialRedirectionPath* GetSpecialRedirectionPathArray ();
+  static BOOL IsMultibytePathEqual (const char* lhs, const char* rhs, size_t rhsLengthInBytes);
   static BOOL IsSpecialRedirectionPath (const char *path, WIN32_FIND_DATA &fd);
+  static BOOL IsSpecialRedirectionFilename (const char *path);
   static file_path_mode GetFilePathMode ();
 };
 
@@ -155,6 +158,69 @@ WINWOW64::GetSpecialRedirectionPathArray ()
   return srp;
 }
 
+int
+WINWOW64::normalizeMultibytePathChar (int c)
+{
+  if (c == '/')
+    {
+      c = '\\';
+    }
+  else if (c >= 'A' && c <= 'Z')
+    {
+      c = c - 'A' + 'a';
+    }
+  return c;
+}
+
+BOOL
+WINWOW64::IsMultibytePathEqual (const char* lhs, const char* rhs, size_t rhsLengthInBytes)
+{
+  BOOL match = FALSE;
+  const char* l = lhs;
+  const char* r = rhs;
+  while(r-rhs < (ptrdiff_t) rhsLengthInBytes)
+    {
+      int c = *l++;
+      if(_ismbblead (c))
+        {
+          c = (c << 8) | *l;
+          r += (*l != 0);
+        }
+      c = normalizeMultibytePathChar (c);
+
+      int d = *r++;
+      if(_ismbblead (d))
+        {
+          d = (d << 8) | *r;
+          r += (*r != 0);
+        }
+      d = normalizeMultibytePathChar (d);
+
+      if(c != d || c == 0)
+        {
+          break;
+        }
+    }
+  match = (r-rhs >= (ptrdiff_t)rhsLengthInBytes);
+  return match;
+}
+
+BOOL
+WINWOW64::IsSpecialRedirectionFilename (const char* filename)
+{
+  BOOL ret = FALSE;
+  const WINWOW64::WoW64SpecialRedirectionPath* srp = WINWOW64::GetSpecialRedirectionPathArray ();
+  for (int i = 0; srp[i].name; i++)
+    {
+      if (IsMultibytePathEqual (filename, srp[i].path, strlen (srp[i].path)))
+        {
+          ret = TRUE;
+          break;
+        }
+    }
+  return ret;
+}
+
 BOOL
 WINWOW64::IsSpecialRedirectionPath (const char *path, WIN32_FIND_DATA &fd)
 {
@@ -211,69 +277,6 @@ Wow64FsRedirectionSelector::~Wow64FsRedirectionSelector ()
     }
 }
 
-static int
-normalizeMultibytePathChar (int c)
-{
-  if (c == '/')
-    {
-      c = '\\';
-    }
-  else if (c >= 'A' && c <= 'Z')
-    {
-      c = c - 'A' + 'a';
-    }
-  return c;
-}
-
-static bool
-isMultibytePathEqual (const char* lhs, const char* rhs, size_t rhsLength)
-{
-  bool match = false;
-  const char* l = lhs;
-  const char* r = rhs;
-  while(r-rhs < (ptrdiff_t) rhsLength)
-    {
-      int c = *l++;
-      if(_ismbblead (c))
-        {
-          c = (c << 8) | *l;
-          r += (*l != 0);
-        }
-      c = normalizeMultibytePathChar (c);
-
-      int d = *r++;
-      if(_ismbblead (d))
-        {
-          d = (d << 8) | *r;
-          r += (*r != 0);
-        }
-      d = normalizeMultibytePathChar (d);
-
-      if(c != d || c == 0)
-        {
-          break;
-        }
-    }
-  match = (r-rhs >= (ptrdiff_t)rhsLength);
-  return match;
-}
-
-bool
-isSpecialRedirectionPath (const char* filename)
-{
-  bool ret = false;
-  const WINWOW64::WoW64SpecialRedirectionPath* srp = WINWOW64::GetSpecialRedirectionPathArray ();
-  for (int i = 0; srp[i].name; i++)
-    {
-      if (isMultibytePathEqual (filename, srp[i].path, strlen (srp[i].path)))
-        {
-          ret = true;
-          break;
-        }
-    }
-  return ret;
-}
-
 lisp
 Fsi_wow64_reinterpret_path (lisp string, lisp flag)
 {
@@ -290,7 +293,7 @@ Fsi_wow64_reinterpret_path (lisp string, lisp flag)
 
       if (isNativePath && WINWOW64::GetFilePathMode () == WINWOW64::wow64)
         {
-          if (! isSpecialRedirectionPath (srcPath))
+		  if (! WINWOW64::IsSpecialRedirectionFilename (srcPath))
             {
               replaceFromExp = "%windir%\\System32";
               replaceToExp = "%windir%\\Sysnative";
@@ -298,7 +301,7 @@ Fsi_wow64_reinterpret_path (lisp string, lisp flag)
         }
       else if (!isNativePath && WINWOW64::GetFilePathMode () == WINWOW64::native)
         {
-          if (! isSpecialRedirectionPath (srcPath))
+		  if (! WINWOW64::IsSpecialRedirectionFilename (srcPath))
             {
               replaceFromExp = "%windir%\\System32";
               replaceToExp = "%windir%\\SysWOW64";
@@ -310,7 +313,7 @@ Fsi_wow64_reinterpret_path (lisp string, lisp flag)
           char replaceFrom[MAX_PATH+1];
           ExpandEnvironmentStrings (replaceFromExp, replaceFrom, _countof (replaceFrom));
           size_t replaceFromLen = strlen (replaceFrom);
-          if (isMultibytePathEqual (srcPath, replaceFrom, replaceFromLen))
+		  if (WINWOW64::IsMultibytePathEqual (srcPath, replaceFrom, replaceFromLen))
             {
               char replaceTo[MAX_PATH+1];
               ExpandEnvironmentStrings (replaceToExp, replaceTo, _countof (replaceTo));
