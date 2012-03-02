@@ -12,8 +12,8 @@ Buffer *Buffer::b_dlist;
 Buffer *Buffer::b_last_selected_buffer;
 
 long Buffer::b_total_create_count;
-Buffer *Buffer::b_last_title_bar_buffer;
-int Buffer::b_title_bar_text_order;
+std::map<ApplicationFrame*, int> Buffer::b_title_bar_text_order_map;
+std::map<ApplicationFrame*, Buffer*> Buffer::b_last_title_bar_buffer_map;
 int Buffer::b_default_fold_mode = FOLD_NONE;
 int Buffer::b_default_linenum_mode = LNMODE_DISP;
 int Buffer::b_default_kinsoku_mode = KINSOKU_MODE_MASK;
@@ -1016,8 +1016,11 @@ Fdelete_buffer (lisp buffer)
   if (bp->run_hook_while_success (Vdelete_buffer_hook, bp->lbp) == Qnil)
     return Qnil;
 
-  if (bp == Buffer::b_last_title_bar_buffer)
-    Buffer::b_last_title_bar_buffer = 0;
+  for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+  {
+	  if (bp == Buffer::b_last_title_bar_buffer_map[app])
+		Buffer::b_last_title_bar_buffer_map[app] = 0;
+  }
 
   bp->dlist_add_tail ();
   Buffer *newbp = Buffer::dlist_find ();
@@ -1444,7 +1447,7 @@ Buffer::refresh_title_bar (ApplicationFrame *app) const
 
       SetWindowText (app->toplev, b);
     }
-  b_last_title_bar_buffer = 0; // 次回タイトルバーを強制的に再描画させる
+  b_last_title_bar_buffer_map[app] = 0; // 次回タイトルバーを強制的に再描画させる
 }
 
 void
@@ -1454,22 +1457,25 @@ Buffer::set_frame_title (ApplicationFrame* app, int update)
   if (!internal_buffer_p ()
       && (update
           || b_buffer_name_modified
-          || b_last_title_bar_buffer != this
-          || b_title_bar_text_order != order))
+          || b_last_title_bar_buffer_map[app] != this
+          || b_title_bar_text_order_map[app] != order))
     {
       refresh_title_bar (app);
       b_buffer_name_modified = 0;
-      b_last_title_bar_buffer = this;
-      b_title_bar_text_order = order;
+      b_last_title_bar_buffer_map[app] = this;
+      b_title_bar_text_order_map[app] = order;
     }
 }
 
 lisp
 Frefresh_title_bar ()
 {
-  Buffer *bp = selected_buffer ();
-  if (!bp->internal_buffer_p ())
-	  bp->refresh_title_bar (&active_app_frame());
+  for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+  {
+	Buffer *bp = selected_buffer (app);
+	if (!bp->internal_buffer_p ())
+		bp->refresh_title_bar (app);
+  }
   return Qt;
 }
 
