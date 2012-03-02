@@ -1716,6 +1716,7 @@ static symbols ed[] =
 
   /* frame.cc */
   MAKE_SYMBOL2 (startup-frame),
+  MAKE_SYMBOL2 (startup-frame-second),
   DEFCMD3 (make-frame, 0, 1, 0, ""),
   DEFUN3 (selected-frame, 0, 0, 0),
   DEFUN3 (next-frame, 1, 1, 0),

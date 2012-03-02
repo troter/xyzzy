@@ -73,6 +73,8 @@ ApplicationFrame* retrieve_app_frame(HWND hwnd)
 
 #include <vector>
 static std::vector<ApplicationFrame*> g_floating_frames;
+static std::vector<ApplicationFrame*> g_startup_second_pending_frames;
+
 
 void app_frame_gc_mark(void (*f)(lisp))
 {
@@ -121,11 +123,10 @@ bool is_last_app_frame()
 	return false;
 }
 
-void notify_focus(ApplicationFrame *app1)
+static void change_root_frame(ApplicationFrame *app1)
 {
 	if (root == app1) // do nothing.
 		return;
-
 	ApplicationFrame *cur = root;
 	ApplicationFrame *prev = cur;
 	while(cur != app1)
@@ -138,6 +139,15 @@ void notify_focus(ApplicationFrame *app1)
 	prev->a_next = app1->a_next;
 	app1->a_next = root;
 	root = app1;
+}
+
+void notify_focus(ApplicationFrame *app1)
+{
+	if (root == app1) // do nothing.
+		return;
+
+	change_root_frame(app1);
+
 	kbd_queue::change_application_window = true;
 	for(Window* wp = root->active_frame.windows; wp; wp = wp->w_next)
 		wp->update_window();
@@ -184,6 +194,29 @@ void delete_floating_app_frame()
 	g_floating_frames.clear();
 }
 
+void call_all_startup_frame_second()
+{
+	for(std::vector<ApplicationFrame*>::iterator itr = g_startup_second_pending_frames.begin(); itr != g_startup_second_pending_frames.end(); itr++)
+	{
+		ApplicationFrame *app1 = *itr;
+		change_root_frame(app1);
+		if (xsymbol_function (Vstartup_frame_second) == Qunbound
+			|| xsymbol_function (Vstartup_frame_second) == Qnil)
+		return;
+
+		suppress_gc sgc;
+		try
+		{
+			funcall_1 (Vstartup_frame_second, app1->lfp);
+		}
+		catch (nonlocal_jump &)
+		{
+    		print_condition (nonlocal_jump::data());
+		}
+	}
+	g_startup_second_pending_frames.clear();
+}
+
 extern int init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent);
 
 ApplicationFrame *
@@ -213,11 +246,11 @@ Fmake_frame (lisp opt)
 	ApplicationFrame* next = root->a_next;
 	root->a_next = new_app;
 	new_app->a_next = next;
+	g_startup_second_pending_frames.push_back(new_app);
 
 	init_app(hinst, new_app, parent);
 
 	defer_change_focus::request_change_focus(new_app);	
-
 	return new_app->lfp;
 }
 lisp

@@ -1684,6 +1684,7 @@ run_command:
 #include <exception>
 
 extern void delete_floating_app_frame();
+extern void call_all_startup_frame_second();
 
 void
 main_loop ()
@@ -1743,13 +1744,14 @@ main_loop ()
 	          c = active_app_frame().kbdq.peek (toplev_accept_mouse_move_p ());
 			  continue;
 		  }
+		  call_all_startup_frame_second();
           if (c == lChar_EOF)
             break;
           pending_refresh_screen ();
 		  // I think this line should be active_app_frame() instead of app1.
           if (!active_app_frame().kbdq.macro_is_running ())
             Fundo_boundary ();
-        }
+	  }
 
       if (!active_app_frame().f_auto_save_pending
           && !active_app_frame().kbdq.macro_is_running ())

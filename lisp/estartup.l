@@ -166,10 +166,16 @@
     (trap-errors (process-command-line))
     (trap-errors (run-hooks '*post-startup-hook*))))
 
+;; this startup is called after changing (selected-frame).
+(defun startup-frame-second (frame)
+  (trap-errors (init-pseudo-frame frame))
+  (unless *inhibit-history-load*
+    (ignore-errors (load-command-bar-info frame)))
+  (ignore-errors (init-app-menus frame)))
 
 (defun startup-frame (frame parent)
 ;  (trap-errors (init-misc-objects))
-  (trap-errors (init-pseudo-frame frame))
+;  (trap-errors (init-pseudo-frame frame))
   (let (no-init-file
 	(cl (car si:*command-line-args*)))
 ;    (when (or (equal cl "-q")
@@ -187,9 +193,9 @@
 ;      (unless *inhibit-history-load*
 ;	(ignore-errors (load-history-file))))
 ;    (ignore-errors (keep-compatibility))
-    (unless *inhibit-history-load*
-      (ignore-errors (load-command-bar-info frame)))
-    (ignore-errors (init-app-menus frame))
+;    (unless *inhibit-history-load*
+;      (ignore-errors (load-command-bar-info frame)))
+;    (ignore-errors (init-app-menus frame))
     ; (ignore-errors (init-misc-options))
     (ignore-errors
      (when (and *use-global-ime*
