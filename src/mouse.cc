@@ -355,13 +355,13 @@ mouse_state::show_cursor ()
 }
 
 void
-mouse_state::hide_cursor ()
+mouse_state::hide_cursor (ApplicationFrame *app)
 {
   if (xsymbol_value (Vhide_mouse_cursor) != Qnil && !ms_hidden
-      && !active_app_frame().wait_cursor_depth)
+      && !app->wait_cursor_depth)
     {
       RECT r;
-      GetWindowRect (active_app_frame().toplev, &r);
+      GetWindowRect (app->toplev, &r);
       DWORD pos = GetMessagePos ();
       POINT p;
       p.x = short (LOWORD (pos));

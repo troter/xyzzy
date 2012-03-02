@@ -666,14 +666,15 @@ save_restriction::save_restriction ()
 class save_cursor_depth
 {
   int odepth;
+  ApplicationFrame *appframe;
 public:
-  save_cursor_depth () : odepth (active_app_frame().wait_cursor_depth) {}
+  save_cursor_depth (ApplicationFrame *app = &active_app_frame()) : odepth (app->wait_cursor_depth), appframe(app) {}
   ~save_cursor_depth ()
     {
       if (!odepth)
-        end_wait_cursor (1);
+        end_wait_cursor (1, appframe);
       else
-        active_app_frame().wait_cursor_depth = odepth;
+        appframe->wait_cursor_depth = odepth;
     }
 };
 

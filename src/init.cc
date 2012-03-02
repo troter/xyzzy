@@ -1049,6 +1049,9 @@ call_startup(ApplicationFrame *app1, ApplicationFrame *parent)
     }
 }
 
+extern void begin_wait_cursor (ApplicationFrame *app1);
+
+
 int
 init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent)
 {
@@ -1068,7 +1071,7 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent)
 
   xappframe_fp (app1->lfp) = app1;
 
-  Fbegin_wait_cursor ();
+  begin_wait_cursor (app1);
 
   ShowWindow(app1->toplev, SW_SHOW);
 

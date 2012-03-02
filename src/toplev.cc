@@ -166,15 +166,21 @@ set_current_cursor (ApplicationFrame *app1)
   set_current_cursor (Window::find_scr_point_window (app1, p, 0, 0));
 }
 
-lisp
-Fbegin_wait_cursor ()
+void
+begin_wait_cursor (ApplicationFrame *app1)
 {
-  active_app_frame().wait_cursor_depth++;
+  app1->wait_cursor_depth++;
   if (g_app.toplevel_is_active)
     {
       SetCursor (sysdep.hcur_wait);
       mouse_state::show_cursor ();
     }
+}
+
+lisp
+Fbegin_wait_cursor ()
+{
+  begin_wait_cursor(&active_app_frame());
   return Qt;
 }
 
@@ -195,7 +201,7 @@ end_wait_cursor (int f, ApplicationFrame *app1)
   if (g_app.toplevel_is_active)
     {
       if (GetFocus () == app1->toplev)
-        mouse_state::hide_cursor ();
+        mouse_state::hide_cursor (app1);
       set_current_cursor (app1);
     }
   return 1;
@@ -957,7 +963,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     case WM_PRIVATE_DELAYED_ACTIVATE:
       {
-        save_cursor_depth cursor_depth;
+        save_cursor_depth cursor_depth(app1);
         app1->kbdq.activate (wparam);
         return 0;
       }

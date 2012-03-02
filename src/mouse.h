@@ -2,6 +2,8 @@
 # define _mouse_h_
 
 class kbd_queue;
+extern ApplicationFrame& active_app_frame();
+
 
 class mouse_state
 {
@@ -39,7 +41,7 @@ public:
   void clear_move () {ms_movechar = 0;}
   static void update_cursor (UINT, WPARAM);
   static void show_cursor ();
-  static void hide_cursor ();
+  static void hide_cursor (ApplicationFrame *app = &active_app_frame());
   static void install_hook ()
     {hhook_mouse = SetWindowsHookEx (WH_MOUSE, mouse_hook_proc,
                                      0, GetCurrentThreadId ());}
