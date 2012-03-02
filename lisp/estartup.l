@@ -35,11 +35,6 @@
 	(when (= l (length short))
 	  (subseq arg l))))))
 
-(defun wow64-reinterpret-path (str flag)
-  (if (boundp '*wow64-enable-file-system-redirector*)
-      (si:wow64-reinterpret-path str flag)
-      str))
-
 (defun process-command-line-1 (dir waitobj)
   (let ((mode nil)
 	(wow64-redirection t)
@@ -94,7 +89,7 @@
 		((run-hook-with-args-until-success
 		  '*process-command-line-hook* arg))
 		(t
-		 (let* ((filename (wow64-reinterpret-path (merge-pathnames arg dir) wow64-redirection))
+		 (let* ((filename (si:wow64-reinterpret-path (merge-pathnames arg dir) wow64-redirection))
 			(*find-file-auto-mode-function* mode))
 		   (if ro
 		       (find-file-read-only filename)
