@@ -1,4 +1,3 @@
-;; need docstring support!
 (deftest fix-previous-pseudo-frame-test ()
   "(previous-pseudo-frame) caused \"appframe not found\" error."
   (previous-pseudo-frame)
@@ -27,3 +26,48 @@
     (delete pkg pkglist)
     (eq pkg (find-package name)))
   => t)
+
+(deftest fix-parenthesis-escape-case-forward ()
+  "cc mode goto-matched parentheis does not understand escape for hanlding comment"
+  (with-temp-buffer
+   (c++-mode)
+   (insert "(hoge\\//)")
+   (goto-char 0)
+   (goto-matched-parenthesis)
+   (forward-char)
+   (eobp))
+  => t)
+
+(deftest fix-parenthesis-escape-case-backward ()
+  "cc mode goto-matched parentheis does not understand escape for hanlding comment, backward"
+  (with-temp-buffer
+   (c++-mode)
+   (insert "(hoge\\//)")
+   (end-of-buffer)
+   (backward-char)
+   (goto-matched-parenthesis)
+   (bolp))
+  => t)
+
+(deftest fix-parenthesis-no-escape-case-forward ()
+  "cc mode goto-matched parentheis does not understand escape for hanlding comment, not escape case"
+  (with-temp-buffer
+   (c++-mode)
+   (insert "(hoge\\\\//)")
+   (goto-char 0)
+   (goto-matched-parenthesis)
+   (forward-char)
+   (eobp))
+  => nil)
+
+(deftest fix-parenthesis-no-escape-case-backward ()
+  "cc mode goto-matched parentheis does not understand escape for hanlding comment, not escape case, backward"
+  (with-temp-buffer
+   (c++-mode)
+   (insert "(hoge\\\\//)")
+   (end-of-buffer)
+   (backward-char)
+   (goto-matched-parenthesis)
+   (bolp))
+  => nil)
+
