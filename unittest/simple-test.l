@@ -588,6 +588,8 @@ Output (*trace-output*):
 (defvar *test-temp-buffer-delete* t)
 
 (defmacro with-temp-buffer (&body body)
+  "Call body with temp buffer set as current buffer.
+Delete temp buffer automatically. If you don't want to delete, set *test-temp-buffer-delete* nil."
   `(let* ((#1=#:buf (get-buffer-create (format nil "*test-tmp-buffer-~A*" (symbol-name (gensym))))))
      (save-window-excursion
        (unwind-protect

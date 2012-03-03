@@ -27,47 +27,53 @@
     (eq pkg (find-package name)))
   => t)
 
+(defmacro with-moved-p (&body body)
+  `(let* ((#1=#:point (point)))
+     (save-excursion
+       ,@body
+       (not (eq #1# (point))))))
+
+(defmacro with-c++-bed (&body body)
+  `(with-temp-buffer
+    (c++-mode)
+    ,@body
+    ))
+
 (deftest fix-parenthesis-escape-case-forward ()
   "cc mode goto-matched parentheis does not understand escape for hanlding comment"
-  (with-temp-buffer
-   (c++-mode)
+  (with-c++-bed
    (insert "(hoge\\//)")
    (goto-char 0)
-   (goto-matched-parenthesis)
-   (forward-char)
-   (eobp))
+   (with-moved-p
+    (goto-matched-parenthesis)))
   => t)
 
 (deftest fix-parenthesis-escape-case-backward ()
   "cc mode goto-matched parentheis does not understand escape for hanlding comment, backward"
-  (with-temp-buffer
-   (c++-mode)
+  (with-c++-bed
    (insert "(hoge\\//)")
    (end-of-buffer)
    (backward-char)
-   (goto-matched-parenthesis)
-   (bolp))
+   (with-moved-p
+    (goto-matched-parenthesis)))
   => t)
 
 (deftest fix-parenthesis-no-escape-case-forward ()
   "cc mode goto-matched parentheis does not understand escape for hanlding comment, not escape case"
-  (with-temp-buffer
-   (c++-mode)
+  (with-c++-bed
    (insert "(hoge\\\\//)")
    (goto-char 0)
-   (goto-matched-parenthesis)
-   (forward-char)
-   (eobp))
+   (with-moved-p
+    (goto-matched-parenthesis)))
   => nil)
 
 (deftest fix-parenthesis-no-escape-case-backward ()
   "cc mode goto-matched parentheis does not understand escape for hanlding comment, not escape case, backward"
-  (with-temp-buffer
-   (c++-mode)
+  (with-c++-bed
    (insert "(hoge\\\\//)")
    (end-of-buffer)
    (backward-char)
-   (goto-matched-parenthesis)
-   (bolp))
+   (with-moved-p
+    (goto-matched-parenthesis)))
   => nil)
 
