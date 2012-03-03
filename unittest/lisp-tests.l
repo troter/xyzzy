@@ -39,11 +39,14 @@
     ,@body
     ))
 
+(defun setup-text(text)
+  (insert text)
+  (goto-char 0))
+
 (deftest fix-parenthesis-escape-case-forward ()
   "cc mode goto-matched parentheis does not understand escape for hanlding comment"
   (with-c++-bed
-   (insert "(hoge\\//)")
-   (goto-char 0)
+   (setup-text "(hoge\\//)")
    (with-moved-p
     (goto-matched-parenthesis)))
   => t)
@@ -51,9 +54,8 @@
 (deftest fix-parenthesis-escape-case-backward ()
   "cc mode goto-matched parentheis does not understand escape for hanlding comment, backward"
   (with-c++-bed
-   (insert "(hoge\\//)")
-   (end-of-buffer)
-   (backward-char)
+   (setup-text "(hoge\\//)")
+   (search-forward ")")
    (with-moved-p
     (goto-matched-parenthesis)))
   => t)
@@ -61,8 +63,7 @@
 (deftest fix-parenthesis-no-escape-case-forward ()
   "cc mode goto-matched parentheis does not understand escape for hanlding comment, not escape case"
   (with-c++-bed
-   (insert "(hoge\\\\//)")
-   (goto-char 0)
+   (setup-text "(hoge\\\\//)")
    (with-moved-p
     (goto-matched-parenthesis)))
   => nil)
@@ -70,9 +71,8 @@
 (deftest fix-parenthesis-no-escape-case-backward ()
   "cc mode goto-matched parentheis does not understand escape for hanlding comment, not escape case, backward"
   (with-c++-bed
-   (insert "(hoge\\\\//)")
-   (end-of-buffer)
-   (backward-char)
+   (setup-text "(hoge\\\\//)")
+   (search-forward ")")
    (with-moved-p
     (goto-matched-parenthesis)))
   => nil)
