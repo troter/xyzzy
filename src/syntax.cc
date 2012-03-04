@@ -1058,11 +1058,20 @@ Buffer::goto_matched_open (Point &point, Char closec) const
       if (!SBCP (c))
         continue;
 
+	  bool two_char_before_is_escaped = false;
+	  Point escape_pos(point);
+	  if(forward_char(escape_pos, -1) &&
+		  escaped_char_p(escape_pos))
+		  two_char_before_is_escaped = true;
+
+
       if (xcomment_start_second_char_p (tab, c)
-          && backward_comment_start_p (point))
+          && backward_comment_start_p (point)
+		  && !two_char_before_is_escaped)
         return Sin_comment;
       if (xcomment_end_second_char_p (tab, c)
-          && backward_comment_end_p (point))
+          && backward_comment_end_p (point)
+		  && !two_char_before_is_escaped)
         {
           status = skip_multi_chars_comment_backward (point);
           if (status)
@@ -1071,7 +1080,8 @@ Buffer::goto_matched_open (Point &point, Char closec) const
         }
       if (xcplusplus_comment_char_p (tab, c)
           && !xparse_sexp_ignore_comment_p (tab, c)
-          && backward_cplusplus_comment_p (point))
+          && backward_cplusplus_comment_p (point)
+		  && !two_char_before_is_escaped)
         return Sin_comment;
 
       switch (xchar_syntax (tab, c))
@@ -1254,6 +1264,11 @@ Buffer::goto_matched_close (Point &point, Char openc) const
           if (status)
             return status;
           break;
+
+		case SCescape:
+		  if (!forward_char (point, 1) || eobp (point))
+            return Sunmatched_paren;
+		  break;
 
         default:
           break;

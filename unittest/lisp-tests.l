@@ -1,4 +1,3 @@
-;; need docstring support!
 (deftest fix-previous-pseudo-frame-test ()
   "(previous-pseudo-frame) caused \"appframe not found\" error."
   (previous-pseudo-frame)
@@ -27,3 +26,54 @@
     (delete pkg pkglist)
     (eq pkg (find-package name)))
   => t)
+
+(defmacro with-moved-p (&body body)
+  `(let* ((#1=#:point (point)))
+     (save-excursion
+       ,@body
+       (not (eq #1# (point))))))
+
+(defmacro with-c++-bed (&body body)
+  `(with-temp-buffer
+    (c++-mode)
+    ,@body
+    ))
+
+(defun setup-text(text)
+  (insert text)
+  (goto-char 0))
+
+(deftest fix-parenthesis-escape-case-forward ()
+  "cc mode goto-matched parentheis does not understand escape for hanlding comment"
+  (with-c++-bed
+   (setup-text "(hoge\\//)")
+   (with-moved-p
+    (goto-matched-parenthesis)))
+  => t)
+
+(deftest fix-parenthesis-escape-case-backward ()
+  "cc mode goto-matched parentheis does not understand escape for hanlding comment, backward"
+  (with-c++-bed
+   (setup-text "(hoge\\//)")
+   (search-forward ")")
+   (with-moved-p
+    (goto-matched-parenthesis)))
+  => t)
+
+(deftest fix-parenthesis-no-escape-case-forward ()
+  "cc mode goto-matched parentheis does not understand escape for hanlding comment, not escape case"
+  (with-c++-bed
+   (setup-text "(hoge\\\\//)")
+   (with-moved-p
+    (goto-matched-parenthesis)))
+  => nil)
+
+(deftest fix-parenthesis-no-escape-case-backward ()
+  "cc mode goto-matched parentheis does not understand escape for hanlding comment, not escape case, backward"
+  (with-c++-bed
+   (setup-text "(hoge\\\\//)")
+   (search-forward ")")
+   (with-moved-p
+    (goto-matched-parenthesis)))
+  => nil)
+
