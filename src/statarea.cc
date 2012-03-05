@@ -53,8 +53,9 @@ status_area::reload_settings ()
 }
 
 void
-status_area::init (HWND hwnd)
+status_area::init (HWND hwnd, ApplicationFrame *app)
 {
+  s_app = app;
   s_hwnd = hwnd;
   s_clwidth = 0;
   s_nitems = 1;
@@ -118,7 +119,7 @@ status_area::calc_extent (int n, const char *b)
 int
 status_area::position ()
 {
-  Window *wp = selected_window ();
+  Window *wp = selected_window (s_app);
   if (!wp)
     return calc_extent (ST_POS, s_nil);
   char b[32];
@@ -129,7 +130,7 @@ status_area::position ()
 int
 status_area::char_code ()
 {
-  Window *wp = selected_window ();
+  Window *wp = selected_window (s_app);
   if (!wp)
     return calc_extent (ST_CODE, s_nil);
   if (wp->w_bufp->eobp (wp->w_point))
@@ -143,7 +144,7 @@ status_area::char_code ()
 int
 status_area::char_unicode ()
 {
-  Window *wp = selected_window ();
+  Window *wp = selected_window (s_app);
   if (!wp)
     return calc_extent (ST_UNICODE, s_nil);
   if (wp->w_bufp->eobp (wp->w_point))
@@ -182,7 +183,7 @@ status_area::set_parts () const
   if (s_nitems)
     {
       int cx = s_clwidth;
-      if (!IsZoomed (active_app_frame().toplev))
+      if (!IsZoomed (s_app->toplev))
         cx -= s_borders[0] + sysdep.vscroll + sysdep.border.cx * 2;
 
       w[s_nitems] = cx;
@@ -209,18 +210,39 @@ status_area::update (int f) const
     }
 }
 
+static void ensure_last_status_bar_format_hash()
+{
+  lisp hash = xsymbol_value (Vlast_status_bar_format);
+  if (hash == Qnil)
+  {
+     xsymbol_value (Vlast_status_bar_format) = Fmake_hash_table(Qnil);
+  }
+}
+
+static void set_last_status_bar_format(ApplicationFrame *app, lisp lval)
+{
+  ensure_last_status_bar_format_hash();
+  Fsi_puthash(app->lfp, xsymbol_value (Vlast_status_bar_format), lval);
+}
+
+static lisp get_last_status_bar_format(ApplicationFrame *app)
+{
+  ensure_last_status_bar_format_hash();
+  return Fgethash(app->lfp, xsymbol_value(Vlast_status_bar_format), Qnil);
+}
+
 lisp
 status_area::format_modified_p ()
 {
-  lisp fmt = symbol_value (Vstatus_bar_format, selected_buffer ());
+  lisp fmt = symbol_value (Vstatus_bar_format, selected_buffer (s_app));
   if (!stringp (fmt))
     fmt = Qnil;
-  lisp ofmt = xsymbol_value (Vlast_status_bar_format);
+  lisp ofmt = get_last_status_bar_format(s_app);
   if (fmt == ofmt
       || (stringp (fmt) && stringp (ofmt)
           && string_equal (fmt, ofmt)))
     return 0;
-  xsymbol_value (Vlast_status_bar_format) = fmt;
+  set_last_status_bar_format(s_app, fmt);
   return fmt;
 }
 

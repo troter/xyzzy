@@ -1,10 +1,13 @@
 #ifndef _statarea_h_
 #define _statarea_h_
 
+class ApplicationFrame;
+
 class status_area
 {
   enum {ST_TIME, ST_POS, ST_CODE, ST_UNICODE, ST_MAX};
 
+  ApplicationFrame *s_app;
   HWND s_hwnd;
   HFONT s_hfont;
   int s_flags;
@@ -35,7 +38,7 @@ class status_area
   int char_unicode ();
   int time ();
   void parse_format (const Char *, int);
-  static lisp format_modified_p ();
+  lisp format_modified_p ();
   static int char_ext (HDC hdc, char c)
     {
       SIZE sz;
@@ -44,7 +47,7 @@ class status_area
     }
   static int char_max_ext (HDC, char, char);
 public:
-  void init (HWND);
+  void init (HWND, ApplicationFrame *);
   void resize ();
   void update ();
   void timer ();

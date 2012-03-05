@@ -633,7 +633,7 @@ toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
   if (!app1->hwnd_sw)
     return -1;
 
-  app1->stat_area.init (app1->hwnd_sw);
+  app1->stat_area.init (app1->hwnd_sw, app1);
   app1->status_window.set (app1->hwnd_sw);
 
   try
