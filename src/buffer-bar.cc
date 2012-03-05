@@ -6,6 +6,9 @@
 
 typedef std::map<ApplicationFrame*, buffer_bar*> app_buf_map;
 static app_buf_map g_buffer_bar_map;
+typedef std::pair<buffer_bar*,Buffer*> bar_buf_pair;
+typedef std::map<bar_buf_pair, int> bufbar_buf_flag_map;
+static bufbar_buf_flag_map g_modified_flag;
 
 
 #pragma warning (disable: 4355)
@@ -69,7 +72,7 @@ buffer_bar::notify (NMHDR *nm, LRESULT &result)
     case TCN_SELCHANGE:
     case TCN_SELCHANGING:
       if (!b_app_frame->kbdq.idlep ()
-          || selected_window ()->minibuffer_window_p ())
+          || selected_window (b_app_frame)->minibuffer_window_p ())
         {
           result = 1; // prevent the selection
           return 1;
@@ -153,6 +156,11 @@ buffer_bar::draw_item (const draw_item_struct &dis)
   char buf[BUFFER_NAME_MAX * 2 + 32];
   set_buffer_name (bp, buf, sizeof buf);
 
+  if (bp->b_modified)
+    g_modified_flag[bar_buf_pair(this,bp)] |= BUFFER_BAR_LAST_MODIFIED_FLAG;
+  else
+    g_modified_flag[bar_buf_pair(this,bp)] &= ~BUFFER_BAR_LAST_MODIFIED_FLAG;
+
   COLORREF fg, bg;
   tab_color (bp, fg, bg);
   bp->b_buffer_bar_fg = fg;
@@ -174,6 +182,7 @@ buffer_bar::insert_buffers ()
         if (bp == selected_buffer (b_app_frame))
           current = i;
         i++;
+        g_modified_flag[bar_buf_pair(this, bp)] &= BUFFER_BAR_LAST_MODIFIED_FLAG;
       }
   if (current >= 0)
     set_cursel (current);
@@ -327,7 +336,7 @@ void
 buffer_bar::update_ui ()
 {
   int n = item_count ();
-  buf_bool_map checked;
+  buf_bool_map newly_inserted;
   if (b_last_checked_version != Buffer::b_last_modified_version_number)
     {
       set_no_redraw ();
@@ -348,7 +357,7 @@ buffer_bar::update_ui ()
               {
                 if (!bp->internal_buffer_p ())
                   buffers[i++] = bp;
-				checked[bp] = true;
+                newly_inserted[bp] = true;
               }
 
           qsort (buffers, nbuffers, sizeof *buffers, compare_buffer);
@@ -373,15 +382,13 @@ buffer_bar::update_ui ()
             continue;
           if (bp == selected_buffer (b_app_frame))
             cur = i;
-          if (checked.find(bp) != checked.end() &&
-			  b_last_checked_version > bp->b_modified_version)
+          if (newly_inserted.find(bp) == newly_inserted.end() &&
+			  b_last_checked_version < bp->b_modified_version)
             ;
-		  /* I can't understand this condition. This comment-out might cause a little wast update at worst.
           else if (bp->b_modified
-                   ? !(bp->b_buffer_bar_modified & Buffer::BUFFER_BAR_LAST_MODIFIED_FLAG)
-                   : bp->b_buffer_bar_modified & Buffer::BUFFER_BAR_LAST_MODIFIED_FLAG)
+                   ? !(g_modified_flag[bar_buf_pair(this, bp)] & BUFFER_BAR_LAST_MODIFIED_FLAG)
+                   : g_modified_flag[bar_buf_pair(this, bp)]  & BUFFER_BAR_LAST_MODIFIED_FLAG)
             ;
-			*/
           else
             {
               COLORREF fg, bg;
