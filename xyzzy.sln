@@ -4,6 +4,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xyzzy_mak", "src\xyzzy_mak.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xyzzy", "src\xyzzy.vcxproj", "{8E447303-073A-4162-A6BE-844804A90DD1}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gen_syms", "gen_syms\gen_syms.vcxproj", "{CF3A9627-51CE-45C6-A8CE-9A90D2764282}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -17,8 +19,12 @@ Global
 		{8E447303-073A-4162-A6BE-844804A90DD1}.Debug|Win32.ActiveCfg = Debug|Win32
 		{8E447303-073A-4162-A6BE-844804A90DD1}.Debug|Win32.Build.0 = Debug|Win32
 		{8E447303-073A-4162-A6BE-844804A90DD1}.Release|Win32.ActiveCfg = Release|Win32
+		{CF3A9627-51CE-45C6-A8CE-9A90D2764282}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CF3A9627-51CE-45C6-A8CE-9A90D2764282}.Debug|Win32.Build.0 = Debug|Win32
+		{CF3A9627-51CE-45C6-A8CE-9A90D2764282}.Release|Win32.ActiveCfg = Release|Win32
+		{CF3A9627-51CE-45C6-A8CE-9A90D2764282}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-EndGlobal
+EndGlobal
