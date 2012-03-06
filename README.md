@@ -15,7 +15,7 @@
 
 ## ソースコードをビルド、改良して、提案したい
 
-[src/README.md](./src) を参照してください。
+[src/README.md](https://github.com/mumurik/xyzzy/blob/master/src/README.md) を参照してください。
 
  - ソースコードの取得方法
  - ビルドの方法
