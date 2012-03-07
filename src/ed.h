@@ -532,6 +532,7 @@ public:
 };
 
 void change_focus_to_frame(ApplicationFrame *app);
+void re_focus_frame(ApplicationFrame *app1);
 
 class defer_change_focus
 {
@@ -547,6 +548,10 @@ public :
 		}
 		else
 		{
+			if(app == &active_app_frame())
+			{
+				re_focus_frame(app);
+			}
 			s_focus_candidate = app;
 		}
 	}

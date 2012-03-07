@@ -146,6 +146,14 @@ void notify_focus(ApplicationFrame *app1)
 	if (root == app1) // do nothing.
 		return;
 
+	/*
+	most of the case, hs_focus turn off at KILL_FOCUS.
+	But when inside read_minibuffer, defer_focus should update caret and other information even if they are inside eval call.
+	So I apply re_focus in defer_focus_change, and that make has_focus non-zero in some case.
+	*/
+	root->active_frame.has_focus = 0;
+
+
 	change_root_frame(app1);
 
 	kbd_queue::change_application_window = true;

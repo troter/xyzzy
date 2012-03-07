@@ -677,14 +677,19 @@ extern ApplicationFrame *first_app_frame();
 extern bool is_last_app_frame();
 extern void delete_app_frame(ApplicationFrame *app1);
 
-void change_focus_to_frame(ApplicationFrame *app1)
+void re_focus_frame(ApplicationFrame *app1)
 {
-	  notify_focus(app1);
       app1->active_frame.has_focus = 1;
       app1->kbdq.toggle_ime (app1->ime_open_mode, 0);
       set_caret_blink_time (app1);
       Window::update_last_caret (app1);
       app1->active_frame.fnkey->update_vkey (0);
+}
+
+void change_focus_to_frame(ApplicationFrame *app1)
+{
+	  notify_focus(app1);
+	  re_focus_frame(app1);
 }
 
 LRESULT CALLBACK
