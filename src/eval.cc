@@ -258,7 +258,7 @@ class special_bind
 {
   lisp *vec;
   char *flags;
-  int n;
+  int vec_length;
 
 public:
   special_bind (lisp *, char *, int);
@@ -267,15 +267,19 @@ public:
 
 inline
 special_bind::special_bind (lisp *v, char *f, int nv)
-     : vec (v), flags (f), n (nv)
+     : vec (v), flags (f), vec_length (nv)
 {
 }
 
 inline
 special_bind::~special_bind ()
 {
-  for (int i = 0, j = 0; i < n; i += 2, j++)
+  assert(vec_length%2 == 0);
+  int i = 0;
+  for (int k = 0; k < vec_length; k += 2)
     {
+      i = vec_length-k-2;
+      int j = i/2;
       assert (consp (vec[i]));
       assert (symbolp (xcar (vec[i])));
       assert (xcdr (vec[i]) == Qunbound);
@@ -287,6 +291,7 @@ special_bind::~special_bind ()
       xcdr (vec[i]) = xsymbol_value (sym);
       xsymbol_value (sym) = vec[i + 1];
     }
+  assert(i == 0);
 }
 
 static lisp
@@ -343,21 +348,26 @@ declare_progn (lisp body, lex_env &lex, int can_doc)
   int i = 0, j = 0;
 
   if (nspecials)
-    for (e = lex.lex_var; e != lex.lex_ltail; e = xcdr (e))
-      {
-        lisp x = xcar (e);
-        if (consp (x) && symbolp (xcar (x))
-            && specialp (xcar (x)) && xcdr (x) != Qunbound)
-          {
-            lisp sym = xcar (x);
-            oflags[j++] = xsymbol_flags (sym) & SFdynamic_bind;
-            xsymbol_flags (sym) |= SFdynamic_bind;
-            save[i++] = x;
-            save[i++] = xsymbol_value (sym);
-            xsymbol_value (sym) = xcdr (x);
-            xcdr (x) = Qunbound;
-          }
-      }
+    {
+      lisp var = Qnil;
+      for (e = lex.lex_var; e != lex.lex_ltail; e = xcdr (e))
+        var = xcons (xcar (e), var);
+      for (e = var; consp (e); e = xcdr (e))
+        {
+          lisp x = xcar (e);
+          if (consp (x) && symbolp (xcar (x))
+              && specialp (xcar (x)) && xcdr (x) != Qunbound)
+            {
+              lisp sym = xcar (x);
+              oflags[j++] = xsymbol_flags (sym) & SFdynamic_bind;
+              xsymbol_flags (sym) |= SFdynamic_bind;
+              save[i++] = x;
+              save[i++] = xsymbol_value (sym);
+              xsymbol_value (sym) = xcdr (x);
+              xcdr (x) = Qunbound;
+            }
+        }
+    }
 
   if (nvars)
     {
@@ -629,7 +639,7 @@ eval (lisp arg, lex_env &lex)
 
       trace.set (stack_trace::eval_args, real_name, Qnil);
       arglist = eval_args (arglist, lex);
-      if (call_applyhook (real_name, arglist, r))
+      if (call_applyhook (f, arglist, r))
         return r;
       trace.set (stack_trace::apply, real_name, arglist);
       return funcall_builtin (f, arglist);
@@ -639,7 +649,7 @@ eval (lisp arg, lex_env &lex)
     {
       trace.set (stack_trace::eval_args, real_name, Qnil);
       arglist = eval_args (arglist, lex);
-      if (call_applyhook (real_name, arglist, r))
+      if (call_applyhook (f, arglist, r))
         return r;
       lex_env nlex (xclosure_vars (f), xclosure_fns (f), xclosure_frame (f));
       trace.set (stack_trace::apply, real_name, arglist);
@@ -650,7 +660,7 @@ eval (lisp arg, lex_env &lex)
     {
       trace.set (stack_trace::eval_args, real_name, Qnil);
       arglist = eval_args (arglist, lex);
-      if (call_applyhook (real_name, arglist, r))
+      if (call_applyhook (f, arglist, r))
         return r;
       trace.set (stack_trace::apply, real_name, arglist);
       return funcall_dll (f, arglist);
@@ -660,7 +670,7 @@ eval (lisp arg, lex_env &lex)
     {
       trace.set (stack_trace::eval_args, real_name, Qnil);
       arglist = eval_args (arglist, lex);
-      if (call_applyhook (real_name, arglist, r))
+      if (call_applyhook (f, arglist, r))
         return r;
       trace.set (stack_trace::apply, real_name, arglist);
       return funcall_c_callable (f, arglist);
@@ -672,7 +682,7 @@ eval (lisp arg, lex_env &lex)
         {
           trace.set (stack_trace::eval_args, real_name, Qnil);
           arglist = eval_args (arglist, lex);
-          if (call_applyhook (real_name, arglist, r))
+          if (call_applyhook (f, arglist, r))
             return r;
           trace.set (stack_trace::apply, real_name, arglist);
           return funcall_lambda (f, arglist, lex);
@@ -1303,7 +1313,7 @@ Fsi_set_function_name (lisp closure, lisp name)
 static lisp
 flet (lisp arg, lex_env &olex, lex_env &nlex, int macrop)
 {
-  if (!consp (arg) || !consp (xcar (arg)) || !consp (xcdr (arg)))
+  if (!consp (arg) || !listp (xcar (arg)) || !listp (xcdr (arg)))
     FEtoo_few_arguments ();
   lisp ofns = nlex.lex_fns;
   for (lisp defs = xcar (arg); consp (defs); defs = xcdr (defs))
@@ -1532,10 +1542,15 @@ lisp
 Fmacroexpand (lisp arg, lisp env)
 {
   protect_gc gcpro (arg);
-  do
-    arg = Fmacroexpand_1 (arg, env);
-  while (multiple_value::value (1) != Qnil);
-  multiple_value::clear ();
+  int n = 0;
+  while (1)
+    {
+      arg = Fmacroexpand_1 (arg, env);
+      if (multiple_value::value (1) == Qnil) break;
+      n++;
+    }
+  multiple_value::count () = 2;
+  multiple_value::value (1) = n > 0 ? Qt : Qnil;
   return arg;
 }
 
@@ -1558,8 +1573,17 @@ Fsave_restriction (lisp arg, lex_env &lex)
 lisp
 Fsave_window_excursion (lisp arg, lex_env &lex)
 {
-  WindowConfiguration wc;
-  return Fprogn (arg, lex);
+  WindowConfiguration *wc = new WindowConfiguration;
+  lisp x = Fprogn (arg, lex);
+  multiple_value::value (0) = x;
+  multiple_value_data save;
+  save.count = multiple_value::count ();
+  bcopy (multiple_value::data ()->values, save.values, save.count);
+  protect_gc gcpro (save.values, save.count);
+  delete wc;
+  bcopy (save.values, multiple_value::data ()->values, save.count);
+  multiple_value::count () = save.count;
+  return x;
 }
 
 lisp
@@ -1908,7 +1932,7 @@ process_interactive_string (lisp fmt, lisp args)
               {
                 lisp def = load_default (args, nargs);
                 if (def == Qnil)
-                  def = c == 'B' ? Fother_buffer (0) : Fselected_buffer ();
+                  def = c == 'B' ? Fother_buffer (0) : Fselected_buffer (Qnil);
                 if (bufferp (def))
                   def = Fbuffer_name (def);
                 v1 = complete_read (p0, p - p0, def,

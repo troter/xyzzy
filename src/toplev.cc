@@ -166,15 +166,21 @@ set_current_cursor (ApplicationFrame *app1)
   set_current_cursor (Window::find_scr_point_window (app1, p, 0, 0));
 }
 
-lisp
-Fbegin_wait_cursor ()
+void
+begin_wait_cursor (ApplicationFrame *app1)
 {
-  active_app_frame().wait_cursor_depth++;
+  app1->wait_cursor_depth++;
   if (g_app.toplevel_is_active)
     {
       SetCursor (sysdep.hcur_wait);
       mouse_state::show_cursor ();
     }
+}
+
+lisp
+Fbegin_wait_cursor ()
+{
+  begin_wait_cursor(&active_app_frame());
   return Qt;
 }
 
@@ -195,7 +201,7 @@ end_wait_cursor (int f, ApplicationFrame *app1)
   if (g_app.toplevel_is_active)
     {
       if (GetFocus () == app1->toplev)
-        mouse_state::hide_cursor ();
+        mouse_state::hide_cursor (app1);
       set_current_cursor (app1);
     }
   return 1;
@@ -588,6 +594,32 @@ process_mouse_activate (ApplicationFrame *app1, LPARAM lparam)
   return r;
 }
 
+static int
+process_mouse_activate_client (ApplicationFrame *app1, LPARAM lparam)
+{
+  int r;
+  if (g_app.toplevel_is_active
+      || xsymbol_value (Veat_mouse_activate) == Qnil)
+    r = MA_ACTIVATE;
+  else
+    switch (LOWORD (lparam))
+      {
+      case HTCLIENT:
+      case HTHSCROLL:
+      case HTVSCROLL:
+        r = MA_ACTIVATEANDEAT;
+        break;
+
+      default:
+        r = MA_ACTIVATE;
+        break;
+      }
+  if (GetFocus () != app1->toplev)
+    SetFocus (app1->toplev);
+
+  return r;
+}
+
 LRESULT CALLBACK 
 toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -601,7 +633,7 @@ toplevel_wnd_create(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
   if (!app1->hwnd_sw)
     return -1;
 
-  app1->stat_area.init (app1->hwnd_sw);
+  app1->stat_area.init (app1->hwnd_sw, app1);
   app1->status_window.set (app1->hwnd_sw);
 
   try
@@ -645,14 +677,19 @@ extern ApplicationFrame *first_app_frame();
 extern bool is_last_app_frame();
 extern void delete_app_frame(ApplicationFrame *app1);
 
-void change_focus_to_frame(ApplicationFrame *app1)
+void re_focus_frame(ApplicationFrame *app1)
 {
-	  notify_focus(app1);
       app1->active_frame.has_focus = 1;
       app1->kbdq.toggle_ime (app1->ime_open_mode, 0);
       set_caret_blink_time (app1);
       Window::update_last_caret (app1);
       app1->active_frame.fnkey->update_vkey (0);
+}
+
+void change_focus_to_frame(ApplicationFrame *app1)
+{
+	  notify_focus(app1);
+	  re_focus_frame(app1);
 }
 
 LRESULT CALLBACK
@@ -957,7 +994,7 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
     case WM_PRIVATE_DELAYED_ACTIVATE:
       {
-        save_cursor_depth cursor_depth;
+        save_cursor_depth cursor_depth(app1);
         app1->kbdq.activate (wparam);
         return 0;
       }
@@ -1127,7 +1164,9 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_IME_REQUEST:
       if (wparam == IMR_RECONVERTSTRING)
         return app1->kbdq.reconvert ((RECONVERTSTRING *)lparam, 0);
-      break;
+       if (wparam == IMR_DOCUMENTFEED)
+        return app1->kbdq.documentfeed ((RECONVERTSTRING *)lparam, 0);
+     break;
 
     case WM_DRAWITEM:
       if (app1->status_window.paint ((DRAWITEMSTRUCT *)lparam)
@@ -1146,7 +1185,9 @@ toplevel_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           if ((msg == msime || msg == atok)
               && wparam == IMR_RECONVERTSTRING)
             return app1->kbdq.reconvert ((RECONVERTSTRING *)lparam, 1);
-        }
+          if (wparam == IMR_DOCUMENTFEED)
+            return app1->kbdq.documentfeed ((RECONVERTSTRING *)lparam, 1);
+         }
 
       wheel_info wi;
       if (xsymbol_value (Vsupport_mouse_wheel) != Qnil
@@ -1418,7 +1459,7 @@ client_wndproc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
 
     case WM_MOUSEACTIVATE:
-      return process_mouse_activate (get_app_frame_from_window(hwnd), lparam);
+      return process_mouse_activate_client (get_app_frame_from_window(hwnd), lparam);
 
     case WM_SETFOCUS:
       SetFocus (get_app_frame_from_window(hwnd)->toplev);
@@ -1680,6 +1721,7 @@ run_command:
 #include <exception>
 
 extern void delete_floating_app_frame();
+extern void call_all_startup_frame_second();
 
 void
 main_loop ()
@@ -1699,9 +1741,9 @@ main_loop ()
         pending_refresh_screen ();
       else
         {
-          if (stringp (xsymbol_value (Vminibuffer_message)))
+          if (stringp (active_app_frame().lminibuffer_message))
             {
-              xsymbol_value (Vminibuffer_message) = Qnil;
+              active_app_frame().lminibuffer_message = Qnil;
               Window::minibuffer_window ()->w_disp_flags |= Window::WDF_WINDOW;
             }
           refresh_screen (1);
@@ -1739,13 +1781,14 @@ main_loop ()
 	          c = active_app_frame().kbdq.peek (toplev_accept_mouse_move_p ());
 			  continue;
 		  }
+		  call_all_startup_frame_second();
           if (c == lChar_EOF)
             break;
           pending_refresh_screen ();
 		  // I think this line should be active_app_frame() instead of app1.
           if (!active_app_frame().kbdq.macro_is_running ())
             Fundo_boundary ();
-        }
+	  }
 
       if (!active_app_frame().f_auto_save_pending
           && !active_app_frame().kbdq.macro_is_running ())
@@ -1798,12 +1841,12 @@ Fsi_minibuffer_message (lisp message, lisp prompt)
 {
   active_app_frame().minibuffer_prompt_column = -1;
   if (message == Qnil)
-    xsymbol_value (Vminibuffer_message) = Qnil;
+    active_app_frame().lminibuffer_message = Qnil;
   else
     {
       check_string (message);
-      xsymbol_value (Vminibuffer_message) = message;
-      xsymbol_value (Vminibuffer_prompt) = boole (prompt && prompt != Qnil);
+      active_app_frame().lminibuffer_message = message;
+      active_app_frame().lminibuffer_prompt = boole (prompt && prompt != Qnil);
     }
   Window::minibuffer_window ()->w_disp_flags |= Window::WDF_WINDOW;
   if (!active_app_frame().kbdq.macro_is_running ())

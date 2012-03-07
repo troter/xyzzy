@@ -127,8 +127,6 @@ const wcolor_index_name wcolor_index_names[] =
   {0, RGB (0, 0, 0), "選択モード行背景色"},
 };
 
-extern ApplicationFrame * coerce_to_frame (lisp object);
-
 ModelineParam::ModelineParam ()
      : m_hfont (0)
 {
@@ -498,9 +496,11 @@ Window::Window (const Window &src)
   init (0, 0);
 }
 
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
 /* なんか知らんがinternal compiler error が出るようになってしまったので
    てきとーに対処。*/
 #pragma optimize("g", off)
+#endif
 
 Window::Window (ApplicationFrame* owner, int minibufp, int temporary)
 {
@@ -536,7 +536,9 @@ Window::Window (ApplicationFrame* owner, int minibufp, int temporary)
 
   init (minibufp, temporary);
 }
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
 #pragma optimize("", on)
+#endif
 
 Window::~Window ()
 {
@@ -1560,7 +1562,7 @@ Window::delete_other_windows ()
   if (minibuffer_window_p ())
     return;
 
-  Window *mini = minibuffer_window ();
+  Window *mini = minibuffer_window (w_owner);
 
   int f = 0;
   for (Window *wp = w_owner->active_frame.windows, *next; wp; wp = next)
@@ -1595,7 +1597,7 @@ Window::delete_other_windows ()
 lisp
 Fdelete_other_windows (lisp lapp)
 {
-  ApplicationFrame *app = coerce_to_frame(lapp);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(lapp);
   selected_window (app)->delete_other_windows ();
   return Qt;
 }
@@ -1765,9 +1767,16 @@ Fdelete_window ()
 }
 
 lisp
+Fdeleted_window_p (lisp window)
+{
+  check_window (window);
+  return boole (!xwindow_wp (window));
+}
+
+lisp
 Fselected_window (lisp lapp)
 {
-	ApplicationFrame *app = coerce_to_frame(lapp);
+	ApplicationFrame *app = ApplicationFrame::coerce_to_frame(lapp);
   assert (xwindow_wp (selected_window (app)->lwp));
   assert (xwindow_wp (selected_window (app)->lwp) == selected_window (app));
   return selected_window (app)->lwp;
@@ -1776,7 +1785,7 @@ Fselected_window (lisp lapp)
 lisp
 Fminibuffer_window (lisp frame)
 {
-  return Window::minibuffer_window (coerce_to_frame(frame) )->lwp;
+  return Window::minibuffer_window (ApplicationFrame::coerce_to_frame(frame) )->lwp;
 }
 
 lisp
@@ -2766,7 +2775,7 @@ Fwindow_coordinate (lisp lwindow)
 lisp
 Fcurrent_window_configuration (lisp lapp)
 {
-  ApplicationFrame* app = coerce_to_frame(lapp);
+  ApplicationFrame* app = ApplicationFrame::coerce_to_frame(lapp);
   lisp ldefs = Qnil;
   for (Window *wp = app->active_frame.windows; wp->w_next; wp = wp->w_next)
     {
@@ -3125,7 +3134,7 @@ Fset_window_configuration (lisp lconf, lisp lappframe)
       check_window (lselected_window);
     }
 
-  ApplicationFrame* app_frame = coerce_to_frame(lappframe);
+  ApplicationFrame* app_frame = ApplicationFrame::coerce_to_frame(lappframe);
   x = xcdr (x);
   lisp ldefs = xcar (x);
   if (!consp (ldefs))
@@ -3289,10 +3298,10 @@ void
 Window::calc_ruler_rect (RECT &r) const
 {
   POINT p = {0, 0};
-  MapWindowPoints (w_hwnd, active_app_frame().active_frame.hwnd, &p, 1);
-  r.left = p.x + active_app_frame().text_font.cell ().cx / 2;
+  MapWindowPoints (w_hwnd, w_owner->active_frame.hwnd, &p, 1);
+  r.left = p.x + w_owner->text_font.cell ().cx / 2;
   if (flags () & WF_LINE_NUMBER)
-    r.left += (LINENUM_COLUMNS + 1) * active_app_frame().text_font.cell ().cx;
+    r.left += (LINENUM_COLUMNS + 1) * w_owner->text_font.cell ().cx;
   r.top = p.y - RULER_HEIGHT;
   r.right = p.x + w_clsize.cx + RIGHT_PADDING - 1;
   r.bottom = p.y - 3;
@@ -3301,8 +3310,8 @@ Window::calc_ruler_rect (RECT &r) const
 inline void
 Window::calc_ruler_box (const RECT &r, RECT &br) const
 {
-  br.left = r.left + (w_ruler_column - w_ruler_top_column) * active_app_frame().text_font.cell ().cx;
-  br.right = br.left + active_app_frame().text_font.cell ().cx;
+  br.left = r.left + (w_ruler_column - w_ruler_top_column) * w_owner->text_font.cell ().cx;
+  br.right = br.left + w_owner->text_font.cell ().cx;
   br.top = r.top;
   br.bottom = r.bottom;
 }
@@ -3348,6 +3357,7 @@ Window::paint_ruler (HDC hdc, const RECT &r, int x, int y, int column) const
     draw_vline (hdc, y - 1, y + 1, x, sysdep.window_text);
 }
 
+
 void
 Window::paint_ruler (HDC hdc) const
 {
@@ -3357,7 +3367,7 @@ Window::paint_ruler (HDC hdc) const
   RECT r;
 
   GetWindowRect (w_hwnd, &r);
-  MapWindowPoints (HWND_DESKTOP, active_app_frame().active_frame.hwnd, (POINT *)&r, 2);
+  MapWindowPoints (HWND_DESKTOP, w_owner->active_frame.hwnd, (POINT *)&r, 2);
   r.bottom = r.top;
   r.top -= RULER_HEIGHT;
   draw_hline (hdc, r.left, r.right - 1, r.top, sysdep.btn_highlight);
@@ -3374,7 +3384,7 @@ Window::paint_ruler (HDC hdc) const
   else
     {
       int x = r.left + ((w_ruler_fold_column - w_ruler_top_column)
-                        * active_app_frame().text_font.cell ().cx);
+                        * w_owner->text_font.cell ().cx);
       if (x < r.right)
         {
           fill_rect (hdc, r.left, r.top, x - r.left, r.bottom - r.top, sysdep.window);
@@ -3389,8 +3399,8 @@ Window::paint_ruler (HDC hdc) const
   int bkmode = SetBkMode (hdc, TRANSPARENT);
 
   int y = (r.top + r.bottom) / 2;
-  for (int x = r.left + active_app_frame().text_font.cell ().cx / 2, column = w_ruler_top_column + 1;
-       x < r.right; x += active_app_frame().text_font.cell ().cx, column++)
+  for (int x = r.left + w_owner->text_font.cell ().cx / 2, column = w_ruler_top_column + 1;
+       x < r.right; x += w_owner->text_font.cell ().cx, column++)
     paint_ruler (hdc, r, x, y, column);
 
   SetTextColor (hdc, ofg);
@@ -3418,8 +3428,8 @@ Window::erase_ruler (HDC hdc, const RECT &r) const
   int bkmode = SetBkMode (hdc, TRANSPARENT);
 
   int y = (r.top + r.bottom) / 2;
-  int x = (r.left + active_app_frame().text_font.cell ().cx / 2
-           + (w_ruler_column - w_ruler_top_column) * active_app_frame().text_font.cell ().cx);
+  int x = (r.left + w_owner->text_font.cell ().cx / 2
+           + (w_ruler_column - w_ruler_top_column) * w_owner->text_font.cell ().cx);
   int column = w_ruler_column + 1;
   paint_ruler (hdc, br, x, y, column);
 
@@ -3427,11 +3437,11 @@ Window::erase_ruler (HDC hdc, const RECT &r) const
   if (rem)
     {
       column -= rem;
-      x -= rem * active_app_frame().text_font.cell ().cx;
+      x -= rem * w_owner->text_font.cell ().cx;
       if (column && x >= r.left)
         paint_ruler (hdc, br, x, y, column);
       column += 10;
-      x += 10 * active_app_frame().text_font.cell ().cx;
+      x += 10 * w_owner->text_font.cell ().cx;
       if (x < r.right)
         paint_ruler (hdc, br, x, y, column);
     }
@@ -3451,20 +3461,20 @@ Window::update_ruler ()
       w_ruler_top_column = w_top_column;
       w_ruler_column = w_column;
       w_ruler_fold_column = get_fold_columns();
-      HDC hdc = GetDC (active_app_frame().active_frame.hwnd);
+      HDC hdc = GetDC (w_owner->active_frame.hwnd);
       paint_ruler (hdc);
-      ReleaseDC (active_app_frame().active_frame.hwnd, hdc);
+      ReleaseDC (w_owner->active_frame.hwnd, hdc);
     }
   else if (w_ruler_column != w_column)
     {
-      HDC hdc = GetDC (active_app_frame().active_frame.hwnd);
+      HDC hdc = GetDC (w_owner->active_frame.hwnd);
       RECT r;
       calc_ruler_rect (r);
       if (w_ruler_column >= 0)
         erase_ruler (hdc, r);
       w_ruler_column = w_column;
       paint_ruler_box (hdc, r);
-      ReleaseDC (active_app_frame().active_frame.hwnd, hdc);
+      ReleaseDC (w_owner->active_frame.hwnd, hdc);
     }
 }
 
@@ -3489,10 +3499,10 @@ Window::point2window_pos (point_t point, POINT &p) const
   if (w_last_flags & Window::WF_LINE_NUMBER)
     p.x += Window::LINENUM_COLUMNS + 1;
   p.x = min (max (0L, p.x), w_ch_max.cx);
-  p.x *= active_app_frame().text_font.cell ().cx;
-  p.x += active_app_frame().text_font.cell ().cx / 2;
+  p.x *= w_owner->text_font.cell ().cx;
+  p.x += w_owner->text_font.cell ().cx / 2;
 
   p.y = linenum - w_last_top_linenum;
   p.y = min (max (0L, p.y), w_ch_max.cy);
-  p.y *= active_app_frame().text_font.cell ().cy;
+  p.y *= w_owner->text_font.cell ().cy;
 }

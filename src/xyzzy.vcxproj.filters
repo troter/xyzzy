@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="source">
@@ -368,6 +368,15 @@
     <ClCompile Include="xlist.cc">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="..\privctrl\listviewex.cc">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\privctrl\privctrl.cc">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\privctrl\url.cc">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="r\xyzzy.res">
@@ -726,10 +735,10 @@
     <ClInclude Include="vector.h">
       <Filter>header</Filter>
     </ClInclude>
-    <ClInclude Include="verinfo.h">
+    <ClInclude Include="version.h">
       <Filter>header</Filter>
     </ClInclude>
-    <ClInclude Include="version.h">
+    <ClInclude Include="version-rc.h">
       <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="vfs.h">
@@ -769,6 +778,15 @@
       <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="xyzzycli.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\privctrl\mousemsg.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\privctrl\privctlimpl.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\privctrl\privctrl.h">
       <Filter>header</Filter>
     </ClInclude>
   </ItemGroup>

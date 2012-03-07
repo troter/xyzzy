@@ -12,8 +12,8 @@ Buffer *Buffer::b_dlist;
 Buffer *Buffer::b_last_selected_buffer;
 
 long Buffer::b_total_create_count;
-Buffer *Buffer::b_last_title_bar_buffer;
-int Buffer::b_title_bar_text_order;
+std::map<ApplicationFrame*, int> Buffer::b_title_bar_text_order_map;
+std::map<ApplicationFrame*, Buffer*> Buffer::b_last_title_bar_buffer_map;
 int Buffer::b_default_fold_mode = FOLD_NONE;
 int Buffer::b_default_linenum_mode = LNMODE_DISP;
 int Buffer::b_default_kinsoku_mode = KINSOKU_MODE_MASK;
@@ -151,7 +151,7 @@ Buffer::Buffer (lisp name, lisp filename, lisp dirname, int temporary)
   b_prev = b_next = 0;
   b_ldisp = 0;
 
-  b_tab_columns = active_app_frame().default_tab_columns;
+  b_tab_columns = g_app.default_tab_columns;
   b_local_tab_columns = 0;
 
   lbp = temporary ? Qnil : make_buffer ();
@@ -710,10 +710,12 @@ Fcreate_new_buffer (lisp buffer_name)
   return Buffer::create_buffer (buffer_name, Qnil, Qnil)->lbp;
 }
 
+
 lisp
-Fselected_buffer ()
+Fselected_buffer (lisp lframe)
 {
-  return selected_buffer ()->lbp;
+  ApplicationFrame *frame = ApplicationFrame::coerce_to_frame(lframe);
+  return selected_buffer (frame)->lbp;
 }
 
 lisp
@@ -866,6 +868,8 @@ Fset_buffer_modified_p (lisp flag, lisp buffer)
   bp->b_modified = bp->b_need_auto_save = flag != Qnil;
   bp->modify_mode_line ();
   Buffer::maybe_modify_buffer_bar ();
+  if (!bp->b_modified)
+    bp->save_modtime_undo (bp->b_modtime);
   if (!bp->b_modified && symbol_value (Slock_file, bp) == Kedit)
     bp->unlock_file ();
   return Qt;
@@ -1012,8 +1016,11 @@ Fdelete_buffer (lisp buffer)
   if (bp->run_hook_while_success (Vdelete_buffer_hook, bp->lbp) == Qnil)
     return Qnil;
 
-  if (bp == Buffer::b_last_title_bar_buffer)
-    Buffer::b_last_title_bar_buffer = 0;
+  for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+  {
+	  if (bp == Buffer::b_last_title_bar_buffer_map[app])
+		Buffer::b_last_title_bar_buffer_map[app] = 0;
+  }
 
   bp->dlist_add_tail ();
   Buffer *newbp = Buffer::dlist_find ();
@@ -1386,7 +1393,7 @@ Fkill_xyzzy ()
 {
   if(!is_last_app_frame())
   {
-    PostMessage(active_app_frame().toplev, WM_CLOSE, 0, 0);
+    Fdelete_frame(active_app_frame().lfp, Qnil);
     return Qnil;
   }
 
@@ -1440,7 +1447,7 @@ Buffer::refresh_title_bar (ApplicationFrame *app) const
 
       SetWindowText (app->toplev, b);
     }
-  b_last_title_bar_buffer = 0; // 次回タイトルバーを強制的に再描画させる
+  b_last_title_bar_buffer_map[app] = 0; // 次回タイトルバーを強制的に再描画させる
 }
 
 void
@@ -1450,22 +1457,25 @@ Buffer::set_frame_title (ApplicationFrame* app, int update)
   if (!internal_buffer_p ()
       && (update
           || b_buffer_name_modified
-          || b_last_title_bar_buffer != this
-          || b_title_bar_text_order != order))
+          || b_last_title_bar_buffer_map[app] != this
+          || b_title_bar_text_order_map[app] != order))
     {
       refresh_title_bar (app);
       b_buffer_name_modified = 0;
-      b_last_title_bar_buffer = this;
-      b_title_bar_text_order = order;
+      b_last_title_bar_buffer_map[app] = this;
+      b_title_bar_text_order_map[app] = order;
     }
 }
 
 lisp
 Frefresh_title_bar ()
 {
-  Buffer *bp = selected_buffer ();
-  if (!bp->internal_buffer_p ())
-	  bp->refresh_title_bar (&active_app_frame());
+  for(ApplicationFrame *app = first_app_frame(); app; app = app->a_next)
+  {
+	Buffer *bp = selected_buffer (app);
+	if (!bp->internal_buffer_p ())
+		bp->refresh_title_bar (app);
+  }
   return Qt;
 }
 
@@ -1516,6 +1526,24 @@ Fset_buffer_colors (lisp lcolors, lisp lbuffer)
       Buffer::coerce_to_buffer (lbuffer)->change_colors (cc);
     }
   return Qt;
+}
+
+lisp
+Fget_buffer_colors (lisp lbuffer)
+{
+  lisp v = make_vector (USER_DEFINABLE_COLORS, Qnil);
+  Buffer *bp = Buffer::coerce_to_buffer (lbuffer);
+  if (bp->b_colors_enable)
+    {
+      for (int i = 0; i < USER_DEFINABLE_COLORS; i++)
+        xvector_contents (v) [i] = make_fixnum (bp->b_colors[i]);
+    }
+  else
+    {
+      for (int i = 0; i < USER_DEFINABLE_COLORS; i++)
+        xvector_contents (v) [i] = make_fixnum (Window::default_xcolors[i]);
+    }
+  return v;
 }
 
 void

@@ -1,6 +1,6 @@
 
 # define VC++ version (4, 6, or 7)
-VCVER=4
+VCVER=10
 
 .SUFFIXES: .cc .rc .res .d
 
@@ -141,7 +141,11 @@ CXXOPT=-GF -EHa
 !ENDIF
 
 DEFS=-DSTRICT -DWIN32 -D_WIN32 -D_MT -D__XYZZY__ -DPRIVCTRL_NODLL -DHAVE_DIMM_H -DDEBUG_GC
+!IF "$(VCVER)" == "8" || "$(VCVER)" == "9" || "$(VCVER)" == "10"
+CXX=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_WARNINGS
+!ELSE
 CXX=cl -nologo
+!ENDIF
 CPP=cl -nologo -E
 LD=link -nologo
 LIBS=kernel32.lib user32.lib gdi32.lib advapi32.lib shell32.lib \
@@ -165,16 +169,16 @@ CFG=r
 
 OUTDIR=d
 OBJS=$(OBJS: = d/)
-CXXFLAGS=-Od -Gz -Gs -Gy -Gi -Gm $(CXXOPT) -W3 -MTd -Zi $(INC) $(DEFS) -DDEBUG -Fo$(OUTDIR)/
-LDFLAGS=-debug -stack:0x2000000 -incremental:yes
+CXXFLAGS=-Od -Gz -Gs -Gy -Gm $(CXXOPT) -W3 -MTd -Zi $(INC) $(DEFS) -DDEBUG -Fo$(OUTDIR)/
+LDFLAGS=-debug -stack:0x2000000 /NODEFAULTLIB:LIBCMT
 FINAL_TARGET=$(OUTDIR)/$(BUILD)
 
 !ELSE
 
 OUTDIR=r
 OBJS=$(OBJS: = r/)
-CXXFLAGS=-Ob1 -Og -Oi -Ot -Oy -G5 -Gs -Gy -Gz $(CXXOPT) -W3 -MT -vmb $(INC) $(DEFS) -Fo$(OUTDIR)/
-LDFLAGS=-stack:0x2000000 -map:$(OUTDIR)/xyzzy.map -incremental:no -fixed -opt:ref
+CXXFLAGS=-Ob1 -O2 -Oi -Ot -Oy -Gs -Gy -Gz $(CXXOPT) -W3 -MT -vmb $(INC) $(DEFS) -Fo$(OUTDIR)/
+LDFLAGS=-stack:0x2000000 -map:$(OUTDIR)/xyzzy.map -fixed -opt:ref
 FINAL_TARGET=../$(BUILD)
 
 !ENDIF
@@ -212,7 +216,6 @@ clean:
 	  $(OUTDIR)\$(BUILD:.exe=.ilk)
 	del /F gen-syms.obj gen-syms.exe gen-ctab.obj gen-ctab.exe
 	del /F gen-ktab.obj gen-ktab.exe gen-msg.obj gen-msg.exe
-	del /F gen-vinf.obj gen-vinf.exe verinfo.h
 	del /F gen-ucs2tab.obj gen-ucs2tab.exe
 	del /F gen-utf2sjis.obj gen-utf2sjis.exe
 	del /F gen-char-width.obj gen-char-width.exe
@@ -231,7 +234,7 @@ distclean: clean
 	  xdde.obj xyzzycli.obj xyzzycli.exe xyzzyenv.obj xyzzyenv.exe \
 	  xyzzycli.res xyzzyenv.res libxpi.lib xpi.obj \
 	  vc40.idb vc40.pdb *.aps XTAGS #* *~ \
-	  $(PRIVCTRLDIR)/#* $(PRIVCTRLDIR)/*~
+	  $(PRIVCTRLDIR:/=\)\#* $(PRIVCTRLDIR:/=\)\*~
 
 realclean: distclean
 	del /F jisx0212-width.h lucida-width.h ucs2tab.h fontrange.h
@@ -272,9 +275,9 @@ TMPFILE=tmpfile.$$$$
 $(OUTDIR)/xyzzy.res: $(OUTDIR)/xyzzy.rc
 	rc -r -fo$@ $(RCFLAGS) $(OUTDIR)/xyzzy.rc
 
-$(OUTDIR)\xyzzy.rc: xyzzy.rc verinfo.h
+$(OUTDIR)\xyzzy.rc: xyzzy.rc version.h version-rc.h
 	type xyzzy.rc > $@
-	type verinfo.h >> $@
+	type version-rc.h >> $@
 
 vars-decl.h: gen-syms.exe
 	-@if exist $@ del $@ > nul
@@ -314,11 +317,6 @@ msgdef.cc: gen-msg.exe
 kanjitab.h: gen-ktab.exe
 	-@if exist $@ del $@ > nul
 	.\gen-ktab > $(TMPFILE)
-	move $(TMPFILE) $@ > nul
-
-verinfo.h: gen-vinf.exe
-	-@if exist $@ del $@ > nul
-	.\gen-vinf > $(TMPFILE)
 	move $(TMPFILE) $@ > nul
 
 ucs2tab.h: gen-ucs2tab.cc
@@ -381,9 +379,6 @@ gen-msg.exe: gen-msg.cc chtab.cc chtype.h msgdef.h
 
 gen-ktab.exe: gen-ktab.cc
 	$(CXX) -Fe$@ -Tpgen-ktab.cc
-
-gen-vinf.exe: gen-vinf.cc version.h
-	$(CXX) -Fe$@ -Tpgen-vinf.cc
 
 gen-ucs2tab.exe: gen-ucs2tab.cc charset.h fontrange.h
 	$(CXX) -Fe$@ -Tpgen-ucs2tab.cc

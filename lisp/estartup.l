@@ -8,7 +8,7 @@
 (in-package "editor")
 
 (export '(*inhibit-history-load* *pre-startup-hook* *post-startup-hook*
-	  *before-make-frame-hook* *after-make-frame-hook*
+	  *after-make-frame-functions*
 	  *command-line-mailto-hook* *print-option-show-dialog*
 	  *process-command-line-hook* *loading-user-initial-file*))
 
@@ -37,6 +37,7 @@
 
 (defun process-command-line-1 (dir waitobj)
   (let ((mode nil)
+	(wow64-redirection t)
 	(ro nil))
     (catch 'warn
       (while si:*command-line-args*
@@ -81,10 +82,14 @@
 		 (setq ro t))
 		((equal "-rw" arg)
 		 (setq ro nil))
+		((equal "-wow64-redirection" arg)
+		 (setq wow64-redirection t))
+		((equal "-no-wow64-redirection" arg)
+		 (setq wow64-redirection nil))
 		((run-hook-with-args-until-success
 		  '*process-command-line-hook* arg))
 		(t
-		 (let* ((filename (merge-pathnames arg dir))
+		 (let* ((filename (si:wow64-reinterpret-path (merge-pathnames arg dir) wow64-redirection))
 			(*find-file-auto-mode-function* mode))
 		   (if ro
 		       (find-file-read-only filename)
@@ -166,11 +171,16 @@
     (trap-errors (process-command-line))
     (trap-errors (run-hooks '*post-startup-hook*))))
 
-
-(defun startup-frame (frame)
-;  (trap-errors (init-misc-objects))
+;; this startup is called after changing (selected-frame).
+(defun startup-frame-second (frame)
   (trap-errors (init-pseudo-frame frame))
-  (trap-errors (run-hooks '*before-make-frame-hook*))
+  (unless *inhibit-history-load*
+    (ignore-errors (load-command-bar-info frame)))
+  (ignore-errors (init-app-menus frame)))
+
+(defun startup-frame (frame parent)
+;  (trap-errors (init-misc-objects))
+;  (trap-errors (init-pseudo-frame frame))
   (let (no-init-file
 	(cl (car si:*command-line-args*)))
 ;    (when (or (equal cl "-q")
@@ -188,15 +198,15 @@
 ;      (unless *inhibit-history-load*
 ;	(ignore-errors (load-history-file))))
 ;    (ignore-errors (keep-compatibility))
-    (unless *inhibit-history-load*
-      (ignore-errors (load-command-bar-info frame)))
-    (ignore-errors (init-app-menus frame))
-    (ignore-errors (init-misc-options))
+;    (unless *inhibit-history-load*
+;      (ignore-errors (load-command-bar-info frame)))
+;    (ignore-errors (init-app-menus frame))
+    ; (ignore-errors (init-misc-options))
+    (ignore-errors
+     (when (and *use-global-ime*
+		(not (ignore-errors (enable-global-ime t frame))))))
     (trap-errors
-      (let ((scratch (find-buffer "*scratch*")))
-	(when scratch
-	  (save-excursion
-	    (set-buffer scratch)
-	    (funcall *initial-buffer-mode*)))))
+      (let ((scratch (selected-buffer parent)))
+	(set-buffer scratch)))
     ; (trap-errors (process-command-line))
-    (trap-errors (run-hooks '*after-make-frame-hook*))))
+    (trap-errors (run-hook-with-args '*after-make-frame-functions* frame))))

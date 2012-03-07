@@ -819,6 +819,7 @@ u_char utf8_chtab[] =
 
 u_char utf8_chmask[] = {0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f};
 
+
 void
 utf8_to_internal_stream::refill_internal ()
 {
@@ -827,34 +828,14 @@ utf8_to_internal_stream::refill_internal ()
       int c = s_in.get ();
       if (c == eof)
         break;
-      u_char nbits = utf8_chtab[c];
-      c &= utf8_chmask[nbits];
-      switch (nbits)
-        {
-        case 7:
-          putw (c);
-          break;
-
-        case 0:
-        case 6:
-          /* invalid code */
-          break;
-
-        default:
-          {
-            ucs4_t code = c;
-            do
-              {
-                c = s_in.get ();
-                if (c == eof)
-                  return;
-                code = (code << 6) | (c & 0x3f);
-              }
-            while (++nbits < 6);
-            putl (code);
-            break;
-          }
-        }
+	  try
+	  {
+		ucs4_t code = getch_utf8_to_ucs4(c, s_in);
+		if(code != UCS4_EOF)
+	        putl (code);
+	  }catch(std::exception)
+	  {
+	  }
     }
 }
 

@@ -17,6 +17,14 @@ private:
   bool b_item_deleted;
   int b_drop_index;
   enum {DROP_TIMER_ID = 10};
+  enum
+    {
+      BUFFER_BAR_MODIFIED = 1,
+      BUFFER_BAR_CREATED = 2,
+      BUFFER_BAR_DELETED = 4,
+      BUFFER_BAR_LAST_MODIFIED_FLAG = 8,
+      BUFFER_BAR_MARK = 16
+    };
 
   buffer_bar (ApplicationFrame*, dock_frame &);
   virtual ~buffer_bar () {}

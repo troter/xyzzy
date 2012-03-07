@@ -957,8 +957,8 @@ item_string (lisp item, char *buf, int size)
           else if (c == '\t')
             {
               int col = b - b0;
-              int goal = ((col + active_app_frame().default_tab_columns) / active_app_frame().default_tab_columns
-                          * active_app_frame().default_tab_columns);
+              int goal = ((col + g_app.default_tab_columns) / g_app.default_tab_columns
+                          * g_app.default_tab_columns);
               for (int n = min (goal - col, be - b); n > 0; n--)
                 *b++ = ' ';
             }

@@ -405,6 +405,7 @@ public:
   ApplicationFrame ();
   ~ApplicationFrame();
 
+  static ApplicationFrame * coerce_to_frame (lisp object);
   HINSTANCE hinst;
   HWND toplev;
   HWND hwnd_sw;
@@ -456,6 +457,8 @@ public:
 
   ATOM atom_toplev;
   int minibuffer_prompt_column;
+  lisp lminibuffer_message;
+  lisp lminibuffer_prompt;
 
   utimer user_timer;
   main_frame* mframe;
@@ -471,6 +474,7 @@ public:
   Application ();
   ~Application ();
 
+
   static const char ToplevelClassName[];
   static const char FrameClassName[];
   static const char ClientClassName[];
@@ -484,11 +488,18 @@ public:
   char *ini_file_path;
   int toplevel_is_active;
   u_int quit_thread_id;
+  int default_tab_columns;
 
   void *initial_stack;
   int in_gc;
 
 };
+
+// does not take care parent (ex. ..\).
+// similar to Fmerge_pathnames, but does not require any initialization.
+errno_t ResolveModuleRelativeDir(char *dest, int destSize, const char* relative);
+// relativeDir can be null.
+errno_t ResolveModuleRelativePath(char *dest, int destSize, const char* relativeDir, const char* file);
 
 extern ApplicationFrame& active_app_frame();
 extern ApplicationFrame* first_app_frame();
@@ -521,6 +532,7 @@ public:
 };
 
 void change_focus_to_frame(ApplicationFrame *app);
+void re_focus_frame(ApplicationFrame *app1);
 
 class defer_change_focus
 {
@@ -536,12 +548,11 @@ public :
 		}
 		else
 		{
-			// may be killed and refocus during evalling lisp.
-			change_focus_to_frame(&active_app_frame());
 			if(app == &active_app_frame())
-				s_focus_candidate = 0;
-			else
-				s_focus_candidate = app;
+			{
+				re_focus_frame(app);
+			}
+			s_focus_candidate = app;
 		}
 	}
 	defer_change_focus() {
@@ -571,7 +582,6 @@ public :
 inline Window *
 selected_window (ApplicationFrame *owner = &active_app_frame())
 {
-//  ApplicationFrame *frame = owner != 0? owner : &active_app_frame();
   return owner->active_frame.selected;
 }
 
@@ -661,14 +671,15 @@ save_restriction::save_restriction ()
 class save_cursor_depth
 {
   int odepth;
+  ApplicationFrame *appframe;
 public:
-  save_cursor_depth () : odepth (active_app_frame().wait_cursor_depth) {}
+  save_cursor_depth (ApplicationFrame *app = &active_app_frame()) : odepth (app->wait_cursor_depth), appframe(app) {}
   ~save_cursor_depth ()
     {
       if (!odepth)
-        end_wait_cursor (1);
+        end_wait_cursor (1, appframe);
       else
-        active_app_frame().wait_cursor_depth = odepth;
+        appframe->wait_cursor_depth = odepth;
     }
 };
 

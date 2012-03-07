@@ -5,6 +5,7 @@
 #include <eh.h>
 #include <fcntl.h>
 #include <objbase.h>
+#include <tlhelp32.h>
 #include "ctl3d.h"
 #include "environ.h"
 #include "except.h"
@@ -41,6 +42,7 @@ Application::Application ()
 {
   toplevel_is_active = 0;
   ini_file_path = 0;
+  default_tab_columns = 8;
 
   int tem;
   initial_stack = &tem;
@@ -51,6 +53,51 @@ Application::~Application ()
 {
   xfree (ini_file_path);
 }
+
+errno_t
+ResolveModuleRelativePath(char *dest, int destSize, const char* relativeDir, const char *file)
+{
+	assert(relativeDir == 0 || relativeDir[strlen(relativeDir)-1] == '\\');
+    char path_name[_MAX_PATH];
+    char drive[_MAX_DRIVE];
+    char dir[_MAX_DIR];
+	char tmp_fname[_MAX_FNAME];
+	char tmp_ext[_MAX_EXT];
+
+	errno_t err = ResolveModuleRelativeDir(path_name, _MAX_PATH, relativeDir);
+	if(err != 0) return err;
+	err = _splitpath_s(path_name, drive,  _MAX_DRIVE, dir, _MAX_DIR,  NULL, 0,  NULL, 0);
+	if(err != 0) return err; // ??
+
+	err = _splitpath_s(file, NULL, 0, NULL, 0, tmp_fname, _MAX_FNAME, tmp_ext, _MAX_EXT);
+	if(err != 0) return err;
+
+	err = _makepath_s(dest, destSize, drive, dir, tmp_fname, tmp_ext);
+	return err;	
+}
+
+
+errno_t
+ResolveModuleRelativeDir(char *dest, int destSize, const char* relativeDir)
+{
+    char module_path_name[_MAX_PATH];
+    char drive[_MAX_DRIVE];
+    char dir[_MAX_DIR];
+
+	GetModuleFileName (0, module_path_name, sizeof module_path_name);
+	_splitpath_s(module_path_name, drive,  _MAX_DRIVE, dir, _MAX_DIR,  NULL, 0,  NULL, 0);
+	errno_t err;
+	if(relativeDir != 0)
+	{
+		err = strcat_s(dir, _MAX_DIR, relativeDir);
+		if(err != 0) {
+			return err;
+		}
+	}
+	err = _makepath_s(dest, destSize, drive, dir, NULL, NULL);
+	return err;
+}
+
 
 static lisp
 make_path (const char *s, int append_slash = 1)
@@ -112,6 +159,15 @@ init_home_dir ()
   static const char xyzzyhome[] = "XYZZYHOME";
   static const char cfgInit[] = "init";
 
+  // top priority is USBInit.
+  if (read_conf (cfgUsbInit, cfgUsbHomeDir, path, sizeof path))
+  {
+	  char absPath[PATH_MAX];
+	  errno_t err = ResolveModuleRelativeDir(absPath, PATH_MAX, path);
+	  if(!err && init_home_dir (absPath))
+		  return;
+  }
+
   if (read_conf (cfgInit, "homeDir", path, sizeof path)
       && init_home_dir (path))
     return;
@@ -160,6 +216,18 @@ init_load_path ()
            xsymbol_value (Vload_path));
 }
 
+static bool
+try_assign_config_path(char *path)
+{
+    DWORD a = WINFS::GetFileAttributes (path);
+    if (a != DWORD (-1) && a & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        xsymbol_value (Quser_config_path) = make_path (path);
+		return true;
+	}
+	return false;
+}
+
 static void
 init_user_config_path (const char *config_path)
 {
@@ -171,14 +239,22 @@ init_user_config_path (const char *config_path)
       int l = WINFS::GetFullPathName (config_path, sizeof path, path, &tem);
       if (l && l < sizeof path)
         {
-          DWORD a = WINFS::GetFileAttributes (path);
-          if (a != DWORD (-1) && a & FILE_ATTRIBUTE_DIRECTORY)
-            {
-              xsymbol_value (Quser_config_path) = make_path (path);
-              return;
-            }
+		  if(try_assign_config_path(path))
+			  return;
         }
     }
+
+  if(g_app.ini_file_path)
+  {
+	  char path[_MAX_PATH];
+	  if(read_conf(cfgUsbInit, cfgUsbConfigDir, path, _MAX_PATH))
+	  {
+		  char absPath[_MAX_PATH];
+		  errno_t err = ResolveModuleRelativeDir(absPath, _MAX_PATH, path);
+		  if(!err && try_assign_config_path(absPath))
+			  return;
+	  }
+  }
 
   char *path = (char *)alloca (w2sl (xsymbol_value (Qmodule_dir))
                                + w2sl (xsymbol_value (Vuser_name))
@@ -191,16 +267,46 @@ init_user_config_path (const char *config_path)
   *p++ = '/';
   strcpy (p, sysdep.windows_short_name);
   WINFS::CreateDirectory (path, 0);
-  DWORD a = WINFS::GetFileAttributes (path);
-  if (a != DWORD (-1) && a & FILE_ATTRIBUTE_DIRECTORY)
-    xsymbol_value (Quser_config_path) = make_path (path);
-  else
-    xsymbol_value (Quser_config_path) = xsymbol_value (Qmodule_dir);
+  if(!try_assign_config_path(path))
+    xsymbol_value (Quser_config_path) = xsymbol_value (Qmodule_dir); //fail all, use module dir. 
+}
+
+static bool
+FileExists (const char* path) {
+  HANDLE h = WINFS::CreateFile (path, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
+  if (h == INVALID_HANDLE_VALUE)
+	  return false;
+  CloseHandle (h);
+  return true;
 }
 
 static void
-init_user_inifile_path (const char *ini_file)
+try_load_inifile_of_modulepath()
 {
+   char path[_MAX_PATH];
+   errno_t err = ResolveModuleRelativePath(path, _MAX_PATH, 0, "xyzzy.ini");
+   if(err != 0)
+      return;
+   if(FileExists(path))
+   {
+      g_app.ini_file_path = xstrdup (path);
+   }
+}
+
+static void
+init_user_inifile_path_1st_phase (const char *ini_file)
+{
+  // if there is no ini file specification, use the same place as xyzzy.exe if exist.
+  if(!ini_file)
+    try_load_inifile_of_modulepath();
+}
+
+static void
+init_user_inifile_path_2nd_phase (const char *ini_file)
+{
+  if(g_app.ini_file_path)
+	  return;
+
   if (!ini_file)
     ini_file = getenv ("XYZZYINIFILE");
   if (ini_file && find_slash (ini_file))
@@ -253,7 +359,7 @@ init_env_symbols (const char *config_path, const char *ini_file)
   init_current_dir ();
   init_environ ();
   init_user_config_path (config_path);
-  init_user_inifile_path (ini_file);
+  init_user_inifile_path_2nd_phase (ini_file);
   init_home_dir ();
   init_load_path ();
   init_windows_dir ();
@@ -276,10 +382,10 @@ init_math_symbols ()
     make_single_float (FLT_MIN);
   xsymbol_value (Qleast_negative_normalized_single_float) =
     make_single_float (-FLT_MIN);
-  for (fl = 1.0F, fe = 1.1F; 1.0F + fl != 1.0F && fe > fl; fe = fl, fl /= 2.0F)
+  for (fl = 1.0F, fe = 1.1F; (float)(1.0F + fl) != 1.0F && fe > fl; fe = fl, fl /= 2.0F)
     ;
   xsymbol_value (Qsingle_float_epsilon) = make_single_float (fe);
-  for (fl = 1.0F, fe = 1.1F; 1.0F - fl != 1.0F && fe > fl; fe = fl, fl /= 2.0F)
+  for (fl = 1.0F, fe = 1.1F; (float)(1.0F - fl) != 1.0F && fe > fl; fe = fl, fl /= 2.0F)
     ;
   xsymbol_value (Qsingle_float_negative_epsilon) = make_single_float (fe);
 
@@ -349,7 +455,6 @@ init_symbol_value_once ()
 
   xsymbol_value (Vload_verbose) = Qt;
   xsymbol_value (Vload_print) = Qnil;
-  xsymbol_value (Vload_pathname) = Qnil;
 
   xsymbol_value (Vrandom_state) = Fmake_random_state (Qt);
   xsymbol_value (Vdefault_random_state) = xsymbol_value (Vrandom_state);
@@ -490,16 +595,20 @@ init_symbol_value_once ()
   xsymbol_value (Vunicode_to_half_width) = Qt;
   xsymbol_value (Vcolor_page_enable_dir_p) = Qnil;
   xsymbol_value (Vcolor_page_enable_subdir_p) = Qnil;
+
+  xsymbol_value (Vwow64_enable_file_system_redirector) = Qt;
 }
 
 static void
 init_symbol_value ()
 {
+  // when root app constructor is called, Qnil is not yet initialized.
+  active_app_frame().lminibuffer_message = Qnil;
+  active_app_frame().lminibuffer_prompt = Qnil;
   xsymbol_value (Vquit_flag) = Qnil;
   xsymbol_value (Vinhibit_quit) = Qnil;
   xsymbol_value (Voverwrite_mode) = Qnil;
   xsymbol_value (Vprocess_list) = Qnil;
-  xsymbol_value (Vminibuffer_message) = Qnil;
   xsymbol_value (Vsi_find_motion) = Qt;
   xsymbol_value (Vdefault_menu) = Qnil;
   xsymbol_value (Vlast_active_menu) = Qnil;
@@ -508,7 +617,9 @@ init_symbol_value ()
   xsymbol_value (Vreader_in_backquote) = Qnil;
   xsymbol_value (Vreader_preserve_white) = Qnil;
   xsymbol_value (Vread_suppress) = Qnil;
+  xsymbol_value (Vread_eval) = Qt;
   xsymbol_value (Vreader_label_alist) = Qnil;
+  xsymbol_value (Vload_pathname) = Qnil;
 
   xsymbol_value (Vclipboard_newer_than_kill_ring_p) = Qnil;
   xsymbol_value (Vkill_ring_newer_than_clipboard_p) = Qnil;
@@ -523,12 +634,56 @@ init_symbol_value ()
   xsymbol_value (Vlast_match_string) = Qnil;
 }
 
+static bool is_parent_process_wow64()
+{
+  bool ret = false;
+  typedef BOOL (WINAPI *ISWOW64PROCESS)(HANDLE, PBOOL);
+  static const ISWOW64PROCESS fnIsWow64Process = (ISWOW64PROCESS)GetProcAddress (GetModuleHandle ("KERNEL32"), "IsWow64Process");
+  HANDLE h = CreateToolhelp32Snapshot (TH32CS_SNAPPROCESS, 0);
+  PROCESSENTRY32 pe = { 0 };
+  pe.dwSize = sizeof (PROCESSENTRY32);
+  int pid = GetCurrentProcessId ();
+  if (Process32First (h, &pe))
+    {
+      do
+        {
+          if (pe.th32ProcessID == pid)
+            {
+              HANDLE processHandle = OpenProcess (PROCESS_QUERY_INFORMATION, 0, pe.th32ParentProcessID);
+              BOOL b = FALSE;
+              if (fnIsWow64Process && fnIsWow64Process (processHandle, &b))
+                {
+                  ret = (b != 0);
+                  break;
+                }
+            }
+        } while (Process32Next (h, &pe));
+    }
+  return ret;
+}
+
 static void
 init_command_line (int ac)
 {
   lisp p = Qnil;
   for (int i = __argc - 1; i >= ac; i--)
     p = xcons (make_string (__argv[i]), p);
+  {
+    bool haveWow64Option = false;
+    for (int i = __argc - 1; i >= ac; i--)
+      {
+        if (_stricmp (__argv[i], "-wow64-redirection") == 0 || _stricmp (__argv[i], "-no-wow64-redirection") == 0)
+          {
+            haveWow64Option = true;
+            break;
+          }
+      }
+    if (! haveWow64Option)
+      {
+        const char *wow64_mode = is_parent_process_wow64 () ? "-wow64-redirection" : "-no-wow64-redirection";
+        p = xcons (make_string (wow64_mode), p);
+      }
+  }
   xsymbol_value (Vsi_command_line_args) = p;
 }
 
@@ -570,10 +725,17 @@ init_lisp_objects ()
 
   try
     {
+      if (!ini_file)
+        ini_file = getenv ("XYZZYINIFILE");
+	  init_user_inifile_path_1st_phase(ini_file);
+
       init_dump_path ();
       if ((ac < __argc || !check_dump_key ())
           && rdump_xyzzy ())
-        combine_syms ();
+        {
+          combine_syms ();
+          rehash_all_hash_tables ();
+        }
       else
         {
           init_syms ();
@@ -599,12 +761,17 @@ init_lisp_objects ()
 }
 
 static int
-init_editor_objects (ApplicationFrame* app1)
+init_editor_objects (ApplicationFrame* app1, Buffer* iniBuf)
 {
   try
     {
       Window::create_default_windows (app1);
-      create_default_buffers ();
+      if (iniBuf)
+	  {
+		  selected_window (app1)->set_buffer (iniBuf);
+	  }
+	  else
+        create_default_buffers ();
     }
   catch (nonlocal_jump &)
     {
@@ -762,10 +929,14 @@ sw_maximized_p (int sw)
   return sw == SW_SHOWMAXIMIZED;
 }
 
+static SIZE g_initial_size;
+
+
 static int
 init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 {
   SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+  SetDllDirectory("");
   g_app.in_gc = 0; // whatever.
   active_app_frame().toplev = 0;
 
@@ -807,6 +978,7 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
   POINT point;
   SIZE size;
   int cmdshow = environ::load_geometry (passed_cmdshow, &point, &size);
+  g_initial_size = size;
   int restore_maximized = 0;
   if (sw_minimized_p (passed_cmdshow))
     {
@@ -896,7 +1068,7 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 
   active_app_frame().modeline_param.init (HFONT (SendMessage (active_app_frame().hwnd_sw, WM_GETFONT, 0, 0)));
 
-  if (!init_editor_objects (&active_app_frame()))
+  if (!init_editor_objects (&active_app_frame(), NULL))
     return 0;
 
   try {Dde::initialize ();} catch (Dde::Exception &) {}
@@ -905,7 +1077,7 @@ init_root_app (HINSTANCE hinst, int passed_cmdshow, int &ole_initialized)
 }
 
 static void
-call_startup(ApplicationFrame *app1)
+call_startup(ApplicationFrame *app1, ApplicationFrame *parent)
 {
 	if (xsymbol_function (Vstartup_frame) == Qunbound
 		|| xsymbol_function (Vstartup_frame) == Qnil)
@@ -914,7 +1086,7 @@ call_startup(ApplicationFrame *app1)
   suppress_gc sgc;
   try
     {
-		funcall_1 (Vstartup_frame, app1->lfp);
+		funcall_2 (Vstartup_frame, app1->lfp, parent->lfp);
     }
   catch (nonlocal_jump &)
     {
@@ -922,8 +1094,11 @@ call_startup(ApplicationFrame *app1)
     }
 }
 
+extern void begin_wait_cursor (ApplicationFrame *app1);
+
+
 int
-init_app(HINSTANCE hinst, ApplicationFrame* app1)
+init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent)
 {
   app1->toplev = 0;
   app1->hinst = hinst;
@@ -933,8 +1108,7 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1)
 
   app1->toplev = CreateWindow (Application::ToplevelClassName, TitleBarString,
                              WS_OVERLAPPEDWINDOW,
-                             // point.x, point.y, size.cx, size.cy,
-							 10, 10, 600, 480,
+							 CW_USEDEFAULT, CW_USEDEFAULT, g_initial_size.cx, g_initial_size.cy,
                              HWND_DESKTOP, 0, hinst, app1);
 
   if (!app1->toplev)
@@ -942,7 +1116,7 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1)
 
   xappframe_fp (app1->lfp) = app1;
 
-  Fbegin_wait_cursor ();
+  begin_wait_cursor (app1);
 
   ShowWindow(app1->toplev, SW_SHOW);
 
@@ -951,10 +1125,10 @@ init_app(HINSTANCE hinst, ApplicationFrame* app1)
 
   app1->modeline_param.init (HFONT (SendMessage (app1->hwnd_sw, WM_GETFONT, 0, 0)));
 
-  if (!init_editor_objects (app1))
+  if (!init_editor_objects (app1, selected_buffer(parent)))
     return 0;
 
-  call_startup(app1);
+  call_startup(app1, parent);
 
   return 1;
 }

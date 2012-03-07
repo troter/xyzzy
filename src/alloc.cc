@@ -151,10 +151,10 @@ alloc_page::free (void *p)
             return;
           }
 
-      alloc_page_rep* r = (alloc_page_rep *)p;
-      r->commit = (1U << ap_units_per_block) - 1;
-      r->next = ap_rep;
-      ap_rep = r;
+      alloc_page_rep* r2 = (alloc_page_rep *)p;
+      r2->commit = (1U << ap_units_per_block) - 1;
+      r2->next = ap_rep;
+      ap_rep = r2;
     }
   else
     {

@@ -408,9 +408,11 @@ exact_valid_eol_code_p (int code)
 }
 
 static inline eol_code
-exact_eol_code (int code)
+exact_eol_code (int code, int default_code = 1)
 {
-  return exact_valid_eol_code_p (code) ? eol_code (code) : eol_crlf;
+  return (exact_valid_eol_code_p (code) ? eol_code (code)
+          : exact_valid_eol_code_p (default_code) ? eol_code (default_code)
+          : eol_crlf);
 }
 
 class UndoInfo;
@@ -431,6 +433,8 @@ struct write_region_param
 };
 
 struct glyph_width;
+
+#include <map>
 
 
 struct Buffer
@@ -466,8 +470,8 @@ struct Buffer
   static long b_total_create_count;
   long b_create_count;
 
-  static Buffer *b_last_title_bar_buffer;
-  static int b_title_bar_text_order;
+  static std::map<ApplicationFrame*,int> b_title_bar_text_order_map;
+  static std::map<ApplicationFrame*,Buffer*> b_last_title_bar_buffer_map;
 
   eol_code b_eol_code;
 

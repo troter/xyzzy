@@ -5,7 +5,6 @@
 ApplicationFrame::ApplicationFrame ()
      : mouse (kbdq)
 {
-  default_tab_columns = 8;
   auto_save_count = 0;
   ime_composition = 0;
   ime_open_mode = kbd_queue::IME_MODE_OFF;
@@ -28,6 +27,8 @@ ApplicationFrame::ApplicationFrame ()
   quit_mod = MOD_CONTROL;
   minibuffer_prompt_column = -1;
   mframe = new main_frame();
+  lminibuffer_prompt = Qnil;
+  lminibuffer_message = Qnil;
 
   memset((void*)&active_frame, 0, sizeof(active_frame));
   a_next = 0;
@@ -72,6 +73,8 @@ ApplicationFrame* retrieve_app_frame(HWND hwnd)
 
 #include <vector>
 static std::vector<ApplicationFrame*> g_floating_frames;
+static std::vector<ApplicationFrame*> g_startup_second_pending_frames;
+
 
 void app_frame_gc_mark(void (*f)(lisp))
 {
@@ -87,7 +90,9 @@ void app_frame_gc_mark(void (*f)(lisp))
 
 	  app1->mframe->gc_mark(f);
 
-
+	  (*f)(app1->lminibuffer_message);
+	  (*f)(app1->lminibuffer_prompt);
+	  (*f)(app1->lquit_char);
 	  (*f)(app1->lfp);
       app1->user_timer.gc_mark (f);
   }
@@ -118,11 +123,10 @@ bool is_last_app_frame()
 	return false;
 }
 
-void notify_focus(ApplicationFrame *app1)
+static void change_root_frame(ApplicationFrame *app1)
 {
 	if (root == app1) // do nothing.
 		return;
-
 	ApplicationFrame *cur = root;
 	ApplicationFrame *prev = cur;
 	while(cur != app1)
@@ -135,6 +139,23 @@ void notify_focus(ApplicationFrame *app1)
 	prev->a_next = app1->a_next;
 	app1->a_next = root;
 	root = app1;
+}
+
+void notify_focus(ApplicationFrame *app1)
+{
+	if (root == app1) // do nothing.
+		return;
+
+	/*
+	most of the case, hs_focus turn off at KILL_FOCUS.
+	But when inside read_minibuffer, defer_focus should update caret and other information even if they are inside eval call.
+	So I apply re_focus in defer_focus_change, and that make has_focus non-zero in some case.
+	*/
+	root->active_frame.has_focus = 0;
+
+
+	change_root_frame(app1);
+
 	kbd_queue::change_application_window = true;
 	for(Window* wp = root->active_frame.windows; wp; wp = wp->w_next)
 		wp->update_window();
@@ -181,9 +202,33 @@ void delete_floating_app_frame()
 	g_floating_frames.clear();
 }
 
-extern int init_app(HINSTANCE hinst, ApplicationFrame* app1);
+void call_all_startup_frame_second()
+{
+	for(std::vector<ApplicationFrame*>::iterator itr = g_startup_second_pending_frames.begin(); itr != g_startup_second_pending_frames.end(); itr++)
+	{
+		ApplicationFrame *app1 = *itr;
+		change_root_frame(app1);
+		if (xsymbol_function (Vstartup_frame_second) == Qunbound
+			|| xsymbol_function (Vstartup_frame_second) == Qnil)
+		return;
 
-ApplicationFrame * coerce_to_frame (lisp object)
+		suppress_gc sgc;
+		try
+		{
+			funcall_1 (Vstartup_frame_second, app1->lfp);
+		}
+		catch (nonlocal_jump &)
+		{
+    		print_condition (nonlocal_jump::data());
+		}
+	}
+	g_startup_second_pending_frames.clear();
+}
+
+extern int init_app(HINSTANCE hinst, ApplicationFrame* app1, ApplicationFrame* parent);
+
+ApplicationFrame *
+ApplicationFrame::coerce_to_frame (lisp object)
 {
   if (!object || object == Qnil)
     return &active_app_frame ();
@@ -198,14 +243,22 @@ ApplicationFrame * coerce_to_frame (lisp object)
 lisp
 Fmake_frame (lisp opt)
 {
+	ApplicationFrame *parent = root;
 	HINSTANCE hinst = root->hinst;
 
+	if (Qnil == selected_buffer(root)->run_hook_while_success (Vbefore_make_frame_hook))
+		return Qnil;
+
+
 	ApplicationFrame* new_app = new ApplicationFrame();
-	new_app->a_next = root;
-	root = new_app;
+	ApplicationFrame* next = root->a_next;
+	root->a_next = new_app;
+	new_app->a_next = next;
+	g_startup_second_pending_frames.push_back(new_app);
 
-	init_app(hinst, new_app);
+	init_app(hinst, new_app, parent);
 
+	defer_change_focus::request_change_focus(new_app);	
 	return new_app->lfp;
 }
 lisp
@@ -220,7 +273,7 @@ Fselected_frame ()
 lisp
 Fnext_frame (lisp frame, lisp minibufp)
 {
-  ApplicationFrame *app = coerce_to_frame(frame);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(frame);
   ApplicationFrame *next = app->a_next;
   if (!next)
     next = first_app_frame();
@@ -257,7 +310,17 @@ Fother_frame ()
 lisp
 Fdelete_frame (lisp frame, lisp force)
 {
-  ApplicationFrame *app = coerce_to_frame(frame);
+  ApplicationFrame *app = ApplicationFrame::coerce_to_frame(frame);
+  try
+  {
+	selected_buffer(app)->run_hook (Vdelete_frame_functions, app->lfp);
+  }
+  catch (nonlocal_jump &)
+  {
+    print_condition (nonlocal_jump::data ());
+  }
+
+
   if(!is_last_app_frame())
   {
 	  PostMessage(app->toplev, WM_CLOSE, 0, 0);

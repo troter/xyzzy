@@ -281,8 +281,8 @@ Window::update_caret () const
     show = w_bufp && w_owner->drop_window == this;
   else if (!w_owner->active_frame.has_focus)
     show = 0;
-  else if (stringp (xsymbol_value (Vminibuffer_message))
-           && xsymbol_value (Vminibuffer_prompt) != Qnil
+  else if (stringp (w_owner->lminibuffer_message)
+           && w_owner->lminibuffer_prompt != Qnil
            && w_owner->minibuffer_prompt_column >= 0)
     {
       show = minibuffer_window_p ();
@@ -1009,7 +1009,7 @@ Window::paint_cursor_line (HDC hdc, int f) const
             (hdc, CreatePen (PS_SOLID, 0, w_colors[WCOLOR_CURSOR] ^ w_colors[WCOLOR_BACK]));
           int omode = SetROP2 (hdc, R2_XORPEN);
           MoveToEx (hdc, x1, y, 0);
-          LineTo (hdc, x2 + 1, y);
+          LineTo (hdc, x2, y);
           SetROP2 (hdc, omode);
           DeleteObject (SelectObject (hdc, open));
         }
@@ -3641,11 +3641,11 @@ Window::refresh (int f)
 {
   assert (IsWindow (w_hwnd));
 
-  if (!w_next && stringp (xsymbol_value (Vminibuffer_message)))
+  if (!w_next && stringp (w_owner->lminibuffer_message))
     {
       if (w_disp_flags & (WDF_WINDOW | WDF_PENDING))
         {
-          paint_minibuffer_message (xsymbol_value (Vminibuffer_message));
+          paint_minibuffer_message (w_owner->lminibuffer_message);
           w_disp_flags &= ~(WDF_WINDOW | WDF_PENDING);
         }
       return 0;
