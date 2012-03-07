@@ -1310,38 +1310,27 @@ enum
   UCS4_EOF = 0xffffffffUL
 };
 
-static ucs4_t
-stream_get_utf8 (lisp stream, int c)
-{
-  extern u_char utf8_chtab[];
-  extern u_char utf8_chmask[];
-  ucs4_t ucs4 = 0;
 
-  if (c <= 0x7f)
-    {
-      ucs4 = (ucs4_t) c;
-    }
-  else
-    {
-      u_char nbits = utf8_chtab[c & 0xff];
-      ucs4 = (c & utf8_chmask[nbits]);
-      for (int nchars = 6 - nbits;   nchars > 0; nchars--)
-        {
-          int r = getc (xfile_stream_input (stream));
-          if (r == EOF)
-            {
-              ucs4 = UCS4_EOF;
-              break;
-            }
-          else if ((r & 0xc0) != 0x80)
-            {
-              break;
-            }
-          ucs4 = (ucs4 << 6) | (r & 0x3f);
-        }
-    }
-  return ucs4;
-}
+#include "encoding.h"
+
+class StreamAdapter
+{
+public:
+	StreamAdapter(lisp s) 
+	{
+		stream = s;
+	}
+	inline int get()
+	{
+		return getc (xfile_stream_input (stream));
+	}
+private:
+	lisp stream;
+};
+
+static const int tofu = 0x81a1;
+
+
 
 static int
 ucs4_to_sjis (ucs4_t ucs4)
@@ -1358,7 +1347,6 @@ ucs4_to_sjis (ucs4_t ucs4)
   else
     {
       // FIXME : implement better ucs4 (surrogate pair) to sjis (cp932) mapping funciton.
-      const int tofu = 0x81a1;
       return tofu;
     }
   return sjis;
@@ -1406,8 +1394,15 @@ readc_stream (lisp stream)
                       case lstream::UTF_8:
                         if (c > 0x7f)
                           {
-                            ucs4_t ucs4 = stream_get_utf8 (stream, c);
-                            return ucs4_to_sjis (ucs4);
+							  try
+							  {
+								ucs4_t ucs4 = getch_utf8_to_ucs4(c, StreamAdapter(stream));
+								return ucs4_to_sjis (ucs4);
+							  }
+							  catch(std::exception)
+							  {
+								  return tofu;
+							  }
                           }
                         break;
                       default:
