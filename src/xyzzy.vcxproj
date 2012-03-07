@@ -70,6 +70,7 @@
       <ExceptionHandling>Async</ExceptionHandling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(ProjectDir)/zlib/zlib.lib;comctl32.lib;imm32.lib;mpr.lib;oleaut32.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -102,6 +103,7 @@
       <AdditionalOptions>/Gs %(AdditionalOptions)</AdditionalOptions>
       <CallingConvention>StdCall</CallingConvention>
       <WholeProgramOptimization>false</WholeProgramOptimization>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(ProjectDir)/zlib/zlib.lib;comctl32.lib;imm32.lib;mpr.lib;oleaut32.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
